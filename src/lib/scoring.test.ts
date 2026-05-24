@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { initialState } from "@/lib/state";
+import { footballCopy } from "@/lib/football-jargon";
 import { inferPredictionOutcome, savePredictionInState, scorePrediction, upsertMatchResultInState } from "@/lib/scoring";
 import type { Prediction } from "@/lib/types";
 
@@ -89,6 +90,20 @@ describe("savePredictionInState", () => {
     expect(state.predictions[0]).toMatchObject({ homeGoals: 1, awayGoals: 1 });
   });
 
+  it("allows edits until the last moment before kickoff and locks at kickoff", () => {
+    let state = initialState();
+    const lastMomentBeforeKickoff = new Date("2026-06-11T18:59:59.999Z");
+
+    state = savePredictionInState(state, prediction("m001", { homeGoals: 1, awayGoals: 0 }), lastMomentBeforeKickoff);
+    state = savePredictionInState(state, prediction("m001", { homeGoals: 3, awayGoals: 1 }), lastMomentBeforeKickoff);
+
+    expect(state.predictions).toHaveLength(1);
+    expect(state.predictions[0]).toMatchObject({ homeGoals: 3, awayGoals: 1 });
+    expect(() => savePredictionInState(state, prediction("m001", { homeGoals: 4, awayGoals: 1 }), new Date("2026-06-11T19:00:00Z"))).toThrow(
+      footballCopy.lockError,
+    );
+  });
+
   it("rejects knockout draws without a resolution", () => {
     const state = initialState();
     expect(() => savePredictionInState(state, prediction("m073", { homeGoals: 1, awayGoals: 1 }), nowBeforeVm)).toThrow(
@@ -114,7 +129,7 @@ describe("savePredictionInState", () => {
   it("rejects predictions after kickoff", () => {
     const state = initialState();
     expect(() => savePredictionInState(state, prediction("m001"), new Date("2026-06-11T19:00:01Z"))).toThrow(
-      "Tipsfristen er passert.",
+      footballCopy.lockError,
     );
   });
 });

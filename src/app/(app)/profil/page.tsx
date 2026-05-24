@@ -28,7 +28,7 @@ export default async function ProfilePage() {
 
   const badges = [
     standing?.exactResults ? { icon: Star, title: "VAR-profet", text: `${standing.exactResults} eksakte resultater.` } : null,
-    hitRate >= 50 ? { icon: Target, title: "Resultatmann", text: `${hitRate}% riktig utfall.` } : null,
+    hitRate >= 50 ? { icon: Target, title: "Kupongkaptein", text: `${hitRate}% riktig utfall.` } : null,
     standing?.roundsWon ? { icon: Medal, title: "Kampdagens konge", text: `${standing.roundsWon} rundeseire.` } : null,
   ].filter(Boolean) as Array<{ icon: typeof Star; title: string; text: string }>;
 
@@ -62,7 +62,7 @@ export default async function ProfilePage() {
               </article>
             );
           })}
-          {!badges.length ? <p className="lead">Ingen badges ennå. Tabellen venter tålmodig på dokumentert storhet.</p> : null}
+          {!badges.length ? <p className="lead">Ingen badges ennå. Garderoben venter tålmodig på dokumentert storhet.</p> : null}
         </div>
       </Panel>
 

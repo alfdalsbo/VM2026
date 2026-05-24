@@ -10,7 +10,7 @@ export function LineupBoard({ lineup, match }: { lineup: MatchLineup | null; mat
         <p>
           {hasFormation
             ? `${match.homeTeam}: ${lineup?.formation.home ?? "-"} · ${match.awayTeam}: ${lineup?.formation.away ?? "-"}`
-            : "Hvis gratisdata leverer lagoppstilling rundt kampstart, dukker den opp her."}
+            : "Når startelleverne slipper gjennom gratisdata, havner taktikkbildet her."}
         </p>
       </div>
     );

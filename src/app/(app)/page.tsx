@@ -2,7 +2,9 @@ import Link from "next/link";
 
 import { MatchCard } from "@/components/match-card";
 import { Notice, Panel } from "@/components/ui";
+import { getAwards } from "@/lib/awards";
 import { requireSession } from "@/lib/auth";
+import { footballCopy, pickDashboardLine } from "@/lib/football-jargon";
 import { formatOsloDate, formatOsloDateTime, formatScore } from "@/lib/format";
 import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
@@ -50,6 +52,7 @@ export default async function HomePage({
     .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))
     .slice(0, 4);
   const topStandings = standings.slice(0, 5);
+  const awards = getAwards(state);
 
   return (
     <div className="dashboard space-y-5">
@@ -61,6 +64,7 @@ export default async function HomePage({
           <p className="eyebrow">Tippekjelleren · VM 2026</p>
           <h1 className="dashboard-title">{todayMatches.length ? "Dagens kamper" : "Neste kampdag"}</h1>
           <p className="lead">{formatOsloDate(focusMatches[0]?.kickoffAt ?? new Date().toISOString())}</p>
+          <p className="dashboard-line">{pickDashboardLine(focusKey)}</p>
         </div>
         <Link href="/kamper" className="btn-secondary">
           Alle kamper
@@ -71,7 +75,7 @@ export default async function HomePage({
         {focusMatches.map((match) => (
           <MatchCard key={match.id} match={match} player={player} state={state} />
         ))}
-        {!focusMatches.length ? <Panel><p className="lead">Ingen kamper å tippe akkurat nå.</p></Panel> : null}
+        {!focusMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
@@ -118,6 +122,21 @@ export default async function HomePage({
           </div>
         </Panel>
       </div>
+
+      <Panel>
+        <div className="mb-4">
+          <p className="eyebrow">Kjellerjuryen</p>
+          <h2 className="section-title">Dagens bemerkninger</h2>
+        </div>
+        <div className="awards-grid">
+          {awards.map((award) => (
+            <article key={award.title}>
+              <strong>{award.title}</strong>
+              <p>{award.text}</p>
+            </article>
+          ))}
+        </div>
+      </Panel>
 
       <Panel>
         <div className="mb-4 flex items-end justify-between gap-4">

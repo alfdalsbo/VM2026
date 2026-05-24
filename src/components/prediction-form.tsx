@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { TicketCheck } from "lucide-react";
 
 import { savePredictionAction } from "@/app/actions";
+import { footballCopy } from "@/lib/football-jargon";
 import { describePrediction, isKnockoutMatch } from "@/lib/scoring";
 import type { Prediction, WorldCupMatch } from "@/lib/types";
 
@@ -31,7 +32,7 @@ export function PredictionForm({
   if (locked) {
     return (
       <div className="locked-tip">
-        <span>Ditt tips</span>
+        <span>{footballCopy.lockedLabel}</span>
         <strong>{describePrediction(prediction)}</strong>
       </div>
     );
@@ -123,17 +124,19 @@ export function PredictionForm({
         </div>
       ) : null}
 
-      <TipSubmitButton />
+      <p className="prediction-note">{footballCopy.predictionNote}</p>
+      <TipSubmitButton hasPrediction={Boolean(prediction)} />
     </form>
   );
 }
 
-function TipSubmitButton() {
+function TipSubmitButton({ hasPrediction }: { hasPrediction: boolean }) {
   const { pending } = useFormStatus();
+  const label = hasPrediction ? "Oppdater tips" : "Tipp kampen";
   return (
     <button className="btn-primary" type="submit" disabled={pending} aria-live="polite">
       <TicketCheck className="h-4 w-4" aria-hidden="true" />
-      {pending ? "Tipper..." : "Tipp kampen"}
+      {pending ? "Tipper..." : label}
     </button>
   );
 }

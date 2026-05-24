@@ -27,7 +27,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }) 
   await expect(firstMatch.getByRole("button", { name: /S Seier/ })).toHaveCount(0);
   await firstMatch.getByLabel("Mexico mål").fill("2");
   await firstMatch.getByLabel("South Africa mål").fill("1");
-  await expect(firstMatch.getByRole("button", { name: "Tipp kampen" })).toBeVisible();
+  await expect(firstMatch.getByRole("button", { name: /Tipp kampen|Oppdater tips/ })).toBeVisible();
   await expect(firstMatch).toContainText("TV 2 Direkte");
 
   await firstMatch.getByRole("link", { name: "Mexico", exact: true }).click();

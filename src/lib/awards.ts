@@ -6,7 +6,7 @@ export type Award = {
   text: string;
 };
 
-export const emptyAwardText = "Embetsverket avventer første fasit før det begynner å late som dette var vitenskap.";
+export const emptyAwardText = "Dommerbordet avventer første fasit før det begynner å late som dette var vitenskap.";
 
 export function getAwards(state: AppState): Award[] {
   const completedMatches = state.matches.filter((match) => match.result);
@@ -33,34 +33,21 @@ export function getAwards(state: AppState): Award[] {
   return [
     best
       ? {
-          title: "Rundens profet",
-          text: `${best.player.shortName} tok ${best.points} poeng og kommer til å omtale dette som metode, ikke flaks.`,
+          title: "Rundens TV-ekspert",
+          text: `${best.player.shortName} tok ${best.points} poeng og kommer til å omtale dette som kampplan, ikke flaks.`,
         }
       : null,
     exactHero
       ? {
           title: "VAR-varselet",
-          text: `${exactHero.player.shortName} har ${exactHero.exactResults} eksakte resultater og bør kontrolleres for hemmelig tilgang til manus.`,
+          text: `${exactHero.player.shortName} har ${exactHero.exactResults} eksakte resultater og bør kontrolleres for hemmelig tilgang til kampmanus.`,
         }
       : null,
     worst
       ? {
-          title: "Rundens bomskudd",
-          text: `${worst.player.shortName} leverte et bidrag tabellen teknisk sett var nødt til å registrere.`,
+          title: "Rundens tribuneskudd",
+          text: `${worst.player.shortName} leverte et tips tabellen teknisk sett var nødt til å registrere.`,
         }
       : null,
   ].filter(Boolean) as Award[];
-}
-
-export const dashboardLines = [
-  "VM kommer til Nord-Amerika. Gjengen kommer til å overdrive selvtilliten.",
-  "Tabellen er foreløpig høflig. Det varer sjelden lenge.",
-  "Alle tips føres med alvor. Alle bortforklaringer arkiveres med glede.",
-  "Første bud: tipp før kampstart. Andre bud: nekt for at du var skråsikker.",
-];
-
-export function pickLine(seed: string) {
-  let hash = 0;
-  for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return dashboardLines[hash % dashboardLines.length];
 }

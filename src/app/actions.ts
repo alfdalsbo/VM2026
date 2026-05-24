@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createSession, destroySession, isCorrectPasscode, requireSession } from "@/lib/auth";
+import { footballCopy } from "@/lib/football-jargon";
 import { clampScore } from "@/lib/format";
 import { getPlayer } from "@/lib/players";
 import { inferPredictionOutcome, isKnockoutMatch, savePredictionInState } from "@/lib/scoring";
@@ -102,9 +103,9 @@ export async function savePredictionAction(formData: FormData) {
   try {
     await saveAppState(savePredictionInState(state, prediction));
   } catch (error) {
-    redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Tipset kunne ikke lagres.")}#${matchId}`);
+    redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Tipset gikk ikke gjennom.")}#${matchId}`);
   }
 
   revalidateApp(matchId);
-  redirect(`${next}?status=${encodeURIComponent("Tipset er ført i protokollen.")}#${matchId}`);
+  redirect(`${next}?status=${encodeURIComponent(footballCopy.predictionSaved)}#${matchId}`);
 }

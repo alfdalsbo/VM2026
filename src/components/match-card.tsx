@@ -60,7 +60,7 @@ export function MatchCard({
       ) : null}
       {otherPredictions.length ? (
         <div className="other-predictions">
-          <p>Offentlige tips etter frist</p>
+          <p>Åpne kuponger etter avspark</p>
           <div>
             {otherPredictions.map((item) => {
               const other = state.players.find((candidate) => candidate.id === item.playerId);

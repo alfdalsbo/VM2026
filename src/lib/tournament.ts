@@ -33,12 +33,12 @@ export function formatBroadcast(match: WorldCupMatch) {
 }
 
 export function formatMatchStatus(match: WorldCupMatch) {
-  if (match.status === "live") return match.minute ? `Live · ${match.minute}'` : "Live";
-  if (match.status === "halftime") return "Pause";
-  if (match.status === "finished") return "Ferdig";
+  if (match.status === "live") return match.minute ? `Kampen lever · ${match.minute}'` : "Kampen lever";
+  if (match.status === "halftime") return "Pauseprat";
+  if (match.status === "finished") return "Full tid";
   if (match.status === "postponed") return "Utsatt";
   if (match.status === "cancelled") return "Avlyst";
-  return "Ikke startet";
+  return "Før avspark";
 }
 
 function createStanding(group: string, team: string): GroupStanding {

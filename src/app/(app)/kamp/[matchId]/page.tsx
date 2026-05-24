@@ -94,7 +94,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
             ) : null}
           </>
         ) : (
-          <p className="lead mt-3">Enkel statistikk vises her når gratisdata har noe å komme med.</p>
+          <p className="lead mt-3">Kampstatistikk legges på dommerbordet når gratisdata har noe å komme med.</p>
         )}
       </Panel>
 

@@ -1,4 +1,5 @@
 import type { AppState, BroadcastInfo, Prediction, PredictionOutcome, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
+import { footballCopy } from "@/lib/football-jargon";
 
 export function inferPredictionOutcome(homeGoals: number, awayGoals: number): PredictionOutcome {
   if (homeGoals > awayGoals) return "home";
@@ -182,7 +183,7 @@ export function savePredictionInState(
 ): AppState {
   const match = state.matches.find((item) => item.id === prediction.matchId);
   if (!match) throw new Error("Kampen finnes ikke.");
-  if (isMatchLocked(match, now)) throw new Error("Tipsfristen er passert.");
+  if (isMatchLocked(match, now)) throw new Error(footballCopy.lockError);
   validatePredictionForMatch(match, prediction);
 
   const predictions = state.predictions.filter((item) => {

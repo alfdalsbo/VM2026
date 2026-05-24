@@ -14,6 +14,8 @@ export default defineConfig({
     env: {
       VENNELIGAEN_PASSCODE: "vm2026",
       AUTH_SECRET: "playwright-vm2026-secret",
+      BLOB_READ_WRITE_TOKEN: "",
+      DATABASE_URL: "",
     },
   },
   projects: [

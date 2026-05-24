@@ -28,10 +28,11 @@ npm run dev
 VENNELIGAEN_PASSCODE=sett-en-delt-privat-kode
 AUTH_SECRET=lang-tilfeldig-hemmelighet
 ADMIN_PLAYER_IDS=alf
+BLOB_READ_WRITE_TOKEN=vercel-blob-token
 DATABASE_URL=postgres://...
 ```
 
-`DATABASE_URL` kan peke på Supabase/Postgres. Uten `DATABASE_URL` bruker appen lokal fil under `.data/`, som er fint for lokal utvikling, men ikke for varig Vercel-lagring.
+`DATABASE_URL` kan peke på Supabase/Postgres og får førsteprioritet. Uten `DATABASE_URL` bruker appen Vercel Blob når `BLOB_READ_WRITE_TOKEN` finnes. Hvis ingen varig lagring er konfigurert, faller den tilbake til lokal fil under `.data/`, som bare er egnet for lokal utvikling.
 
 ## Kontroll
 

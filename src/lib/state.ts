@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { get, put } from "@vercel/blob";
 import postgres from "postgres";
 
 import { players } from "@/lib/players";
@@ -11,6 +12,7 @@ const stateFile = process.env.VERCEL
   ? path.join("/tmp", "venneligaen-state.json")
   : path.join(process.cwd(), ".data", "venneligaen-state.json");
 const stateId = "vm2026";
+const blobPath = "state/venneligaen-vm2026.json";
 
 let sqlClient: ReturnType<typeof postgres> | null = null;
 let tableReady = false;
@@ -94,6 +96,29 @@ async function writeDatabaseState(state: AppState) {
   return true;
 }
 
+function hasBlobStorage() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || (process.env.VERCEL_OIDC_TOKEN && process.env.BLOB_STORE_ID));
+}
+
+async function readBlobState() {
+  if (!hasBlobStorage()) return null;
+  const result = await get(blobPath, { access: "private", useCache: false });
+  if (!result || result.statusCode !== 200 || !result.stream) return null;
+  const raw = await new Response(result.stream).text();
+  return mergeWithSeed(JSON.parse(raw) as AppState);
+}
+
+async function writeBlobState(state: AppState) {
+  if (!hasBlobStorage()) return false;
+  await put(blobPath, `${JSON.stringify(state, null, 2)}\n`, {
+    access: "private",
+    allowOverwrite: true,
+    cacheControlMaxAge: 60,
+    contentType: "application/json",
+  });
+  return true;
+}
+
 async function readFileState() {
   try {
     const raw = await readFile(stateFile, "utf8");
@@ -109,15 +134,18 @@ async function writeFileState(state: AppState) {
 }
 
 export async function getAppState() {
-  return (await readDatabaseState()) ?? (await readFileState()) ?? initialState();
+  return (await readDatabaseState()) ?? (await readBlobState()) ?? (await readFileState()) ?? initialState();
 }
 
 export async function saveAppState(state: AppState) {
   const next = mergeWithSeed(state);
   if (await writeDatabaseState(next)) return;
+  if (await writeBlobState(next)) return;
   await writeFileState(next);
 }
 
 export function getStorageMode() {
-  return process.env.DATABASE_URL ? "Postgres/Supabase" : "lokal fil";
+  if (process.env.DATABASE_URL) return "Postgres/Supabase";
+  if (hasBlobStorage()) return "Vercel Blob";
+  return "lokal fil";
 }

@@ -48,7 +48,7 @@ export default async function HomePage() {
         <Stat label="Din plass" value={`#${myStanding?.rank ?? "-"}`} detail={`${myStanding?.totalPoints ?? 0} poeng`} />
         <Stat label="Dine tips" value={`${predictions}/${totalPossible}`} detail="Ført før kampstart, som voksne folk nesten." />
         <Stat label="Neste frist" value={nextMatch ? `#${nextMatch.matchNumber}` : "Ferdig"} detail={nextMatch ? formatOsloDateTime(nextMatch.kickoffAt) : "Alle kamper er låst."} />
-        <Stat label="Lagring" value={getStorageMode()} detail="Supabase/Postgres når DATABASE_URL er satt." />
+        <Stat label="Lagring" value={getStorageMode()} detail="Postgres først, Vercel Blob som varig fallback." />
       </div>
 
       <Panel>

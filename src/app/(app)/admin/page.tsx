@@ -1,5 +1,6 @@
 import { ResultForm } from "@/components/result-form";
 import { Notice, Panel } from "@/components/ui";
+import { syncWorldCupAction } from "@/app/actions";
 import { requireAdmin } from "@/lib/auth";
 import { getAppState } from "@/lib/state";
 
@@ -28,6 +29,22 @@ export default async function AdminPage({
 
       <Notice message={params.status} />
       <Notice message={params.error} tone="error" />
+
+      <Panel className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="eyebrow">Automatikk</p>
+          <h2 className="text-xl font-black">FIFA-sync</h2>
+          <p className="lead mt-1">
+            Status: {state.sync.status} · sist ferdig {state.sync.lastCompletedAt ? new Date(state.sync.lastCompletedAt).toLocaleString("nb-NO") : "aldri"} ·{" "}
+            {state.sync.message ?? "Klar, men ikke dramatisk."}
+          </p>
+        </div>
+        <form action={syncWorldCupAction}>
+          <button className="btn-primary" type="submit">
+            Oppdater kampdata nå
+          </button>
+        </form>
+      </Panel>
 
       <div className="grid gap-4">
         {state.matches.map((match) => (

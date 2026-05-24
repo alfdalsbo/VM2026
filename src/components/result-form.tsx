@@ -2,9 +2,11 @@ import { Save } from "lucide-react";
 
 import { saveResultAction } from "@/app/actions";
 import { formatOsloDateTime } from "@/lib/format";
+import { getBroadcastForMatch } from "@/lib/tournament";
 import type { WorldCupMatch } from "@/lib/types";
 
 export function ResultForm({ match }: { match: WorldCupMatch }) {
+  const broadcast = getBroadcastForMatch(match);
   return (
     <form id={match.id} action={saveResultAction} className="admin-match">
       <input type="hidden" name="matchId" value={match.id} />
@@ -41,6 +43,18 @@ export function ResultForm({ match }: { match: WorldCupMatch }) {
         <label className="joker-toggle">
           <input name="decidedByPenalties" type="checkbox" defaultChecked={match.result?.decidedByPenalties ?? false} />
           <span>Avgjort på straffer</span>
+        </label>
+        <label>
+          <span>Kanal</span>
+          <input name="broadcastChannel" defaultValue={broadcast?.channel ?? ""} placeholder="NRK1 / TV 2 Direkte" />
+        </label>
+        <label>
+          <span>Strømming</span>
+          <input name="broadcastService" defaultValue={broadcast?.service ?? ""} placeholder="NRK TV / TV 2 Play" />
+        </label>
+        <label>
+          <span>TV-notat</span>
+          <input name="broadcastNote" defaultValue={broadcast?.note ?? ""} placeholder="Endret av admin ved behov" />
         </label>
       </div>
       <button className="btn-primary" type="submit">

@@ -1,0 +1,16 @@
+name: Sync World Cup data
+
+on:
+  schedule:
+    - cron: "*/10 * * 6,7 *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Tippekjelleren sync endpoint
+        run: |
+          curl --fail --show-error --silent \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://tippekjelleren.vercel.app/api/sync/world-cup"

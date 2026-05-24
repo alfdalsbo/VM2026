@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { initialState } from "@/lib/state";
-import { savePredictionInState, scorePrediction, upsertMatchResultInState } from "@/lib/scoring";
+import { inferPredictionOutcome, savePredictionInState, scorePrediction, upsertMatchResultInState } from "@/lib/scoring";
 import type { Prediction } from "@/lib/types";
 
 const nowBeforeVm = new Date("2026-06-01T10:00:00Z");
@@ -20,6 +20,12 @@ function prediction(matchId: string, overrides: Partial<Prediction> = {}): Predi
 }
 
 describe("scorePrediction", () => {
+  it("derives SUT outcomes from score lines", () => {
+    expect(inferPredictionOutcome(2, 1)).toBe("home");
+    expect(inferPredictionOutcome(1, 1)).toBe("draw");
+    expect(inferPredictionOutcome(0, 2)).toBe("away");
+  });
+
   it("gives 10 points for an exact result", () => {
     const state = initialState();
     const match = upsertMatchResultInState(state, "m001", {

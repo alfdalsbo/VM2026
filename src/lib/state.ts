@@ -5,7 +5,7 @@ import { get, put } from "@vercel/blob";
 import postgres from "postgres";
 
 import { players } from "@/lib/players";
-import type { AppState } from "@/lib/types";
+import type { AppState, SyncState, TournamentStats } from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
 
 const stateFile = process.env.VERCEL
@@ -17,13 +17,37 @@ const blobPath = "state/tippekjelleren-vm2026.json";
 let sqlClient: ReturnType<typeof postgres> | null = null;
 let tableReady = false;
 
+export function emptySyncState(): SyncState {
+  return {
+    status: "idle",
+    source: null,
+    lastStartedAt: null,
+    lastCompletedAt: null,
+    updatedMatches: 0,
+    message: null,
+  };
+}
+
+export function emptyTournamentStats(): TournamentStats {
+  return {
+    topScorers: [],
+    assistMakers: [],
+    discipline: [],
+    updatedAt: null,
+    source: null,
+    unavailableReason: "Gratis FIFA-data har foreløpig ikke levert toppscorer, assist og kort i en stabil struktur.",
+  };
+}
+
 export function initialState(): AppState {
   return {
-    version: 1,
+    version: 2,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
     predictions: [],
+    sync: emptySyncState(),
+    tournamentStats: emptyTournamentStats(),
   };
 }
 
@@ -34,20 +58,30 @@ function mergeWithSeed(state: AppState): AppState {
     return stored
       ? {
           ...seedMatch,
+          fifaMatchId: stored.fifaMatchId ?? seedMatch.fifaMatchId,
           homeTeam: stored.homeTeam || seedMatch.homeTeam,
           awayTeam: stored.awayTeam || seedMatch.awayTeam,
           result: stored.result ?? null,
+          status: stored.status ?? seedMatch.status,
+          minute: stored.minute ?? seedMatch.minute,
+          period: stored.period ?? seedMatch.period,
+          lastSyncedAt: stored.lastSyncedAt ?? seedMatch.lastSyncedAt,
+          syncSource: stored.syncSource ?? seedMatch.syncSource,
+          syncStatus: stored.syncStatus ?? seedMatch.syncStatus,
+          broadcasts: stored.broadcasts?.length ? stored.broadcasts : seedMatch.broadcasts,
         }
       : seedMatch;
   });
 
   return {
     ...state,
-    version: 1,
+    version: 2,
     players,
     rounds: worldCupRounds,
     matches,
     predictions: state.predictions ?? [],
+    sync: state.sync ?? emptySyncState(),
+    tournamentStats: state.tournamentStats ?? emptyTournamentStats(),
   };
 }
 

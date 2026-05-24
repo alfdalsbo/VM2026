@@ -6,9 +6,10 @@ import { redirect } from "next/navigation";
 import { createSession, destroySession, isCorrectPasscode, requireAdmin, requireSession } from "@/lib/auth";
 import { clampScore } from "@/lib/format";
 import { getPlayer } from "@/lib/players";
-import { savePredictionInState, upsertMatchResultInState } from "@/lib/scoring";
+import { inferPredictionOutcome, savePredictionInState, upsertMatchResultInState } from "@/lib/scoring";
 import { getAppState, saveAppState } from "@/lib/state";
-import type { MatchResult, Prediction } from "@/lib/types";
+import type { BroadcastInfo, MatchResult, Prediction } from "@/lib/types";
+import { syncWorldCupData } from "@/lib/world-cup-sync";
 
 function field(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -53,9 +54,14 @@ export async function savePredictionAction(formData: FormData) {
   const advancingTeamValue = field(formData, "advancingTeam");
   const advancingTeam = advancingTeamValue === "home" || advancingTeamValue === "away" ? advancingTeamValue : null;
   const joker = field(formData, "joker") === "on";
+  const outcomeValue = field(formData, "predictedOutcome");
 
   if (homeGoals === null || awayGoals === null) {
     redirect(`/kamper?error=${encodeURIComponent("Skriv inn gyldig resultat først.")}#${matchId}`);
+  }
+  const outcome = inferPredictionOutcome(homeGoals, awayGoals);
+  if (outcomeValue && outcomeValue !== outcome) {
+    redirect(`/kamper?error=${encodeURIComponent("S/U/T må stemme med stillingen du leverer.")}#${matchId}`);
   }
 
   const state = await getAppState();
@@ -64,6 +70,7 @@ export async function savePredictionAction(formData: FormData) {
     matchId,
     homeGoals,
     awayGoals,
+    outcome,
     advancingTeam,
     joker,
     updatedAt: new Date().toISOString(),
@@ -89,6 +96,9 @@ export async function saveResultAction(formData: FormData) {
   const decidedByPenalties = field(formData, "decidedByPenalties") === "on";
   const advancingTeamValue = field(formData, "advancingTeam");
   const advancingTeam = advancingTeamValue === "home" || advancingTeamValue === "away" ? advancingTeamValue : null;
+  const broadcastChannel = field(formData, "broadcastChannel");
+  const broadcastService = field(formData, "broadcastService");
+  const broadcastNote = field(formData, "broadcastNote");
 
   const state = await getAppState();
   const existing = state.matches.find((match) => match.id === matchId);
@@ -104,9 +114,37 @@ export async function saveResultAction(formData: FormData) {
           advancingTeam: decidedByPenalties ? advancingTeam : null,
           updatedAt: new Date().toISOString(),
           updatedBy: admin.id,
+          source: "manual",
         };
 
-  await saveAppState(upsertMatchResultInState(state, matchId, result, homeTeam, awayTeam));
+  const existingBroadcast = existing.broadcasts[0];
+  const broadcasts: BroadcastInfo[] = broadcastChannel
+    ? [
+        {
+          channel: broadcastChannel,
+          service: broadcastService || existingBroadcast?.service || broadcastChannel,
+          sourceName: "Admin",
+          sourceUrl: existingBroadcast?.sourceUrl || "https://www.strim.no/strimetips/fotball-vm-2026-komplett-sendeskjema",
+          verifiedAt: new Date().toISOString(),
+          note: broadcastNote || undefined,
+        },
+      ]
+    : [];
+
+  await saveAppState(upsertMatchResultInState(state, matchId, result, homeTeam, awayTeam, broadcasts));
   revalidateApp();
   redirect(`/admin?status=${encodeURIComponent("Kampen er oppdatert.")}#${matchId}`);
+}
+
+export async function syncWorldCupAction() {
+  await requireAdmin();
+  const result = await syncWorldCupData({ ignoreWindow: true });
+  revalidateApp();
+  const message =
+    result.status === "success"
+      ? result.message || "Kampdata er oppdatert."
+      : result.status === "skipped"
+        ? result.message || "Sync ble hoppet over."
+        : result.message || "Sync feilet.";
+  redirect(`/admin?${result.status === "error" ? "error" : "status"}=${encodeURIComponent(message)}`);
 }

@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import { PredictionForm } from "@/components/prediction-form";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
+import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
 import type { AppState, Player, WorldCupMatch } from "@/lib/types";
 
 export function MatchCard({
@@ -30,6 +31,8 @@ export function MatchCard({
         <span>#{match.matchNumber}</span>
         <span>{match.group ?? match.stageLabel}</span>
         <span>{formatOsloDateTime(match.kickoffAt)}</span>
+        <span>{formatBroadcast(match)}</span>
+        <span>{formatMatchStatus(match)}</span>
       </div>
       <div className="teams-row">
         <strong>{match.homeTeam}</strong>

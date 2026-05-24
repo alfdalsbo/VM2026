@@ -8,6 +8,7 @@ import { requireSession } from "@/lib/auth";
 import { formatOsloDateTime } from "@/lib/format";
 import { computeStandings, getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
 import { getAppState, getStorageMode } from "@/lib/state";
+import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
 
 export const metadata = {
   title: "Hjem",
@@ -40,6 +41,9 @@ export default async function HomePage() {
             <Link href="/tabell" className="btn-secondary">
               Se tabellen
             </Link>
+            <Link href="/vm" className="btn-secondary">
+              VM-oversikt
+            </Link>
           </div>
         </div>
       </section>
@@ -47,7 +51,7 @@ export default async function HomePage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Stat label="Din plass" value={`#${myStanding?.rank ?? "-"}`} detail={`${myStanding?.totalPoints ?? 0} poeng`} />
         <Stat label="Dine tips" value={`${predictions}/${totalPossible}`} detail="Ført før kampstart, som voksne folk nesten." />
-        <Stat label="Neste frist" value={nextMatch ? `#${nextMatch.matchNumber}` : "Ferdig"} detail={nextMatch ? formatOsloDateTime(nextMatch.kickoffAt) : "Alle kamper er låst."} />
+        <Stat label="Neste frist" value={nextMatch ? `#${nextMatch.matchNumber}` : "Ferdig"} detail={nextMatch ? `${formatOsloDateTime(nextMatch.kickoffAt)} · ${formatBroadcast(nextMatch)}` : "Alle kamper er låst."} />
         <Stat label="Lagring" value={getStorageMode()} detail="Postgres først, Vercel Blob som varig fallback." />
       </div>
 
@@ -98,7 +102,7 @@ export default async function HomePage() {
                 <article key={match.id} className="rounded border border-black/10 bg-white/70 p-4">
                   <p className="text-sm font-bold text-[#6f5a46]">#{match.matchNumber} · {match.group ?? match.stageLabel}</p>
                   <h3 className="mt-1 font-black">{match.homeTeam} - {match.awayTeam}</h3>
-                  <p className="lead mt-1">Du fikk {score.total} poeng.</p>
+                  <p className="lead mt-1">{formatMatchStatus(match)} · Du fikk {score.total} poeng.</p>
                 </article>
               );
             })}

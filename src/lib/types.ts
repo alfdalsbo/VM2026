@@ -26,6 +26,12 @@ export type Round = {
   endsAt: string;
 };
 
+export type MatchStatus = "scheduled" | "live" | "halftime" | "finished" | "postponed" | "cancelled" | "unknown";
+
+export type PredictionOutcome = "home" | "draw" | "away";
+
+export type ResultSource = "manual" | "fifa";
+
 export type MatchResult = {
   homeGoals: number;
   awayGoals: number;
@@ -33,11 +39,22 @@ export type MatchResult = {
   advancingTeam: "home" | "away" | null;
   updatedAt: string;
   updatedBy: string;
+  source?: ResultSource;
+};
+
+export type BroadcastInfo = {
+  channel: string;
+  service: string;
+  sourceName: string;
+  sourceUrl: string;
+  verifiedAt: string;
+  note?: string;
 };
 
 export type WorldCupMatch = {
   id: string;
   matchNumber: number;
+  fifaMatchId: string | null;
   roundId: string;
   stage: TournamentStage;
   stageLabel: string;
@@ -49,6 +66,13 @@ export type WorldCupMatch = {
   venue: string;
   city: string;
   result: MatchResult | null;
+  status: MatchStatus;
+  minute: number | null;
+  period: string | null;
+  lastSyncedAt: string | null;
+  syncSource: string | null;
+  syncStatus: string | null;
+  broadcasts: BroadcastInfo[];
 };
 
 export type Prediction = {
@@ -56,9 +80,40 @@ export type Prediction = {
   matchId: string;
   homeGoals: number;
   awayGoals: number;
+  outcome?: PredictionOutcome;
   advancingTeam: "home" | "away" | null;
   joker: boolean;
   updatedAt: string;
+};
+
+export type SyncState = {
+  status: "idle" | "success" | "error" | "skipped";
+  source: string | null;
+  lastStartedAt: string | null;
+  lastCompletedAt: string | null;
+  updatedMatches: number;
+  message: string | null;
+};
+
+export type PlayerTournamentStat = {
+  playerName: string;
+  teamName: string;
+  value: number;
+};
+
+export type TeamDisciplineStat = {
+  teamName: string;
+  yellowCards: number;
+  redCards: number;
+};
+
+export type TournamentStats = {
+  topScorers: PlayerTournamentStat[];
+  assistMakers: PlayerTournamentStat[];
+  discipline: TeamDisciplineStat[];
+  updatedAt: string | null;
+  source: string | null;
+  unavailableReason: string | null;
 };
 
 export type AppState = {
@@ -66,6 +121,8 @@ export type AppState = {
   rounds: Round[];
   matches: WorldCupMatch[];
   predictions: Prediction[];
+  sync: SyncState;
+  tournamentStats: TournamentStats;
   version: number;
 };
 

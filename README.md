@@ -6,11 +6,14 @@ Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felle
 
 - Fast brukerliste: Alf Kåre, Anders, Danny, Fredrik, Glenn Ruben, Jørgen, Steinar, Sverre og Vegard.
 - VM 2026-kampene er seedet fra FIFAs offentlige kampkalender.
+- S/U/T-hurtigvalg med scorefelt for eksakt resultat.
 - Tips låses automatisk ved kampstart i Europe/Oslo-tid.
 - Poeng: riktig utfall 3, riktig målforskjell +2, eksakt resultat +5.
 - Joker dobler poeng på valgt kamp, maks én joker per kampdag.
 - Sluttspill støtter straffekonkurranse med `advancingTeam`.
-- Admin kan føre fasit og oppdatere sluttspill-plassholdere.
+- Admin kan føre fasit, overstyre TV-kanal og oppdatere sluttspill-plassholdere.
+- FIFA-data kan synkes automatisk/best-effort via gratis offentlig API.
+- VM-side med gruppetabeller, utslag, TV-guide og statistikkflater.
 - Tabell, profil, badges og små interne kåringer.
 
 ## Lokal kjøring
@@ -29,6 +32,7 @@ TIPPEKJELLEREN_PASSCODE=sett-en-delt-privat-kode
 AUTH_SECRET=lang-tilfeldig-hemmelighet
 ADMIN_PLAYER_IDS=alf
 BLOB_READ_WRITE_TOKEN=vercel-blob-token
+CRON_SECRET=lang-tilfeldig-cron-hemmelighet
 DATABASE_URL=postgres://...
 ```
 
@@ -53,5 +57,5 @@ npm run test:e2e
 
 - Dette er kun en VM 2026-app i første versjon.
 - Ingen betaling, gambling, offentlige ligaer eller åpen registrering.
-- Ingen live-resultat-API i v1; admin fører fasit manuelt.
+- Automatisk kampdata er best-effort via gratis FIFA-data; admin kan alltid rette manuelt.
 - Ingen offisiell FIFA-logo eller beskyttede VM-assets brukes.

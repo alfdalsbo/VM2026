@@ -1,9 +1,15 @@
-import type { AppState, Prediction, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
+import type { AppState, BroadcastInfo, Prediction, PredictionOutcome, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
 
-function outcome(homeGoals: number, awayGoals: number) {
+export function inferPredictionOutcome(homeGoals: number, awayGoals: number): PredictionOutcome {
   if (homeGoals > awayGoals) return "home";
   if (awayGoals > homeGoals) return "away";
   return "draw";
+}
+
+export function sutLabel(outcome: PredictionOutcome) {
+  if (outcome === "home") return "S";
+  if (outcome === "draw") return "U";
+  return "T";
 }
 
 function resolvedOutcome(
@@ -11,7 +17,7 @@ function resolvedOutcome(
   awayGoals: number,
   advancingTeam: "home" | "away" | null,
 ) {
-  const baseOutcome = outcome(homeGoals, awayGoals);
+  const baseOutcome = inferPredictionOutcome(homeGoals, awayGoals);
   if (baseOutcome === "draw" && advancingTeam) return advancingTeam;
   return baseOutcome;
 }
@@ -162,9 +168,14 @@ export function savePredictionInState(
     return !samePrediction && !sameRoundJoker;
   });
 
+  const normalizedPrediction = {
+    ...prediction,
+    outcome: prediction.outcome ?? inferPredictionOutcome(prediction.homeGoals, prediction.awayGoals),
+  };
+
   return {
     ...state,
-    predictions: [...predictions, prediction],
+    predictions: [...predictions, normalizedPrediction],
   };
 }
 
@@ -174,6 +185,7 @@ export function upsertMatchResultInState(
   result: WorldCupMatch["result"],
   homeTeam?: string,
   awayTeam?: string,
+  broadcasts?: BroadcastInfo[],
 ): AppState {
   return {
     ...state,
@@ -184,6 +196,7 @@ export function upsertMatchResultInState(
             homeTeam: homeTeam?.trim() || match.homeTeam,
             awayTeam: awayTeam?.trim() || match.awayTeam,
             result,
+            broadcasts: broadcasts ?? match.broadcasts,
           }
         : match,
     ),

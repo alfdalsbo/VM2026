@@ -266,6 +266,44 @@ select {
   margin-top: 16px;
 }
 
+.sut-controls {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sut-button {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #17130f;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  min-height: 54px;
+  padding: 8px;
+  text-align: center;
+}
+
+.sut-button strong {
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.sut-button span {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.sut-button-active {
+  background: rgba(180, 35, 47, 0.1);
+  border-color: rgba(180, 35, 47, 0.5);
+  color: var(--red-dark);
+}
+
 .prediction-form label,
 .admin-grid label,
 .login-form label {
@@ -401,6 +439,63 @@ th {
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.compact-table {
+  min-width: 500px;
+}
+
+.vm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vm-tabs a {
+  background: rgba(255, 250, 242, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 6px;
+  color: #17130f;
+  font-weight: 900;
+  padding: 9px 12px;
+  text-decoration: none;
+}
+
+.bracket-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.bracket-card {
+  background: rgba(255, 250, 242, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.bracket-card p,
+.bracket-card span,
+.bracket-card em {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.bracket-card h3 {
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.bracket-card strong {
+  background: #17130f;
+  border-radius: 6px;
+  color: white;
+  justify-self: start;
+  padding: 5px 9px;
 }
 
 @media (max-width: 640px) {

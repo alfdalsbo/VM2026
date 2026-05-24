@@ -8,6 +8,7 @@ import type { Player } from "@/lib/types";
 const nav = [
   { href: "/", label: "Hjem" },
   { href: "/kamper", label: "Kamper" },
+  { href: "/vm", label: "VM" },
   { href: "/tabell", label: "Tabell" },
   { href: "/profil", label: "Profil" },
 ];

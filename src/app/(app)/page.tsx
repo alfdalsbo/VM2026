@@ -1,132 +1,140 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Crown, Target, Trophy } from "lucide-react";
 
 import { MatchCard } from "@/components/match-card";
-import { Panel, Stat } from "@/components/ui";
-import { getAwards, pickLine } from "@/lib/awards";
+import { Notice, Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
-import { formatOsloDateTime } from "@/lib/format";
-import { computeStandings, getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
-import { getAppState, getStorageMode } from "@/lib/state";
-import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
+import { formatOsloDate, formatOsloDateTime, formatScore } from "@/lib/format";
+import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
+import { getAppState } from "@/lib/state";
+import { formatMatchStatus } from "@/lib/tournament";
 
 export const metadata = {
   title: "Hjem",
 };
 
-export default async function HomePage() {
+const osloKeyFormatter = new Intl.DateTimeFormat("en-CA", {
+  day: "2-digit",
+  month: "2-digit",
+  timeZone: "Europe/Oslo",
+  year: "numeric",
+});
+
+function osloDateKey(value: string | Date) {
+  const parts = osloKeyFormatter.formatToParts(typeof value === "string" ? new Date(value) : value);
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${lookup.year}-${lookup.month}-${lookup.day}`;
+}
+
+function matchesOnDate(state: Awaited<ReturnType<typeof getAppState>>, key: string) {
+  return state.matches.filter((match) => osloDateKey(match.kickoffAt) === key).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
+}
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ status?: string; error?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
   const standings = computeStandings(state);
-  const myStanding = standings.find((row) => row.player.id === player.id) ?? standings[0];
-  const nextMatch = state.matches.find((match) => !isMatchLocked(match));
-  const openMatches = state.matches.filter((match) => !isMatchLocked(match)).slice(0, 3);
-  const completedMatches = state.matches.filter((match) => match.result).sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt)).slice(0, 4);
-  const awards = getAwards(state);
-  const predictions = state.predictions.filter((prediction) => prediction.playerId === player.id).length;
-  const totalPossible = state.matches.length;
-  const line = pickLine(new Date().toISOString().slice(0, 10));
+  const now = new Date();
+  const todayKey = osloDateKey(now);
+  const todayMatches = matchesOnDate(state, todayKey);
+  const nextOpenMatch = state.matches.find((match) => new Date(match.kickoffAt).getTime() > now.getTime());
+  const focusKey = todayMatches.length ? todayKey : nextOpenMatch ? osloDateKey(nextOpenMatch.kickoffAt) : todayKey;
+  const focusMatches = todayMatches.length ? todayMatches : matchesOnDate(state, focusKey);
+  const tomorrowKey = focusMatches[0] ? osloDateKey(new Date(new Date(focusMatches[0].kickoffAt).getTime() + 24 * 60 * 60 * 1000)) : todayKey;
+  const tomorrowMatches = matchesOnDate(state, tomorrowKey);
+  const completedMatches = state.matches
+    .filter((match) => match.result)
+    .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))
+    .slice(0, 4);
+  const topStandings = standings.slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <section className="hero">
+    <div className="dashboard space-y-5">
+      <Notice message={params.status} />
+      <Notice message={params.error} tone="error" />
+
+      <section className="dashboard-top">
         <div>
-          <p className="eyebrow">Privat VM-liga · 2026</p>
-          <h1>Tippekampen som kommer til å bli tatt litt for alvorlig.</h1>
-          <p>{line}</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/kamper" className="btn-primary">
-              Åpne kampene
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-            <Link href="/tabell" className="btn-secondary">
-              Se tabellen
-            </Link>
-            <Link href="/vm" className="btn-secondary">
-              VM-oversikt
-            </Link>
-          </div>
+          <p className="eyebrow">Tippekjelleren · VM 2026</p>
+          <h1 className="dashboard-title">{todayMatches.length ? "Dagens kamper" : "Neste kampdag"}</h1>
+          <p className="lead">{formatOsloDate(focusMatches[0]?.kickoffAt ?? new Date().toISOString())}</p>
         </div>
+        <Link href="/kamper" className="btn-secondary">
+          Alle kamper
+        </Link>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Stat label="Din plass" value={`#${myStanding?.rank ?? "-"}`} detail={`${myStanding?.totalPoints ?? 0} poeng`} />
-        <Stat label="Dine tips" value={`${predictions}/${totalPossible}`} detail="Ført før kampstart, som voksne folk nesten." />
-        <Stat label="Neste frist" value={nextMatch ? `#${nextMatch.matchNumber}` : "Ferdig"} detail={nextMatch ? `${formatOsloDateTime(nextMatch.kickoffAt)} · ${formatBroadcast(nextMatch)}` : "Alle kamper er låst."} />
-        <Stat label="Lagring" value={getStorageMode()} detail="Postgres først, Vercel Blob som varig fallback." />
+      <div className="grid gap-3">
+        {focusMatches.map((match) => (
+          <MatchCard key={match.id} match={match} player={player} state={state} />
+        ))}
+        {!focusMatches.length ? <Panel><p className="lead">Ingen kamper å tippe akkurat nå.</p></Panel> : null}
       </div>
-
-      <Panel>
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Neste oppgave</p>
-            <h2 className="section-title">Åpne tips</h2>
-          </div>
-          <Link href="/kamper" className="btn-secondary">
-            Alle kamper
-          </Link>
-        </div>
-        <div className="grid gap-4">
-          {openMatches.map((match) => (
-            <MatchCard key={match.id} match={match} player={player} state={state} />
-          ))}
-          {!openMatches.length ? <p className="lead">Ingen åpne kamper. Enten er VM over, eller så er tabellen i ferd med å skrive historie uten oss.</p> : null}
-        </div>
-      </Panel>
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
         <Panel>
-          <div className="mb-4 flex items-center gap-3">
-            <Crown className="h-5 w-5 text-[#b4232f]" aria-hidden="true" />
-            <h2 className="section-title">Kåringer</h2>
-          </div>
-          <div className="grid gap-3">
-            {awards.map((award) => (
-              <article key={award.title} className="rounded border border-black/10 bg-white/70 p-4">
-                <h3 className="font-black">{award.title}</h3>
-                <p className="lead mt-1">{award.text}</p>
-              </article>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel>
-          <div className="mb-4 flex items-center gap-3">
-            <Trophy className="h-5 w-5 text-[#b4232f]" aria-hidden="true" />
-            <h2 className="section-title">Siste resultater</h2>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Resultater</p>
+              <h2 className="section-title">Siste ferdige</h2>
+            </div>
+            <Link href="/kamper" className="btn-secondary">Se alle</Link>
           </div>
           <div className="space-y-3">
             {completedMatches.map((match) => {
               const prediction = getPrediction(state, player.id, match.id);
               const score = scorePrediction(match, prediction);
               return (
-                <article key={match.id} className="rounded border border-black/10 bg-white/70 p-4">
-                  <p className="text-sm font-bold text-[#6f5a46]">#{match.matchNumber} · {match.group ?? match.stageLabel}</p>
-                  <h3 className="mt-1 font-black">{match.homeTeam} - {match.awayTeam}</h3>
-                  <p className="lead mt-1">{formatMatchStatus(match)} · Du fikk {score.total} poeng.</p>
-                </article>
+                <Link key={match.id} href={`/kamp/${match.id}`} className="result-row">
+                  <span>#{match.matchNumber}</span>
+                  <strong>{match.homeTeam} - {match.awayTeam}</strong>
+                  <em>{formatScore(match.result?.homeGoals, match.result?.awayGoals)} · {score.total} p</em>
+                </Link>
               );
             })}
-            {!completedMatches.length ? (
-              <p className="lead">Ingen resultater ført ennå. Optimismen er derfor fortsatt uregulert.</p>
-            ) : null}
+            {!completedMatches.length ? <p className="lead">Ingen resultater ennå. Alle kan fortsatt late som planen er solid.</p> : null}
+          </div>
+        </Panel>
+
+        <Panel>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Tabell</p>
+              <h2 className="section-title">Topp 5</h2>
+            </div>
+            <Link href="/tabell" className="btn-secondary">Tabell</Link>
+          </div>
+          <div className="standings-mini">
+            {topStandings.map((standing) => (
+              <div key={standing.player.id}>
+                <span>#{standing.rank}</span>
+                <strong>{standing.player.shortName}</strong>
+                <em>{standing.totalPoints} p</em>
+              </div>
+            ))}
           </div>
         </Panel>
       </div>
 
-      <Panel className="grid gap-4 md:grid-cols-2">
-        <div className="flex gap-3">
-          <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-[#b4232f]" aria-hidden="true" />
+      <Panel>
+        <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <h2 className="font-black">Frister følger kampstart i Oslo-tid</h2>
-            <p className="lead">Etter kampstart låses tipset. Da kan resten av gjengen se hva du faktisk mente, ikke hva du later som du mente.</p>
+            <p className="eyebrow">Neste</p>
+            <h2 className="section-title">Morgendagens kamper</h2>
           </div>
+          <span className="lead text-sm">{formatOsloDate(tomorrowMatches[0]?.kickoffAt ?? focusMatches[0]?.kickoffAt ?? new Date().toISOString())}</span>
         </div>
-        <div className="flex gap-3">
-          <Target className="mt-1 h-5 w-5 shrink-0 text-[#b4232f]" aria-hidden="true" />
-          <div>
-            <h2 className="font-black">Joker én gang per kampdag</h2>
-            <p className="lead">Joker dobler poengene på valgt kamp. Bytter du joker på samme kampdag, flyttes den gamle automatisk.</p>
-          </div>
+        <div className="tomorrow-grid">
+          {tomorrowMatches.map((match) => (
+            <Link key={match.id} href={`/kamp/${match.id}`}>
+              <strong>{match.homeTeam} - {match.awayTeam}</strong>
+              <span>{formatOsloDateTime(match.kickoffAt)} · {formatMatchStatus(match)}</span>
+            </Link>
+          ))}
+          {!tomorrowMatches.length ? <p className="lead">Ingen kamper dagen etter denne kampdagen.</p> : null}
         </div>
       </Panel>
     </div>

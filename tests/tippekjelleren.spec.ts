@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("user can log in and see VM matches", async ({ page }) => {
+test("user can log in and tip from the match-first dashboard", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("Spiller").locator("option")).toContainText([
     "Alf Kåre",
@@ -17,18 +17,25 @@ test("user can log in and see VM matches", async ({ page }) => {
   await page.getByLabel("Felles kode").fill("Norge");
   await page.getByRole("button", { name: "Logg inn" }).click();
 
-  await expect(page.getByRole("heading", { name: /Tippekampen/ })).toBeVisible();
-  await page.getByRole("navigation").getByRole("link", { name: "Kamper", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Alle kampene" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Dagens kamper|Neste kampdag/ })).toBeVisible();
+  await expect(page.getByText("Lagring")).toHaveCount(0);
+  await expect(page.getByText("Joker")).toHaveCount(0);
+
   const firstMatch = page.locator("#m001");
-  await expect(firstMatch.locator("strong", { hasText: "Mexico" })).toBeVisible();
-  await expect(firstMatch.locator("strong", { hasText: "South Africa" })).toBeVisible();
-  await firstMatch.getByRole("button", { name: /S Seier/ }).click();
-  await expect(firstMatch.getByLabel("Mexico mål")).toHaveValue("1");
-  await expect(firstMatch.getByLabel("South Africa mål")).toHaveValue("0");
+  await expect(firstMatch).toContainText("Mexico");
+  await expect(firstMatch).toContainText("South Africa");
+  await expect(firstMatch.getByRole("button", { name: /S Seier/ })).toHaveCount(0);
+  await firstMatch.getByLabel("Mexico mål").fill("2");
+  await firstMatch.getByLabel("South Africa mål").fill("1");
   await expect(firstMatch).toContainText("TV 2 Direkte");
-  await page.getByRole("navigation").getByRole("link", { name: "VM", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Hele turneringen" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Stillingen" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Når og hvor" })).toBeVisible();
+
+  await firstMatch.getByRole("link", { name: "Mexico" }).click();
+  await expect(page.getByRole("heading", { name: "Mexico" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tropp" })).toBeVisible();
+
+  await page.goto("/kamp/m001");
+  await expect(page.getByText("Kamp #1")).toBeVisible();
+  await expect(page.getByText("Ikke publisert ennå")).toBeVisible();
+
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Admin", exact: true })).toHaveCount(0);
 });

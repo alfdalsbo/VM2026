@@ -1,6 +1,6 @@
 import { emptyTournamentStats, getAppState, saveAppState } from "@/lib/state";
 import { applyKnockoutResolversToState } from "@/lib/tournament";
-import type { AppState, MatchResult, MatchStatus, SyncState, TournamentStats, WorldCupMatch } from "@/lib/types";
+import type { AppState, MatchResult, MatchStats, MatchStatus, SyncState, TournamentStats, WorldCupMatch } from "@/lib/types";
 
 const fifaCalendarUrl = "https://api.fifa.com/api/v3/calendar/matches?language=en&count=200&idCompetition=17&idSeason=285023";
 const syncWindowStart = Date.parse("2026-06-10T00:00:00Z");
@@ -25,6 +25,17 @@ export type FifaMatch = {
   LastPeriodUpdate?: string | null;
   Home?: FifaTeam | null;
   Away?: FifaTeam | null;
+  MatchStatistics?: FifaStat[] | null;
+  Statistics?: FifaStat[] | null;
+};
+
+type FifaStat = {
+  Type?: string | null;
+  Name?: string | null;
+  Home?: number | string | null;
+  Away?: number | string | null;
+  HomeValue?: number | string | null;
+  AwayValue?: number | string | null;
 };
 
 type FifaResponse = {
@@ -87,6 +98,45 @@ export function mapFifaResult(match: FifaMatch, syncedAt: string): MatchResult |
   };
 }
 
+function parseStatValue(value: number | string | null | undefined) {
+  if (typeof value === "number") return value;
+  if (!value) return null;
+  const parsed = Number(String(value).replace("%", "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function findStat(match: FifaMatch, pattern: RegExp) {
+  const stats = match.MatchStatistics ?? match.Statistics ?? [];
+  const stat = stats.find((item) => pattern.test(`${item.Type ?? ""} ${item.Name ?? ""}`));
+  if (!stat) return { home: null, away: null };
+  return {
+    home: parseStatValue(stat.Home ?? stat.HomeValue),
+    away: parseStatValue(stat.Away ?? stat.AwayValue),
+  };
+}
+
+function mapFifaStats(matchId: string, match: FifaMatch, syncedAt: string): MatchStats | null {
+  const possession = findStat(match, /possession/i);
+  const shots = findStat(match, /^.*shots?$/i);
+  const shotsOnTarget = findStat(match, /shots?.*target/i);
+  const corners = findStat(match, /corner/i);
+  const hasAny = [possession, shots, shotsOnTarget, corners].some((item) => item.home !== null || item.away !== null);
+  if (!hasAny) return null;
+  return {
+    matchId,
+    homePossession: possession.home,
+    awayPossession: possession.away,
+    homeShots: shots.home,
+    awayShots: shots.away,
+    homeShotsOnTarget: shotsOnTarget.home,
+    awayShotsOnTarget: shotsOnTarget.away,
+    homeCorners: corners.home,
+    awayCorners: corners.away,
+    source: "FIFA public calendar API",
+    updatedAt: syncedAt,
+  };
+}
+
 function shouldUpdateTeamName(current: string, next: string | null, stage: WorldCupMatch["stage"]) {
   if (!next || next === current) return false;
   if (stage === "group") return false;
@@ -100,6 +150,7 @@ export function applyFifaMatchesToState(
 ) {
   const byId = new Map(fifaMatches.filter((match) => match.IdMatch).map((match) => [String(match.IdMatch), match]));
   const byNumber = new Map(fifaMatches.filter((match) => match.MatchNumber).map((match) => [Number(match.MatchNumber), match]));
+  const statsByMatchId = new Map(state.matchStats.map((stats) => [stats.matchId, stats]));
   let updatedMatches = 0;
 
   const matches = state.matches.map((match) => {
@@ -108,6 +159,8 @@ export function applyFifaMatchesToState(
 
     const status = mapStatus(fifaMatch);
     const fifaResult = mapFifaResult(fifaMatch, options.syncedAt);
+    const fifaStats = mapFifaStats(match.id, fifaMatch, options.syncedAt);
+    if (fifaStats) statsByMatchId.set(match.id, fifaStats);
     const hasManualResult = match.result?.source === "manual" || (match.result && !match.result.source);
     const result = hasManualResult && !options.force ? match.result : fifaResult;
     const homeTeam = shouldUpdateTeamName(match.homeTeam, teamName(fifaMatch.Home), match.stage) ? teamName(fifaMatch.Home)! : match.homeTeam;
@@ -142,6 +195,7 @@ export function applyFifaMatchesToState(
     state: {
       ...state,
       matches,
+      matchStats: [...statsByMatchId.values()],
       tournamentStats: mergeTournamentStats(state.tournamentStats, options.syncedAt),
     },
     updatedMatches,
@@ -181,7 +235,7 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
       status: "skipped",
       lastStartedAt: startedAt,
       lastCompletedAt: startedAt,
-      message: "Automatisk sync er aktiv kun rundt VM-perioden. Admin kan kjøre manuelt når som helst.",
+      message: "Automatisk sync er aktiv kun rundt VM-perioden.",
     });
   }
 

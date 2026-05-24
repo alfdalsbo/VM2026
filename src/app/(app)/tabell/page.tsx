@@ -31,7 +31,6 @@ export default async function TablePage() {
                 <th>Tips</th>
                 <th>Eksakte</th>
                 <th>Utfall</th>
-                <th>Jokertreff</th>
                 <th>Rundeseire</th>
               </tr>
             </thead>
@@ -51,7 +50,6 @@ export default async function TablePage() {
                   <td>{standing.predictions}</td>
                   <td>{standing.exactResults}</td>
                   <td>{standing.outcomeHits}</td>
-                  <td>{standing.jokerHits}</td>
                   <td>{standing.roundsWon}</td>
                 </tr>
               ))}

@@ -1,19 +1,18 @@
 # Tippekjelleren VM 2026
 
-Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felles kode, tippe alle VM-kampene, bruke én joker per kampdag og få automatisk poengberegning når admin fører fasit.
+Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felles kode, tippe alle VM-kampene og få automatisk poengberegning når kampdata synkes inn.
 
 ## Funksjoner
 
 - Fast brukerliste: Alf Kåre, Anders, Danny, Fredrik, Glenn Ruben, Jørgen, Steinar, Sverre og Vegard.
 - VM 2026-kampene er seedet fra FIFAs offentlige kampkalender.
-- S/U/T-hurtigvalg med scorefelt for eksakt resultat.
+- Rask resultattipping med scorefelt for eksakt resultat.
 - Tips låses automatisk ved kampstart i Europe/Oslo-tid.
 - Poeng: riktig utfall 3, riktig målforskjell +2, eksakt resultat +5.
-- Joker dobler poeng på valgt kamp, maks én joker per kampdag.
-- Sluttspill støtter straffekonkurranse med `advancingTeam`.
-- Admin kan føre fasit, overstyre TV-kanal og oppdatere sluttspill-plassholdere.
+- Sluttspill støtter ekstraomganger og straffekonkurranse når ordinær tid tippes uavgjort.
 - FIFA-data kan synkes automatisk/best-effort via gratis offentlig API.
 - VM-side med gruppetabeller, utslag, TV-guide og statistikkflater.
+- Kampkort, lagsider og delbare tippekort for skryt i vennegjengen.
 - Tabell, profil, badges og små interne kåringer.
 
 ## Lokal kjøring
@@ -66,15 +65,15 @@ Lim inn samme hemmelighet som ligger i Vercel. Workflowen kan også kjøres manu
 
 ## Utslagsrunder
 
-FIFA-sync forsøker å fylle ekte lag i sluttspillet når FIFAs offentlige kampdata publiserer dem. I tillegg har admin en knapp for å fylle det appen kan regne ut selv:
+FIFA-sync forsøker å fylle ekte lag i sluttspillet når FIFAs offentlige kampdata publiserer dem. Appen kan også fylle det den kan regne ut selv fra ferdige kamper:
 
 - `1A`, `2B` og tilsvarende fylles når gruppen er ferdigspilt i appens resultater.
 - `W89`, `RU101` og tilsvarende fylles fra vinnere/tapere i tidligere utslagskamper.
-- Beste treere som `3ABCDF` fylles ikke automatisk lokalt, fordi FIFA bestemmer den konkrete koblingen etter gruppespillet. De kan komme via FIFA-sync eller settes manuelt av admin.
+- Beste treere som `3ABCDF` fylles ikke automatisk lokalt, fordi FIFA bestemmer den konkrete koblingen etter gruppespillet. De kan komme via FIFA-sync eller settes i kode/state ved behov.
 
 ## Viktige avgrensninger
 
 - Dette er kun en VM 2026-app i første versjon.
 - Ingen betaling, gambling, offentlige ligaer eller åpen registrering.
-- Automatisk kampdata er best-effort via gratis FIFA-data; admin kan alltid rette manuelt.
+- Automatisk kampdata er best-effort via gratis FIFA-data.
 - Ingen offisiell FIFA-logo eller beskyttede VM-assets brukes.

@@ -29,9 +29,6 @@ export function getAwards(state: AppState): Award[] {
   const exactHero = standings
     .filter((row) => row.exactResults > 0)
     .sort((a, b) => b.exactResults - a.exactResults)[0];
-  const jokerKing = standings
-    .filter((row) => row.jokerHits > 0)
-    .sort((a, b) => b.jokerPoints - a.jokerPoints)[0];
 
   return [
     best
@@ -44,12 +41,6 @@ export function getAwards(state: AppState): Award[] {
       ? {
           title: "VAR-varselet",
           text: `${exactHero.player.shortName} har ${exactHero.exactResults} eksakte resultater og bør kontrolleres for hemmelig tilgang til manus.`,
-        }
-      : null,
-    jokerKing
-      ? {
-          title: "Jokerkongen",
-          text: `${jokerKing.player.shortName} har hentet ${jokerKing.jokerPoints} ekstra jokerpoeng. Kasinoet er stengt, men auraen lever.`,
         }
       : null,
     worst
@@ -65,7 +56,6 @@ export const dashboardLines = [
   "VM kommer til Nord-Amerika. Gjengen kommer til å overdrive selvtilliten.",
   "Tabellen er foreløpig høflig. Det varer sjelden lenge.",
   "Alle tips føres med alvor. Alle bortforklaringer arkiveres med glede.",
-  "Joker er ikke gambling. Det er bare offentlig selvovervurdering med dobbelt effekt.",
   "Første bud: tipp før kampstart. Andre bud: nekt for at du var skråsikker.",
 ];
 

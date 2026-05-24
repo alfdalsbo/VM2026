@@ -32,6 +32,18 @@ export type PredictionOutcome = "home" | "draw" | "away";
 
 export type ResultSource = "manual" | "fifa";
 
+export type KnockoutPredictionResolution =
+  | {
+      method: "extra_time";
+      homeGoals: number;
+      awayGoals: number;
+      winner: "home" | "away";
+    }
+  | {
+      method: "penalties";
+      winner: "home" | "away";
+    };
+
 export type MatchResult = {
   homeGoals: number;
   awayGoals: number;
@@ -49,6 +61,68 @@ export type BroadcastInfo = {
   sourceUrl: string;
   verifiedAt: string;
   note?: string;
+};
+
+export type CoachInfo = {
+  name: string | null;
+  source: string | null;
+  updatedAt: string | null;
+};
+
+export type TeamSquadPlayer = {
+  id: string;
+  name: string;
+  position: "goalkeeper" | "defender" | "midfielder" | "forward" | "unknown";
+  shirtNumber: number | null;
+  source: string | null;
+};
+
+export type TeamProfile = {
+  teamName: string;
+  slug: string;
+  coach: CoachInfo;
+  squad: TeamSquadPlayer[];
+  fifaUrl: string;
+  fotmobUrl: string;
+  updatedAt: string | null;
+};
+
+export type LineupPlayer = {
+  id: string;
+  name: string;
+  teamName: string;
+  position: string;
+  shirtNumber: number | null;
+  isStarter: boolean;
+  x: number | null;
+  y: number | null;
+};
+
+export type Formation = {
+  home: string | null;
+  away: string | null;
+};
+
+export type MatchLineup = {
+  matchId: string;
+  formation: Formation;
+  players: LineupPlayer[];
+  source: string | null;
+  updatedAt: string | null;
+};
+
+export type MatchStats = {
+  matchId: string;
+  homePossession: number | null;
+  awayPossession: number | null;
+  homeShots: number | null;
+  awayShots: number | null;
+  homeShotsOnTarget: number | null;
+  awayShotsOnTarget: number | null;
+  homeCorners: number | null;
+  awayCorners: number | null;
+  source: string | null;
+  updatedAt: string | null;
 };
 
 export type WorldCupMatch = {
@@ -81,8 +155,7 @@ export type Prediction = {
   homeGoals: number;
   awayGoals: number;
   outcome?: PredictionOutcome;
-  advancingTeam: "home" | "away" | null;
-  joker: boolean;
+  knockoutResolution?: KnockoutPredictionResolution | null;
   updatedAt: string;
 };
 
@@ -121,6 +194,9 @@ export type AppState = {
   rounds: Round[];
   matches: WorldCupMatch[];
   predictions: Prediction[];
+  teamProfiles: TeamProfile[];
+  lineups: MatchLineup[];
+  matchStats: MatchStats[];
   sync: SyncState;
   tournamentStats: TournamentStats;
   version: number;
@@ -137,7 +213,6 @@ export type ScoreBreakdown = {
   exactResult: number;
   base: number;
   total: number;
-  jokerApplied: boolean;
 };
 
 export type Standing = {
@@ -147,8 +222,12 @@ export type Standing = {
   predictions: number;
   exactResults: number;
   outcomeHits: number;
-  jokerHits: number;
-  jokerPoints: number;
   roundsWon: number;
   lastRoundPoints: number;
+};
+
+export type ShareCard = {
+  playerId: string;
+  matchId: string;
+  issuedAt: number;
 };

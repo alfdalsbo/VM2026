@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { MapPin } from "lucide-react";
 
 import { PredictionForm } from "@/components/prediction-form";
+import { TeamLink } from "@/components/team-link";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
@@ -35,22 +37,23 @@ export function MatchCard({
         <span>{formatMatchStatus(match)}</span>
       </div>
       <div className="teams-row">
-        <strong>{match.homeTeam}</strong>
+        <strong><TeamLink teamName={match.homeTeam} /></strong>
         <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
-        <strong>{match.awayTeam}</strong>
+        <strong><TeamLink teamName={match.awayTeam} /></strong>
       </div>
       <p className="venue">
         <MapPin className="h-4 w-4" aria-hidden="true" />
         {match.city} · {match.venue}
       </p>
-      <PredictionForm match={match} prediction={prediction} />
+      <PredictionForm match={match} prediction={prediction} locked={locked} />
       {match.result && prediction ? (
         <p className="score-line">
-          Poeng: <strong>{score.total}</strong>
-          {score.jokerApplied ? " med joker" : ""} · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt{" "}
-          {score.exactResult}
+          Poeng: <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
         </p>
       ) : null}
+      <Link className="match-detail-link" href={`/kamp/${match.id}`}>
+        Åpne kampkort
+      </Link>
       {otherPredictions.length ? (
         <div className="other-predictions">
           <p>Offentlige tips etter frist</p>
@@ -60,7 +63,6 @@ export function MatchCard({
               return (
                 <span key={item.playerId}>
                   {other?.shortName}: {formatScore(item.homeGoals, item.awayGoals)}
-                  {item.joker ? " J" : ""}
                 </span>
               );
             })}

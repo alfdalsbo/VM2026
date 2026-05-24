@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { LogOut, Shield, Trophy } from "lucide-react";
+import { LogOut, Trophy } from "lucide-react";
 
 import { logoutAction } from "@/app/actions";
-import { isAdminPlayer } from "@/lib/players";
 import type { Player } from "@/lib/types";
 
 const nav = [
@@ -13,7 +12,7 @@ const nav = [
   { href: "/profil", label: "Profil" },
 ];
 
-export function AppShell({ children, player }: { children: React.ReactNode; player: Player }) {
+export function AppShell({ children }: { children: React.ReactNode; player: Player }) {
   return (
     <div className="min-h-screen bg-[#f7f1e8] text-[#17130f]">
       <header className="sticky top-0 z-30 border-b border-black/10 bg-[#f7f1e8]/92 backdrop-blur">
@@ -28,11 +27,6 @@ export function AppShell({ children, player }: { children: React.ReactNode; play
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            {isAdminPlayer(player.id) ? (
-              <Link href="/admin" className="icon-link" aria-label="Admin">
-                <Shield className="h-4 w-4" />
-              </Link>
-            ) : null}
             <form action={logoutAction}>
               <button className="icon-link" type="submit" aria-label="Logg ut">
                 <LogOut className="h-4 w-4" />
@@ -46,11 +40,6 @@ export function AppShell({ children, player }: { children: React.ReactNode; play
               {item.label}
             </Link>
           ))}
-          {isAdminPlayer(player.id) ? (
-            <Link href="/admin" className="nav-pill">
-              Admin
-            </Link>
-          ) : null}
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">{children}</main>

@@ -1,75 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Save } from "lucide-react";
 
 import { savePredictionAction } from "@/app/actions";
-import { formatScore } from "@/lib/format";
-import { inferPredictionOutcome, sutLabel } from "@/lib/scoring";
-import { isMatchLocked } from "@/lib/scoring";
-import type { Prediction, PredictionOutcome, WorldCupMatch } from "@/lib/types";
+import { describePrediction, isKnockoutMatch } from "@/lib/scoring";
+import type { Prediction, WorldCupMatch } from "@/lib/types";
 
 export function PredictionForm({
   match,
   prediction,
+  locked,
+  compact = false,
 }: {
   match: WorldCupMatch;
   prediction: Prediction | null;
+  locked: boolean;
+  compact?: boolean;
 }) {
-  const locked = isMatchLocked(match);
+  const pathname = usePathname();
   const [homeGoals, setHomeGoals] = useState(prediction?.homeGoals?.toString() ?? "");
   const [awayGoals, setAwayGoals] = useState(prediction?.awayGoals?.toString() ?? "");
-  const selectedOutcome = useMemo(() => {
-    if (homeGoals === "" || awayGoals === "") return prediction?.outcome ?? null;
-    const home = Number(homeGoals);
-    const away = Number(awayGoals);
-    if (!Number.isInteger(home) || !Number.isInteger(away)) return null;
-    return inferPredictionOutcome(home, away);
-  }, [awayGoals, homeGoals, prediction?.outcome]);
-  const hasDrawPrediction = homeGoals !== "" && awayGoals !== "" && homeGoals === awayGoals;
-
-  function setQuickTip(outcome: PredictionOutcome) {
-    if (outcome === "home") {
-      setHomeGoals("1");
-      setAwayGoals("0");
-    } else if (outcome === "draw") {
-      setHomeGoals("1");
-      setAwayGoals("1");
-    } else {
-      setHomeGoals("0");
-      setAwayGoals("1");
-    }
-  }
+  const [method, setMethod] = useState(prediction?.knockoutResolution?.method ?? "");
+  const isDraw = homeGoals !== "" && awayGoals !== "" && homeGoals === awayGoals;
+  const needsKnockoutResolution = isKnockoutMatch(match) && isDraw;
+  const extraTimeResolution = prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution : null;
 
   if (locked) {
-    const outcome = prediction ? sutLabel(prediction.outcome ?? inferPredictionOutcome(prediction.homeGoals, prediction.awayGoals)) : null;
     return (
       <div className="locked-tip">
         <span>Ditt tips</span>
-        <strong>{prediction ? `${outcome} · ${formatScore(prediction.homeGoals, prediction.awayGoals)}` : "Ikke levert"}</strong>
-        {prediction?.joker ? <em>Joker</em> : null}
+        <strong>{describePrediction(prediction)}</strong>
       </div>
     );
   }
 
   return (
-    <form action={savePredictionAction} className="prediction-form">
+    <form action={savePredictionAction} className={compact ? "prediction-form prediction-form-compact" : "prediction-form"}>
       <input type="hidden" name="matchId" value={match.id} />
-      <input type="hidden" name="predictedOutcome" value={selectedOutcome ?? ""} />
-      <div className="sut-controls" aria-label="SUT hurtigvalg">
-        {(["home", "draw", "away"] as const).map((outcome) => (
-          <button
-            aria-pressed={selectedOutcome === outcome}
-            className={selectedOutcome === outcome ? "sut-button sut-button-active" : "sut-button"}
-            key={outcome}
-            onClick={() => setQuickTip(outcome)}
-            type="button"
-          >
-            <strong>{sutLabel(outcome)}</strong>
-            <span>{outcome === "home" ? "Seier" : outcome === "draw" ? "Uavgjort" : "Tap"}</span>
-          </button>
-        ))}
-      </div>
+      <input type="hidden" name="next" value={pathname} />
       <label>
         <span>{match.homeTeam}</span>
         <input
@@ -98,19 +68,60 @@ export function PredictionForm({
           value={awayGoals}
         />
       </label>
-      <label className="select-advancer">
-        <span>Videre ved uavgjort</span>
-        <select name="advancingTeam" defaultValue={prediction?.advancingTeam ?? ""}>
-          <option value="">Ikke relevant</option>
-          <option value="home">{match.homeTeam}</option>
-          <option value="away">{match.awayTeam}</option>
-        </select>
-        {hasDrawPrediction ? <small>Brukes i sluttspill hvis kampen går til straffer.</small> : null}
-      </label>
-      <label className="joker-toggle">
-        <input name="joker" type="checkbox" defaultChecked={prediction?.joker ?? false} />
-        <span>Joker</span>
-      </label>
+
+      {needsKnockoutResolution ? (
+        <div className="knockout-fields">
+          <label>
+            <span>Avgjørelse</span>
+            <select name="knockoutMethod" value={method} onChange={(event) => setMethod(event.target.value)} required>
+              <option value="">Velg</option>
+              <option value="extra_time">Vinner etter ekstraomganger</option>
+              <option value="penalties">Vinner på straffer</option>
+            </select>
+          </label>
+          {method === "extra_time" ? (
+            <>
+              <label>
+                <span>{match.homeTeam} etter ekstra</span>
+                <input
+                  aria-label={`${match.homeTeam} mål etter ekstraomganger`}
+                  inputMode="numeric"
+                  min={0}
+                  max={30}
+                  name="extraTimeHomeGoals"
+                  required
+                  type="number"
+                  defaultValue={extraTimeResolution?.homeGoals ?? ""}
+                />
+              </label>
+              <label>
+                <span>{match.awayTeam} etter ekstra</span>
+                <input
+                  aria-label={`${match.awayTeam} mål etter ekstraomganger`}
+                  inputMode="numeric"
+                  min={0}
+                  max={30}
+                  name="extraTimeAwayGoals"
+                  required
+                  type="number"
+                  defaultValue={extraTimeResolution?.awayGoals ?? ""}
+                />
+              </label>
+            </>
+          ) : null}
+          {method ? (
+            <label>
+              <span>Videre</span>
+              <select name="knockoutWinner" defaultValue={prediction?.knockoutResolution?.winner ?? ""} required>
+                <option value="">Velg lag</option>
+                <option value="home">{match.homeTeam}</option>
+                <option value="away">{match.awayTeam}</option>
+              </select>
+            </label>
+          ) : null}
+        </div>
+      ) : null}
+
       <button className="btn-primary" type="submit">
         <Save className="h-4 w-4" aria-hidden="true" />
         Lagre

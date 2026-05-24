@@ -6,20 +6,62 @@ export function inferPredictionOutcome(homeGoals: number, awayGoals: number): Pr
   return "draw";
 }
 
-export function sutLabel(outcome: PredictionOutcome) {
-  if (outcome === "home") return "S";
-  if (outcome === "draw") return "U";
-  return "T";
+export function isKnockoutMatch(match: WorldCupMatch) {
+  return match.stage !== "group";
 }
 
-function resolvedOutcome(
-  homeGoals: number,
-  awayGoals: number,
-  advancingTeam: "home" | "away" | null,
-) {
-  const baseOutcome = inferPredictionOutcome(homeGoals, awayGoals);
-  if (baseOutcome === "draw" && advancingTeam) return advancingTeam;
+function actualOutcome(match: WorldCupMatch): PredictionOutcome | "home" | "away" {
+  if (!match.result) return "draw";
+  const baseOutcome = inferPredictionOutcome(match.result.homeGoals, match.result.awayGoals);
+  if (baseOutcome === "draw" && match.result.advancingTeam) return match.result.advancingTeam;
   return baseOutcome;
+}
+
+function predictionOutcome(prediction: Prediction): PredictionOutcome | "home" | "away" {
+  const baseOutcome = inferPredictionOutcome(prediction.homeGoals, prediction.awayGoals);
+  if (baseOutcome !== "draw") return baseOutcome;
+  return prediction.knockoutResolution?.winner ?? "draw";
+}
+
+function predictionFinalScore(prediction: Prediction) {
+  if (prediction.homeGoals === prediction.awayGoals && prediction.knockoutResolution?.method === "extra_time") {
+    return {
+      homeGoals: prediction.knockoutResolution.homeGoals,
+      awayGoals: prediction.knockoutResolution.awayGoals,
+    };
+  }
+
+  return {
+    homeGoals: prediction.homeGoals,
+    awayGoals: prediction.awayGoals,
+  };
+}
+
+export function describePrediction(prediction: Prediction | null | undefined) {
+  if (!prediction) return "Ikke levert";
+  const base = `${prediction.homeGoals}-${prediction.awayGoals}`;
+  if (prediction.homeGoals !== prediction.awayGoals || !prediction.knockoutResolution) return base;
+  if (prediction.knockoutResolution.method === "extra_time") {
+    return `${base}, ${prediction.knockoutResolution.homeGoals}-${prediction.knockoutResolution.awayGoals} etter ekstraomganger`;
+  }
+  return `${base}, videre på straffer`;
+}
+
+export function validatePredictionForMatch(match: WorldCupMatch, prediction: Prediction) {
+  if (prediction.homeGoals !== prediction.awayGoals) return;
+  if (!isKnockoutMatch(match)) return;
+
+  if (!prediction.knockoutResolution) {
+    throw new Error("Velg vinner etter ekstraomganger eller straffer.");
+  }
+
+  if (prediction.knockoutResolution.method === "extra_time") {
+    const outcome = inferPredictionOutcome(prediction.knockoutResolution.homeGoals, prediction.knockoutResolution.awayGoals);
+    if (outcome === "draw") throw new Error("Stillingen etter ekstraomganger må ha en vinner.");
+    if (outcome !== prediction.knockoutResolution.winner) {
+      throw new Error("Vinner etter ekstraomganger må stemme med stillingen.");
+    }
+  }
 }
 
 export function isMatchLocked(match: WorldCupMatch, now = new Date()) {
@@ -34,33 +76,22 @@ export function scorePrediction(match: WorldCupMatch, prediction?: Prediction | 
       exactResult: 0,
       base: 0,
       total: 0,
-      jokerApplied: false,
     };
   }
 
-  const actualOutcome = resolvedOutcome(
-    match.result.homeGoals,
-    match.result.awayGoals,
-    match.result.advancingTeam,
-  );
-  const predictedOutcome = resolvedOutcome(
-    prediction.homeGoals,
-    prediction.awayGoals,
-    prediction.advancingTeam,
-  );
-  const outcomePoints = actualOutcome === predictedOutcome ? 3 : 0;
+  const finalPrediction = predictionFinalScore(prediction);
+  const outcomePoints = actualOutcome(match) === predictionOutcome(prediction) ? 3 : 0;
   const diffPoints =
-    match.result.homeGoals - match.result.awayGoals === prediction.homeGoals - prediction.awayGoals ? 2 : 0;
+    match.result.homeGoals - match.result.awayGoals === finalPrediction.homeGoals - finalPrediction.awayGoals ? 2 : 0;
   const exactPoints =
-    match.result.homeGoals === prediction.homeGoals && match.result.awayGoals === prediction.awayGoals ? 5 : 0;
+    match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals ? 5 : 0;
   const base = outcomePoints + diffPoints + exactPoints;
   return {
     outcome: outcomePoints,
     goalDifference: diffPoints,
     exactResult: exactPoints,
     base,
-    total: prediction.joker ? base * 2 : base,
-    jokerApplied: prediction.joker,
+    total: base,
   };
 }
 
@@ -77,8 +108,6 @@ export function computeStandings(state: AppState): Standing[] {
     let totalPoints = 0;
     let exactResults = 0;
     let outcomeHits = 0;
-    let jokerHits = 0;
-    let jokerPoints = 0;
     let predictions = 0;
     let lastRoundPoints = 0;
 
@@ -89,8 +118,6 @@ export function computeStandings(state: AppState): Standing[] {
       totalPoints += score.total;
       if (score.exactResult) exactResults += 1;
       if (score.outcome) outcomeHits += 1;
-      if (score.jokerApplied && score.base > 0) jokerHits += 1;
-      if (score.jokerApplied) jokerPoints += score.base;
       if (match.roundId === lastRoundId) lastRoundPoints += score.total;
     }
 
@@ -101,8 +128,6 @@ export function computeStandings(state: AppState): Standing[] {
       predictions,
       exactResults,
       outcomeHits,
-      jokerHits,
-      jokerPoints,
       roundsWon: 0,
       lastRoundPoints,
     };
@@ -158,14 +183,10 @@ export function savePredictionInState(
   const match = state.matches.find((item) => item.id === prediction.matchId);
   if (!match) throw new Error("Kampen finnes ikke.");
   if (isMatchLocked(match, now)) throw new Error("Tipsfristen er passert.");
+  validatePredictionForMatch(match, prediction);
 
   const predictions = state.predictions.filter((item) => {
-    const samePrediction = item.playerId === prediction.playerId && item.matchId === prediction.matchId;
-    const sameRoundJoker =
-      prediction.joker &&
-      item.playerId === prediction.playerId &&
-      state.matches.find((matchItem) => matchItem.id === item.matchId)?.roundId === match.roundId;
-    return !samePrediction && !sameRoundJoker;
+    return !(item.playerId === prediction.playerId && item.matchId === prediction.matchId);
   });
 
   const normalizedPrediction = {

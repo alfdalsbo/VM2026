@@ -5,7 +5,8 @@ import { get, put } from "@vercel/blob";
 import postgres from "postgres";
 
 import { players } from "@/lib/players";
-import type { AppState, SyncState, TournamentStats } from "@/lib/types";
+import { createSeedTeamProfiles, mergeTeamProfiles } from "@/lib/teams";
+import type { AppState, Prediction, SyncState, TournamentStats } from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
 
 const stateFile = process.env.VERCEL
@@ -41,14 +42,41 @@ export function emptyTournamentStats(): TournamentStats {
 
 export function initialState(): AppState {
   return {
-    version: 2,
+    version: 3,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
     predictions: [],
+    teamProfiles: createSeedTeamProfiles(worldCupMatches),
+    lineups: [],
+    matchStats: [],
     sync: emptySyncState(),
     tournamentStats: emptyTournamentStats(),
   };
+}
+
+type StoredPrediction = Prediction & {
+  advancingTeam?: "home" | "away" | null;
+  joker?: boolean;
+};
+
+function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[] {
+  return predictions.map((prediction) => ({
+    playerId: prediction.playerId,
+    matchId: prediction.matchId,
+    homeGoals: prediction.homeGoals,
+    awayGoals: prediction.awayGoals,
+    outcome: prediction.outcome,
+    knockoutResolution:
+      prediction.knockoutResolution ??
+      (prediction.advancingTeam
+        ? {
+            method: "penalties",
+            winner: prediction.advancingTeam,
+          }
+        : null),
+    updatedAt: prediction.updatedAt,
+  }));
 }
 
 function mergeWithSeed(state: AppState): AppState {
@@ -75,11 +103,14 @@ function mergeWithSeed(state: AppState): AppState {
 
   return {
     ...state,
-    version: 2,
+    version: 3,
     players,
     rounds: worldCupRounds,
     matches,
-    predictions: state.predictions ?? [],
+    predictions: normalizePredictions(state.predictions as StoredPrediction[]),
+    teamProfiles: mergeTeamProfiles(createSeedTeamProfiles(matches), state.teamProfiles),
+    lineups: state.lineups ?? [],
+    matchStats: state.matchStats ?? [],
     sync: state.sync ?? emptySyncState(),
     tournamentStats: state.tournamentStats ?? emptyTournamentStats(),
   };

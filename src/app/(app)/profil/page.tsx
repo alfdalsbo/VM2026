@@ -1,9 +1,9 @@
-import { Medal, Star, Target, Zap } from "lucide-react";
+import { Medal, Star, Target } from "lucide-react";
 
 import { Panel, Stat } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
-import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
+import { computeStandings, describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
@@ -28,7 +28,6 @@ export default async function ProfilePage() {
 
   const badges = [
     standing?.exactResults ? { icon: Star, title: "VAR-profet", text: `${standing.exactResults} eksakte resultater.` } : null,
-    standing?.jokerHits ? { icon: Zap, title: "Joker med puls", text: `${standing.jokerHits} jokere traff poeng.` } : null,
     hitRate >= 50 ? { icon: Target, title: "Resultatmann", text: `${hitRate}% riktig utfall.` } : null,
     standing?.roundsWon ? { icon: Medal, title: "Kampdagens konge", text: `${standing.roundsWon} rundeseire.` } : null,
   ].filter(Boolean) as Array<{ icon: typeof Star; title: string; text: string }>;
@@ -88,7 +87,7 @@ export default async function ProfilePage() {
                   <tr key={match.id}>
                     <td>{match.homeTeam} - {match.awayTeam}</td>
                     <td>{formatOsloDateTime(match.kickoffAt)}</td>
-                    <td>{prediction ? formatScore(prediction.homeGoals, prediction.awayGoals) : "-"}</td>
+                    <td>{describePrediction(prediction)}</td>
                     <td>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</td>
                     <td className="font-black">{score.total}</td>
                   </tr>

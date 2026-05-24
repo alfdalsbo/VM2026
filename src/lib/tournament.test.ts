@@ -2,20 +2,29 @@ import { describe, expect, it } from "vitest";
 
 import { upsertMatchResultInState } from "@/lib/scoring";
 import { initialState } from "@/lib/state";
-import { computeGroupTables, getBroadcastForMatch } from "@/lib/tournament";
+import { applyKnockoutResolversToState, computeGroupTables, getBroadcastForMatch } from "@/lib/tournament";
+import type { AppState } from "@/lib/types";
+
+function result(homeGoals: number, awayGoals: number) {
+  return {
+    homeGoals,
+    awayGoals,
+    decidedByPenalties: false,
+    advancingTeam: null,
+    updatedAt: "2026-06-30T21:00:00Z",
+    updatedBy: "test",
+    source: "manual" as const,
+  };
+}
+
+function finishMatch(state: AppState, matchId: string, homeGoals: number, awayGoals: number) {
+  return upsertMatchResultInState(state, matchId, result(homeGoals, awayGoals));
+}
 
 describe("tournament helpers", () => {
   it("computes group standings from finished matches", () => {
     let state = initialState();
-    state = upsertMatchResultInState(state, "m001", {
-      homeGoals: 2,
-      awayGoals: 0,
-      decidedByPenalties: false,
-      advancingTeam: null,
-      updatedAt: "2026-06-11T21:00:00Z",
-      updatedBy: "test",
-      source: "manual",
-    });
+    state = finishMatch(state, "m001", 2, 0);
 
     const groupA = computeGroupTables(state).find((group) => group.group === "Group A");
     expect(groupA?.rows[0]).toMatchObject({
@@ -32,5 +41,32 @@ describe("tournament helpers", () => {
     const broadcast = getBroadcastForMatch(state.matches.find((match) => match.id === "m001")!);
     expect(broadcast?.channel).toBe("TV 2 Direkte");
     expect(broadcast?.service).toBe("TV 2 Play");
+  });
+
+  it("fills direct knockout placeholders from completed group tables", () => {
+    let state = initialState();
+    state = finishMatch(state, "m001", 2, 0);
+    state = finishMatch(state, "m002", 1, 0);
+    state = finishMatch(state, "m025", 1, 0);
+    state = finishMatch(state, "m028", 1, 0);
+    state = finishMatch(state, "m053", 0, 2);
+    state = finishMatch(state, "m054", 0, 2);
+
+    const resolved = applyKnockoutResolversToState(state, { syncedAt: "2026-06-28T22:00:00Z" });
+
+    expect(resolved.state.matches.find((match) => match.id === "m079")?.homeTeam).toBe("Mexico");
+    expect(resolved.state.matches.find((match) => match.id === "m073")?.homeTeam).toBe("Korea Republic");
+    expect(resolved.state.matches.find((match) => match.id === "m079")?.awayTeam).toBe("3CEFHI");
+  });
+
+  it("fills later knockout placeholders from previous winners and runners-up", () => {
+    let state = initialState();
+    state = upsertMatchResultInState(state, "m074", result(2, 1), "Germany", "Norway");
+    state = upsertMatchResultInState(state, "m101", result(0, 1), "Brazil", "Spain");
+
+    const resolved = applyKnockoutResolversToState(state, { syncedAt: "2026-07-16T22:00:00Z" });
+
+    expect(resolved.state.matches.find((match) => match.id === "m089")?.homeTeam).toBe("Germany");
+    expect(resolved.state.matches.find((match) => match.id === "m103")?.homeTeam).toBe("Brazil");
   });
 });

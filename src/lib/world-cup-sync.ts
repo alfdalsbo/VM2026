@@ -1,4 +1,5 @@
 import { emptyTournamentStats, getAppState, saveAppState } from "@/lib/state";
+import { applyKnockoutResolversToState } from "@/lib/tournament";
 import type { AppState, MatchResult, MatchStatus, SyncState, TournamentStats, WorldCupMatch } from "@/lib/types";
 
 const fifaCalendarUrl = "https://api.fifa.com/api/v3/calendar/matches?language=en&count=200&idCompetition=17&idSeason=285023";
@@ -191,14 +192,16 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
     const state = await getAppState();
     const syncedAt = new Date().toISOString();
     const applied = applyFifaMatchesToState(state, data.Results ?? [], { force: options.force, syncedAt });
+    const resolved = applyKnockoutResolversToState(applied.state, { force: options.force, syncedAt });
+    const updatedMatches = applied.updatedMatches + resolved.updatedMatches;
     const next = {
-      ...applied.state,
+      ...resolved.state,
       sync: syncState({
         status: "success",
         lastStartedAt: startedAt,
         lastCompletedAt: syncedAt,
-        updatedMatches: applied.updatedMatches,
-        message: `Oppdatert ${applied.updatedMatches} kamp${applied.updatedMatches === 1 ? "" : "er"} fra FIFA.`,
+        updatedMatches,
+        message: `Oppdatert ${updatedMatches} kamp${updatedMatches === 1 ? "" : "er"} fra FIFA/bracket.`,
       }),
     };
     await saveAppState(next);

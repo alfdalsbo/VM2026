@@ -53,6 +53,25 @@ Playwright:
 npm run test:e2e
 ```
 
+## GitHub-sync hvert 10. minutt
+
+Workflowen `.github/workflows/sync-world-cup.yml` kaller produksjons-endepunktet hvert tiende minutt i juni og juli 2026. For at den skal virke må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`.
+
+```bash
+gh auth login
+gh secret set CRON_SECRET --repo alfdalsbo/VM2026
+```
+
+Lim inn samme hemmelighet som ligger i Vercel. Workflowen kan også kjøres manuelt fra fanen Actions i GitHub.
+
+## Utslagsrunder
+
+FIFA-sync forsøker å fylle ekte lag i sluttspillet når FIFAs offentlige kampdata publiserer dem. I tillegg har admin en knapp for å fylle det appen kan regne ut selv:
+
+- `1A`, `2B` og tilsvarende fylles når gruppen er ferdigspilt i appens resultater.
+- `W89`, `RU101` og tilsvarende fylles fra vinnere/tapere i tidligere utslagskamper.
+- Beste treere som `3ABCDF` fylles ikke automatisk lokalt, fordi FIFA bestemmer den konkrete koblingen etter gruppespillet. De kan komme via FIFA-sync eller settes manuelt av admin.
+
 ## Viktige avgrensninger
 
 - Dette er kun en VM 2026-app i første versjon.

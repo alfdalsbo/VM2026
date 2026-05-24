@@ -1,5 +1,6 @@
 import { formatScore } from "@/lib/format";
 import type { AppState, BroadcastInfo, TournamentStage, WorldCupMatch } from "@/lib/types";
+import { worldCupMatches } from "@/lib/world-cup-2026";
 
 export type GroupStanding = {
   group: string;
@@ -133,4 +134,89 @@ export function computeKnockoutBracket(state: AppState): KnockoutMatch[] {
 
 export function resultSummary(match: WorldCupMatch) {
   return match.result ? formatScore(match.result.homeGoals, match.result.awayGoals) : "Ikke spilt";
+}
+
+function matchWinner(match: WorldCupMatch) {
+  if (!match.result) return null;
+  if (match.result.homeGoals > match.result.awayGoals) return match.homeTeam;
+  if (match.result.awayGoals > match.result.homeGoals) return match.awayTeam;
+  if (match.result.advancingTeam === "home") return match.homeTeam;
+  if (match.result.advancingTeam === "away") return match.awayTeam;
+  return null;
+}
+
+function matchRunnerUp(match: WorldCupMatch) {
+  if (!match.result) return null;
+  const winner = matchWinner(match);
+  if (!winner) return null;
+  return winner === match.homeTeam ? match.awayTeam : match.homeTeam;
+}
+
+export function isKnockoutPlaceholder(team: string) {
+  return /^([12][A-L]|3[A-L]+|W\d+|RU\d+)$/.test(team);
+}
+
+function resolveGroupRank(state: AppState, rank: number, groupLetter: string) {
+  const group = computeGroupTables(state).find((item) => item.group === `Group ${groupLetter}`);
+  if (!group || group.rows.length < 4 || group.rows.some((row) => row.played < 3)) return null;
+  return group.rows[rank - 1]?.team ?? null;
+}
+
+export function resolveKnockoutPlaceholder(placeholder: string, state: AppState) {
+  const groupRank = placeholder.match(/^([12])([A-L])$/);
+  if (groupRank) return resolveGroupRank(state, Number(groupRank[1]), groupRank[2]);
+
+  const matchReference = placeholder.match(/^(W|RU)(\d+)$/);
+  if (matchReference) {
+    const referencedMatch = state.matches.find((match) => match.matchNumber === Number(matchReference[2]));
+    if (!referencedMatch) return null;
+    return matchReference[1] === "W" ? matchWinner(referencedMatch) : matchRunnerUp(referencedMatch);
+  }
+
+  return null;
+}
+
+function shouldApplyResolvedTeam(current: string, seedPlaceholder: string, force?: boolean) {
+  if (force) return true;
+  return current === seedPlaceholder || isKnockoutPlaceholder(current);
+}
+
+export function applyKnockoutResolversToState(
+  state: AppState,
+  options: { force?: boolean; syncedAt?: string } = {},
+) {
+  const seedById = new Map(worldCupMatches.map((match) => [match.id, match]));
+  let updatedMatches = 0;
+
+  const matches = state.matches.map((match) => {
+    if (match.stage === "group") return match;
+    const seed = seedById.get(match.id);
+    if (!seed) return match;
+
+    const resolvedHome = resolveKnockoutPlaceholder(seed.homeTeam, state);
+    const resolvedAway = resolveKnockoutPlaceholder(seed.awayTeam, state);
+    const homeTeam =
+      resolvedHome && shouldApplyResolvedTeam(match.homeTeam, seed.homeTeam, options.force) ? resolvedHome : match.homeTeam;
+    const awayTeam =
+      resolvedAway && shouldApplyResolvedTeam(match.awayTeam, seed.awayTeam, options.force) ? resolvedAway : match.awayTeam;
+
+    if (homeTeam === match.homeTeam && awayTeam === match.awayTeam) return match;
+    updatedMatches += 1;
+    return {
+      ...match,
+      homeTeam,
+      awayTeam,
+      lastSyncedAt: options.syncedAt ?? match.lastSyncedAt,
+      syncSource: options.syncedAt ? "Tippekjelleren bracket resolver" : match.syncSource,
+      syncStatus: "Utslagslag løst fra gruppetabell/resultat",
+    };
+  });
+
+  return {
+    state: {
+      ...state,
+      matches,
+    },
+    updatedMatches,
+  };
 }

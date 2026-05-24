@@ -1,6 +1,6 @@
 import { ResultForm } from "@/components/result-form";
 import { Notice, Panel } from "@/components/ui";
-import { syncWorldCupAction } from "@/app/actions";
+import { resolveKnockoutTeamsAction, syncWorldCupAction } from "@/app/actions";
 import { requireAdmin } from "@/lib/auth";
 import { getAppState } from "@/lib/state";
 
@@ -42,6 +42,21 @@ export default async function AdminPage({
         <form action={syncWorldCupAction}>
           <button className="btn-primary" type="submit">
             Oppdater kampdata nå
+          </button>
+        </form>
+      </Panel>
+
+      <Panel className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="eyebrow">Utslagsrunder</p>
+          <h2 className="text-xl font-black">Fyll lag fra gruppetabell og fasit</h2>
+          <p className="lead mt-1">
+            Bruker appens egne resultater til å løse 1A/2B og W89/RU101. Beste treere og offisielle TV-kanaler fylles best av FIFA-sync eller manuelt.
+          </p>
+        </div>
+        <form action={resolveKnockoutTeamsAction}>
+          <button className="btn-secondary" type="submit">
+            Fyll utslagslag
           </button>
         </form>
       </Panel>

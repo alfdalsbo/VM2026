@@ -8,6 +8,7 @@ import { clampScore } from "@/lib/format";
 import { getPlayer } from "@/lib/players";
 import { inferPredictionOutcome, savePredictionInState, upsertMatchResultInState } from "@/lib/scoring";
 import { getAppState, saveAppState } from "@/lib/state";
+import { applyKnockoutResolversToState } from "@/lib/tournament";
 import type { BroadcastInfo, MatchResult, Prediction } from "@/lib/types";
 import { syncWorldCupData } from "@/lib/world-cup-sync";
 
@@ -26,6 +27,7 @@ function revalidateApp() {
   revalidatePath("/tabell");
   revalidatePath("/profil");
   revalidatePath("/admin");
+  revalidatePath("/vm");
 }
 
 export async function loginAction(formData: FormData) {
@@ -147,4 +149,18 @@ export async function syncWorldCupAction() {
         ? result.message || "Sync ble hoppet over."
         : result.message || "Sync feilet.";
   redirect(`/admin?${result.status === "error" ? "error" : "status"}=${encodeURIComponent(message)}`);
+}
+
+export async function resolveKnockoutTeamsAction() {
+  await requireAdmin();
+  const state = await getAppState();
+  const syncedAt = new Date().toISOString();
+  const resolved = applyKnockoutResolversToState(state, { syncedAt });
+  await saveAppState(resolved.state);
+  revalidateApp();
+  const message =
+    resolved.updatedMatches === 0
+      ? "Ingen nye utslagslag kunne fylles ennå. FIFA eller admin får ta de vanskelige beste-treer-plassene."
+      : `Fylte ${resolved.updatedMatches} utslagskamp${resolved.updatedMatches === 1 ? "" : "er"} fra gruppetabell/fasit.`;
+  redirect(`/admin?status=${encodeURIComponent(message)}`);
 }

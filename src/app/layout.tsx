@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Venneligaen VM 2026",
-    template: "%s | Venneligaen",
+    default: "Tippekjelleren VM 2026",
+    template: "%s | Tippekjelleren",
   },
   description: "Privat VM 2026-tippekamp for vennegjengen.",
 };

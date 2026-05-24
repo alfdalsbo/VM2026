@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { getPlayer, isAdminPlayer, players } from "@/lib/players";
 import type { Session } from "@/lib/types";
 
-const cookieName = "venneligaen_session";
+const cookieName = "tippekjelleren_session";
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET || process.env.SESSION_SECRET || "local-vm2026-secret-change-before-vercel";
@@ -44,9 +44,9 @@ function decodeSession(value: string): Session | null {
 }
 
 export function isCorrectPasscode(passcode: string) {
-  const configured = process.env.VENNELIGAEN_PASSCODE || "vm2026";
+  const configured = process.env.TIPPEKJELLEREN_PASSCODE || "vm2026";
   if (process.env.VERCEL && configured === "vm2026") {
-    throw new Error("VENNELIGAEN_PASSCODE must be set on Vercel.");
+    throw new Error("TIPPEKJELLEREN_PASSCODE must be set on Vercel.");
   }
   return passcode === configured;
 }

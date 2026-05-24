@@ -1,4 +1,4 @@
-# Venneligaen VM 2026
+# Tippekjelleren VM 2026
 
 Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felles kode, tippe alle VM-kampene, bruke én joker per kampdag og få automatisk poengberegning når admin fører fasit.
 
@@ -25,7 +25,7 @@ npm run dev
 ## Miljøvariabler
 
 ```bash
-VENNELIGAEN_PASSCODE=sett-en-delt-privat-kode
+TIPPEKJELLEREN_PASSCODE=sett-en-delt-privat-kode
 AUTH_SECRET=lang-tilfeldig-hemmelighet
 ADMIN_PLAYER_IDS=alf
 BLOB_READ_WRITE_TOKEN=vercel-blob-token

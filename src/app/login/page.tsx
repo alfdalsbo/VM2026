@@ -24,7 +24,7 @@ export default async function LoginPage({
           <div className="absolute inset-0 bg-[linear-gradient(135deg,#101820,#7f1d1d_58%,#c8912a)]" />
           <div className="absolute inset-x-0 bottom-0 h-28 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,.12),rgba(255,255,255,.12)_10px,transparent_10px,transparent_22px)]" />
           <div className="relative max-w-3xl">
-            <p className="eyebrow">Venneligaen · VM 2026</p>
+            <p className="eyebrow">Tippekjelleren · VM 2026</p>
             <h1 className="mt-4 text-5xl font-black leading-none tracking-[0] sm:text-7xl">Privat VM-domstol for gjengen.</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-white/82">
               Velg spiller, skriv felles kode og gjør deg klar til å overvurdere både form, xG og egen dømmekraft.

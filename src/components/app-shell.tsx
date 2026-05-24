@@ -22,7 +22,7 @@ export function AppShell({ children, player }: { children: React.ReactNode; play
               <Trophy className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block truncate font-black uppercase tracking-[0.08em]">Venneligaen</span>
+              <span className="block truncate font-black uppercase tracking-[0.08em]">Tippekjelleren</span>
               <span className="block text-xs font-semibold text-[#72533a]">VM 2026</span>
             </span>
           </Link>

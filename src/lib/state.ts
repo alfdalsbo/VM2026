@@ -9,10 +9,10 @@ import type { AppState } from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
 
 const stateFile = process.env.VERCEL
-  ? path.join("/tmp", "venneligaen-state.json")
-  : path.join(process.cwd(), ".data", "venneligaen-state.json");
-const stateId = "vm2026";
-const blobPath = "state/venneligaen-vm2026.json";
+  ? path.join("/tmp", "tippekjelleren-state.json")
+  : path.join(process.cwd(), ".data", "tippekjelleren-state.json");
+const stateId = "tippekjelleren-vm2026";
+const blobPath = "state/tippekjelleren-vm2026.json";
 
 let sqlClient: ReturnType<typeof postgres> | null = null;
 let tableReady = false;
@@ -65,7 +65,7 @@ function getSql() {
 async function ensureTable(sql: ReturnType<typeof postgres>) {
   if (tableReady) return;
   await sql`
-    create table if not exists venneligaen_state (
+    create table if not exists tippekjelleren_state (
       id text primary key,
       data jsonb not null,
       updated_at timestamptz not null default now()
@@ -79,7 +79,7 @@ async function readDatabaseState() {
   if (!sql) return null;
   await ensureTable(sql);
   const rows = await sql<{ data: AppState }[]>`
-    select data from venneligaen_state where id = ${stateId} limit 1
+    select data from tippekjelleren_state where id = ${stateId} limit 1
   `;
   return rows[0]?.data ? mergeWithSeed(rows[0].data) : null;
 }
@@ -89,7 +89,7 @@ async function writeDatabaseState(state: AppState) {
   if (!sql) return false;
   await ensureTable(sql);
   await sql`
-    insert into venneligaen_state (id, data, updated_at)
+    insert into tippekjelleren_state (id, data, updated_at)
     values (${stateId}, ${sql.json(state)}, now())
     on conflict (id) do update set data = excluded.data, updated_at = now()
   `;

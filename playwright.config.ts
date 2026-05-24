@@ -12,7 +12,7 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     env: {
-      VENNELIGAEN_PASSCODE: "vm2026",
+      TIPPEKJELLEREN_PASSCODE: "vm2026",
       AUTH_SECRET: "playwright-vm2026-secret",
       BLOB_READ_WRITE_TOKEN: "",
       DATABASE_URL: "",

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { usePathname } from "next/navigation";
-import { Save } from "lucide-react";
+import { TicketCheck } from "lucide-react";
 
 import { savePredictionAction } from "@/app/actions";
 import { describePrediction, isKnockoutMatch } from "@/lib/scoring";
@@ -122,10 +123,17 @@ export function PredictionForm({
         </div>
       ) : null}
 
-      <button className="btn-primary" type="submit">
-        <Save className="h-4 w-4" aria-hidden="true" />
-        Lagre
-      </button>
+      <TipSubmitButton />
     </form>
+  );
+}
+
+function TipSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button className="btn-primary" type="submit" disabled={pending} aria-live="polite">
+      <TicketCheck className="h-4 w-4" aria-hidden="true" />
+      {pending ? "Tipper..." : "Tipp kampen"}
+    </button>
   );
 }

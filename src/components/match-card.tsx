@@ -38,7 +38,14 @@ export function MatchCard({
       </div>
       <div className="teams-row">
         <strong><TeamLink teamName={match.homeTeam} /></strong>
-        <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
+        <Link
+          className="score-link"
+          href={`/kamp/${match.id}`}
+          aria-label={`Kampkort for ${match.homeTeam} mot ${match.awayTeam}`}
+        >
+          <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
+          <em>Kampkort</em>
+        </Link>
         <strong><TeamLink teamName={match.awayTeam} /></strong>
       </div>
       <p className="venue">
@@ -51,9 +58,6 @@ export function MatchCard({
           Poeng: <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
         </p>
       ) : null}
-      <Link className="match-detail-link" href={`/kamp/${match.id}`}>
-        Åpne kampkort
-      </Link>
       {otherPredictions.length ? (
         <div className="other-predictions">
           <p>Offentlige tips etter frist</p>

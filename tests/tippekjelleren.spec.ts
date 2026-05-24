@@ -14,7 +14,7 @@ test("user can log in and see VM matches", async ({ page }) => {
     "Vegard",
   ]);
   await page.getByLabel("Spiller").selectOption("alf");
-  await page.getByLabel("Felles kode").fill("vm2026");
+  await page.getByLabel("Felles kode").fill("Norge");
   await page.getByRole("button", { name: "Logg inn" }).click();
 
   await expect(page.getByRole("heading", { name: /Tippekampen/ })).toBeVisible();

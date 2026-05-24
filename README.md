@@ -23,12 +23,12 @@ npm install
 npm run dev
 ```
 
-Åpne `http://localhost:3000`. Lokal standardkode er `vm2026`.
+Åpne `http://localhost:3000`. Lokal standardkode er `Norge`.
 
 ## Miljøvariabler
 
 ```bash
-TIPPEKJELLEREN_PASSCODE=sett-en-delt-privat-kode
+TIPPEKJELLEREN_PASSCODE=Norge
 AUTH_SECRET=lang-tilfeldig-hemmelighet
 ADMIN_PLAYER_IDS=alf
 BLOB_READ_WRITE_TOKEN=vercel-blob-token

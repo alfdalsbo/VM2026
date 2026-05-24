@@ -44,8 +44,8 @@ function decodeSession(value: string): Session | null {
 }
 
 export function isCorrectPasscode(passcode: string) {
-  const configured = process.env.TIPPEKJELLEREN_PASSCODE || "vm2026";
-  if (process.env.VERCEL && configured === "vm2026") {
+  const configured = process.env.TIPPEKJELLEREN_PASSCODE || "Norge";
+  if (process.env.VERCEL && !process.env.TIPPEKJELLEREN_PASSCODE) {
     throw new Error("TIPPEKJELLEREN_PASSCODE must be set on Vercel.");
   }
   return passcode === configured;

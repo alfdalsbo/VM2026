@@ -1,0 +1,58 @@
+import Link from "next/link";
+import { LogOut, Shield, Trophy } from "lucide-react";
+
+import { logoutAction } from "@/app/actions";
+import { isAdminPlayer } from "@/lib/players";
+import type { Player } from "@/lib/types";
+
+const nav = [
+  { href: "/", label: "Hjem" },
+  { href: "/kamper", label: "Kamper" },
+  { href: "/tabell", label: "Tabell" },
+  { href: "/profil", label: "Profil" },
+];
+
+export function AppShell({ children, player }: { children: React.ReactNode; player: Player }) {
+  return (
+    <div className="min-h-screen bg-[#f7f1e8] text-[#17130f]">
+      <header className="sticky top-0 z-30 border-b border-black/10 bg-[#f7f1e8]/92 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded bg-[#b4232f] text-white shadow-sm">
+              <Trophy className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-black uppercase tracking-[0.08em]">Venneligaen</span>
+              <span className="block text-xs font-semibold text-[#72533a]">VM 2026</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            {isAdminPlayer(player.id) ? (
+              <Link href="/admin" className="icon-link" aria-label="Admin">
+                <Shield className="h-4 w-4" />
+              </Link>
+            ) : null}
+            <form action={logoutAction}>
+              <button className="icon-link" type="submit" aria-label="Logg ut">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+        <nav className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-3">
+          {nav.map((item) => (
+            <Link key={item.href} href={item.href} className="nav-pill">
+              {item.label}
+            </Link>
+          ))}
+          {isAdminPlayer(player.id) ? (
+            <Link href="/admin" className="nav-pill">
+              Admin
+            </Link>
+          ) : null}
+        </nav>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">{children}</main>
+    </div>
+  );
+}

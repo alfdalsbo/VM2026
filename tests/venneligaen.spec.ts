@@ -2,6 +2,17 @@ import { expect, test } from "@playwright/test";
 
 test("user can log in and see VM matches", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByLabel("Spiller").locator("option")).toContainText([
+    "Alf Kåre",
+    "Anders",
+    "Danny",
+    "Fredrik",
+    "Glenn Ruben",
+    "Jørgen",
+    "Steinar",
+    "Sverre",
+    "Vegard",
+  ]);
   await page.getByLabel("Spiller").selectOption("alf");
   await page.getByLabel("Felles kode").fill("vm2026");
   await page.getByRole("button", { name: "Logg inn" }).click();

@@ -4,7 +4,7 @@ Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felle
 
 ## Funksjoner
 
-- Fast brukerliste: Alf Kåre, Vegard, Jørgen, Steinar, Sverre, Fredrik, Glenn Ruben og Danny.
+- Fast brukerliste: Alf Kåre, Anders, Danny, Fredrik, Glenn Ruben, Jørgen, Steinar, Sverre og Vegard.
 - VM 2026-kampene er seedet fra FIFAs offentlige kampkalender.
 - Tips låses automatisk ved kampstart i Europe/Oslo-tid.
 - Poeng: riktig utfall 3, riktig målforskjell +2, eksakt resultat +5.

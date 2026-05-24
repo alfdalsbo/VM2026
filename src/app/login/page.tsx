@@ -58,7 +58,7 @@ export default async function LoginPage({
               </label>
               <label>
                 <span>Felles kode</span>
-                <input name="passcode" type="password" autoComplete="current-password" placeholder="vm2026" required />
+                <input name="passcode" type="password" autoComplete="current-password" placeholder="Privat kode" required />
               </label>
               <Notice message={rejected ? "Adgang nektet. Enten feil kode, eller så prøvde tabellen å beskytte seg." : undefined} tone="error" />
               <button className="btn-primary w-full" type="submit">
@@ -67,7 +67,7 @@ export default async function LoginPage({
             </form>
 
             <p className="lead mt-6 text-sm">
-              Lokal standardkode er `vm2026`. På Vercel skal `VENNELIGAEN_PASSCODE` og `AUTH_SECRET` settes.
+              Bruk den private koden for gjengen. Lokal utviklingskode står i README, men produksjon bruker egen Vercel-kode.
             </p>
           </div>
         </section>

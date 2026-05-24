@@ -32,6 +32,8 @@ export type PredictionOutcome = "home" | "draw" | "away";
 
 export type ResultSource = "manual" | "fifa";
 
+export type TeamSide = "home" | "away";
+
 export type KnockoutPredictionResolution =
   | {
       method: "extra_time";
@@ -76,13 +78,17 @@ export type TeamSquadPlayer = {
   name: string;
   position: "goalkeeper" | "defender" | "midfielder" | "forward" | "unknown";
   shirtNumber: number | null;
+  playerProfileId?: string | null;
   shortName?: string | null;
   countryCode?: string | null;
   birthDate?: string | null;
   heightCm?: number | null;
   weightKg?: number | null;
   matchesPlayed?: number | null;
+  minutesPlayed?: number | null;
+  starts?: number | null;
   goals?: number | null;
+  assists?: number | null;
   yellowCards?: number | null;
   redCards?: number | null;
   pictureUrl?: string | null;
@@ -113,9 +119,14 @@ export type LineupPlayer = {
   id: string;
   name: string;
   teamName: string;
+  teamSide: TeamSide;
+  playerProfileId: string | null;
   position: string;
+  role: TeamSquadPlayer["position"];
   shirtNumber: number | null;
   isStarter: boolean;
+  isCaptain: boolean;
+  isConfirmed: boolean;
   x: number | null;
   y: number | null;
 };
@@ -125,10 +136,81 @@ export type Formation = {
   away: string | null;
 };
 
+export type LineupStatus = "not_published" | "expected" | "confirmed";
+
 export type MatchLineup = {
   matchId: string;
   formation: Formation;
+  status: LineupStatus;
+  confirmedAt: string | null;
   players: LineupPlayer[];
+  homeBench: LineupPlayer[];
+  awayBench: LineupPlayer[];
+  source: string | null;
+  updatedAt: string | null;
+};
+
+export type MatchEventType =
+  | "goal"
+  | "own_goal"
+  | "penalty_goal"
+  | "penalty_missed"
+  | "yellow_card"
+  | "red_card"
+  | "second_yellow"
+  | "substitution"
+  | "var"
+  | "period"
+  | "unknown";
+
+export type MatchEvent = {
+  id: string;
+  matchId: string;
+  minute: number | null;
+  period: string | null;
+  type: MatchEventType;
+  teamSide: TeamSide | null;
+  playerId: string | null;
+  playerProfileId: string | null;
+  playerName: string | null;
+  assistPlayerName: string | null;
+  relatedPlayerName: string | null;
+  scoreAfter: {
+    homeGoals: number;
+    awayGoals: number;
+  } | null;
+  source: ResultSource | "manual";
+  updatedAt: string;
+};
+
+export type FollowedMatch = {
+  playerId: string;
+  matchId: string;
+  createdAt: string;
+};
+
+export type PlayerProfile = {
+  id: string;
+  fifaPlayerId: string | null;
+  name: string;
+  shortName: string | null;
+  teamName: string;
+  teamSlug: string;
+  position: TeamSquadPlayer["position"];
+  positionDetail: string | null;
+  shirtNumber: number | null;
+  pictureUrl: string | null;
+  birthDate: string | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  matchesPlayed: number | null;
+  minutesPlayed: number | null;
+  starts: number | null;
+  goals: number | null;
+  assists: number | null;
+  yellowCards: number | null;
+  redCards: number | null;
+  rosterStatus: "squad" | "lineup" | "event_only";
   source: string | null;
   updatedAt: string | null;
 };
@@ -235,6 +317,9 @@ export type AppState = {
   teamProfiles: TeamProfile[];
   lineups: MatchLineup[];
   matchStats: MatchStats[];
+  matchEvents: MatchEvent[];
+  followedMatches: FollowedMatch[];
+  playerProfiles: PlayerProfile[];
   sync: SyncState;
   tournamentStats: TournamentStats;
   version: number;

@@ -1,13 +1,19 @@
 import { emptyTournamentStats, getAppState, saveAppState } from "@/lib/state";
 import { createTeamProfile, teamSlug } from "@/lib/teams";
 import { applyKnockoutResolversToState } from "@/lib/tournament";
+import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
+import { derivePlayerProfilesFromState, playerProfileIdFor } from "@/lib/player-profiles";
 import type {
   AppState,
   CoachInfo,
+  LineupPlayer,
+  MatchEvent,
+  MatchEventType,
   MatchLineup,
   MatchResult,
   MatchStats,
   MatchStatus,
+  TeamSide,
   SyncState,
   TeamProfile,
   TeamSquadPlayer,
@@ -32,6 +38,10 @@ type FifaTeam = {
   Tactics?: string | null;
   TeamName?: Array<{ Locale?: string; Description?: string }>;
   ShortClubName?: string | null;
+  Lineup?: FifaLineupEntry[] | null;
+  Players?: FifaLineupEntry[] | null;
+  Substitutes?: FifaLineupEntry[] | null;
+  Bench?: FifaLineupEntry[] | null;
 };
 
 export type FifaMatch = {
@@ -60,6 +70,13 @@ export type FifaMatch = {
   SecondHalfTime?: string | null;
   FirstHalfExtraTime?: string | null;
   SecondHalfExtraTime?: string | null;
+  Events?: FifaMatchEvent[] | null;
+  MatchEvents?: FifaMatchEvent[] | null;
+  Timeline?: FifaMatchEvent[] | null;
+  HomeLineup?: FifaLineupEntry[] | null;
+  AwayLineup?: FifaLineupEntry[] | null;
+  HomeSubstitutes?: FifaLineupEntry[] | null;
+  AwaySubstitutes?: FifaLineupEntry[] | null;
 };
 
 type FifaStat = {
@@ -87,6 +104,48 @@ type FifaMatchOfficial = {
   IdCountry?: string | null;
   Name?: Array<{ Locale?: string; Description?: string }>;
   TypeLocalized?: Array<{ Locale?: string; Description?: string }>;
+};
+
+type FifaLineupEntry = {
+  IdPlayer?: string | number | null;
+  PlayerId?: string | number | null;
+  PlayerName?: Array<{ Locale?: string; Description?: string }> | string | null;
+  Name?: Array<{ Locale?: string; Description?: string }> | string | null;
+  ShortName?: Array<{ Locale?: string; Description?: string }> | string | null;
+  JerseyNum?: number | string | null;
+  ShirtNumber?: number | string | null;
+  Position?: number | string | null;
+  RealPosition?: number | string | null;
+  PositionLocalized?: Array<{ Locale?: string; Description?: string }> | null;
+  RealPositionLocalized?: Array<{ Locale?: string; Description?: string }> | null;
+  X?: number | string | null;
+  Y?: number | string | null;
+  Captain?: boolean | null;
+  IsCaptain?: boolean | null;
+  IsStarter?: boolean | null;
+};
+
+type FifaMatchEvent = {
+  IdEvent?: string | number | null;
+  EventId?: string | number | null;
+  Type?: string | number | null;
+  EventType?: string | number | null;
+  EventTypeName?: string | null;
+  EventTypeLocalized?: Array<{ Locale?: string; Description?: string }> | null;
+  Minute?: number | string | null;
+  MatchTime?: number | string | null;
+  Period?: string | null;
+  TeamId?: string | number | null;
+  IdTeam?: string | number | null;
+  HomeTeamScore?: number | null;
+  AwayTeamScore?: number | null;
+  PlayerId?: string | number | null;
+  IdPlayer?: string | number | null;
+  PlayerName?: Array<{ Locale?: string; Description?: string }> | string | null;
+  Player?: FifaLineupEntry | null;
+  AssistPlayerName?: Array<{ Locale?: string; Description?: string }> | string | null;
+  RelatedPlayerName?: Array<{ Locale?: string; Description?: string }> | string | null;
+  SubstitutionOffPlayerName?: Array<{ Locale?: string; Description?: string }> | string | null;
 };
 
 type FifaTeamDetail = {
@@ -118,7 +177,10 @@ type FifaSquadPlayer = {
   Height?: number | null;
   Weight?: number | null;
   MatchesPlayed?: number | null;
+  MinutesPlayed?: number | null;
+  Starts?: number | null;
   Goals?: number | null;
+  Assists?: number | null;
   YellowCards?: number | null;
   RedCards?: number | null;
   PictureUrl?: string | null;
@@ -161,6 +223,11 @@ function teamName(team: FifaTeam | null | undefined) {
 
 function localizedText(values: Array<{ Locale?: string; Description?: string }> | null | undefined) {
   return values?.find((name) => name.Locale?.toLowerCase() === "en-gb")?.Description ?? values?.[0]?.Description ?? null;
+}
+
+function localizedMaybe(value: Array<{ Locale?: string; Description?: string }> | string | null | undefined) {
+  if (typeof value === "string") return value;
+  return localizedText(value);
 }
 
 function fifaImageUrl(url: string | null | undefined) {
@@ -290,17 +357,202 @@ function mapMatchOfficials(officials: FifaMatchOfficial[]) {
     .filter((official) => official.name !== "Ukjent" || official.role !== "Dommerteam");
 }
 
+function lineupPosition(player: FifaLineupEntry): TeamSquadPlayer["position"] {
+  const label = `${localizedText(player.RealPositionLocalized) ?? ""} ${localizedText(player.PositionLocalized) ?? ""}`.toLowerCase();
+  const positionCode = Number(player.RealPosition ?? player.Position);
+  if (label.includes("goalkeeper") || positionCode === 0) return "goalkeeper";
+  if (label.includes("defender") || label.includes("back") || positionCode === 1) return "defender";
+  if (label.includes("midfielder") || positionCode === 2) return "midfielder";
+  if (label.includes("forward") || label.includes("striker") || label.includes("attacker") || positionCode === 3) return "forward";
+  return "unknown";
+}
+
+function lineupPlayerName(player: FifaLineupEntry) {
+  return localizedMaybe(player.PlayerName) ?? localizedMaybe(player.Name) ?? localizedMaybe(player.ShortName);
+}
+
+function formationRows(formation: string | null | undefined, playerCount: number) {
+  const rows = (formation?.match(/\d+/g) ?? []).map(Number).filter((value) => value > 0);
+  const planned = [1, ...rows];
+  if (planned.length > 1 && planned.reduce((sum, value) => sum + value, 0) >= playerCount) return planned;
+  return [1, 4, 3, 3];
+}
+
+function distributeX(index: number, count: number) {
+  return Math.round(((index + 1) * 100) / (count + 1));
+}
+
+function rowY(teamSide: TeamSide, rowIndex: number, rowCount: number) {
+  const min = teamSide === "home" ? 88 : 12;
+  const max = teamSide === "home" ? 38 : 62;
+  if (rowCount <= 1) return 50;
+  return Math.round(min + ((max - min) * rowIndex) / (rowCount - 1));
+}
+
+function assignCoordinates(players: LineupPlayer[], formation: string | null, teamSide: TeamSide) {
+  const rows = formationRows(formation, players.length);
+  let cursor = 0;
+  return rows.flatMap((count, rowIndex) => {
+    const rowPlayers = players.slice(cursor, cursor + count);
+    cursor += count;
+    return rowPlayers.map((player, index) => ({
+      ...player,
+      x: player.x ?? distributeX(index, rowPlayers.length),
+      y: player.y ?? rowY(teamSide, rowIndex, rows.length),
+    }));
+  }).concat(
+    players.slice(cursor).map((player, index, rest) => ({
+      ...player,
+      x: player.x ?? distributeX(index, rest.length),
+      y: player.y ?? (teamSide === "home" ? 28 : 72),
+    })),
+  );
+}
+
+function mapLineupPlayer(
+  player: FifaLineupEntry,
+  options: { teamName: string; teamSide: TeamSide; isStarter: boolean; confirmed: boolean },
+): LineupPlayer | null {
+  const name = lineupPlayerName(player);
+  if (!name) return null;
+  const id = String(player.IdPlayer ?? player.PlayerId ?? `${name}-${player.JerseyNum ?? player.ShirtNumber ?? "uten-nummer"}`);
+  const role = lineupPosition(player);
+  const position = localizedText(player.RealPositionLocalized) ?? localizedText(player.PositionLocalized) ?? role;
+  return {
+    id,
+    name,
+    teamName: options.teamName,
+    teamSide: options.teamSide,
+    playerProfileId: playerProfileIdFor(options.teamName, id, name),
+    position,
+    role,
+    shirtNumber: numberOrNull(player.JerseyNum ?? player.ShirtNumber),
+    isStarter: options.isStarter,
+    isCaptain: Boolean(player.IsCaptain ?? player.Captain),
+    isConfirmed: options.confirmed,
+    x: numberOrNull(player.X),
+    y: numberOrNull(player.Y),
+  };
+}
+
+function lineupEntries(match: FifaMatch, side: TeamSide, bench = false) {
+  const team = side === "home" ? match.Home : match.Away;
+  if (bench) {
+    return (
+      (side === "home" ? match.HomeSubstitutes : match.AwaySubstitutes) ??
+      team?.Substitutes ??
+      team?.Bench ??
+      []
+    );
+  }
+  return (side === "home" ? match.HomeLineup : match.AwayLineup) ?? team?.Lineup ?? team?.Players ?? [];
+}
+
 function mapFifaLineup(matchId: string, match: FifaMatch, syncedAt: string): MatchLineup | null {
-  const home = match.Home?.Tactics ?? null;
-  const away = match.Away?.Tactics ?? null;
-  if (!home && !away) return null;
+  const homeFormation = match.Home?.Tactics ?? null;
+  const awayFormation = match.Away?.Tactics ?? null;
+  const homeTeam = teamName(match.Home) ?? "Hjemmelag";
+  const awayTeam = teamName(match.Away) ?? "Bortelag";
+  const homeEntries = lineupEntries(match, "home");
+  const awayEntries = lineupEntries(match, "away");
+  const confirmed = homeEntries.length > 0 || awayEntries.length > 0;
+  const homePlayers = assignCoordinates(
+    homeEntries
+      .map((entry) => mapLineupPlayer(entry, { teamName: homeTeam, teamSide: "home", isStarter: true, confirmed }))
+      .filter((player): player is LineupPlayer => Boolean(player)),
+    homeFormation,
+    "home",
+  );
+  const awayPlayers = assignCoordinates(
+    awayEntries
+      .map((entry) => mapLineupPlayer(entry, { teamName: awayTeam, teamSide: "away", isStarter: true, confirmed }))
+      .filter((player): player is LineupPlayer => Boolean(player)),
+    awayFormation,
+    "away",
+  );
+  const homeBench = lineupEntries(match, "home", true)
+    .map((entry) => mapLineupPlayer(entry, { teamName: homeTeam, teamSide: "home", isStarter: false, confirmed }))
+    .filter((player): player is LineupPlayer => Boolean(player));
+  const awayBench = lineupEntries(match, "away", true)
+    .map((entry) => mapLineupPlayer(entry, { teamName: awayTeam, teamSide: "away", isStarter: false, confirmed }))
+    .filter((player): player is LineupPlayer => Boolean(player));
+
+  if (!homeFormation && !awayFormation && !homePlayers.length && !awayPlayers.length && !homeBench.length && !awayBench.length) return null;
   return {
     matchId,
-    formation: { home, away },
-    players: [],
+    formation: { home: homeFormation, away: awayFormation },
+    status: confirmed ? "confirmed" : "expected",
+    confirmedAt: confirmed ? syncedAt : null,
+    players: [...homePlayers, ...awayPlayers],
+    homeBench,
+    awayBench,
     source: "FIFA public calendar API",
     updatedAt: syncedAt,
   };
+}
+
+function eventSide(match: FifaMatch, event: FifaMatchEvent): TeamSide | null {
+  const id = event.TeamId ?? event.IdTeam;
+  if (!id) return null;
+  if (String(id) === String(match.Home?.IdTeam)) return "home";
+  if (String(id) === String(match.Away?.IdTeam)) return "away";
+  const raw = String(id).toLowerCase();
+  if (raw.includes("home")) return "home";
+  if (raw.includes("away")) return "away";
+  return null;
+}
+
+function eventType(event: FifaMatchEvent): MatchEventType {
+  const raw = `${event.EventTypeName ?? ""} ${localizedText(event.EventTypeLocalized) ?? ""} ${event.EventType ?? ""} ${event.Type ?? ""}`.toLowerCase();
+  if (/own.*goal/.test(raw)) return "own_goal";
+  if (/penalty.*miss|miss.*penalty/.test(raw)) return "penalty_missed";
+  if (/penalty/.test(raw) && /goal|scored/.test(raw)) return "penalty_goal";
+  if (/goal/.test(raw)) return "goal";
+  if (/second.*yellow/.test(raw)) return "second_yellow";
+  if (/yellow/.test(raw)) return "yellow_card";
+  if (/red/.test(raw)) return "red_card";
+  if (/substitution|substitute|change/.test(raw)) return "substitution";
+  if (/var/.test(raw)) return "var";
+  if (/period|half|kick.?off|full.?time/.test(raw)) return "period";
+  return "unknown";
+}
+
+function eventPlayerName(event: FifaMatchEvent) {
+  return localizedMaybe(event.PlayerName) ?? localizedMaybe(event.Player?.PlayerName) ?? localizedMaybe(event.Player?.Name);
+}
+
+function mapFifaEvents(matchId: string, match: FifaMatch, syncedAt: string): MatchEvent[] {
+  const events = match.Events ?? match.MatchEvents ?? match.Timeline ?? [];
+  return events.map((event, index) => {
+    const type = eventType(event);
+    const teamSide = eventSide(match, event);
+    const playerId = event.PlayerId ?? event.IdPlayer ?? event.Player?.PlayerId ?? event.Player?.IdPlayer;
+    const playerName = eventPlayerName(event);
+    const eventTeamName = teamSide === "home" ? teamName(match.Home) : teamSide === "away" ? teamName(match.Away) : null;
+    const playerProfileId = playerName && eventTeamName ? playerProfileIdFor(eventTeamName, playerId ? String(playerId) : null, playerName) : null;
+    const minute = numberOrNull(event.Minute ?? event.MatchTime);
+    const scoreAfter =
+      typeof event.HomeTeamScore === "number" && typeof event.AwayTeamScore === "number"
+        ? { homeGoals: event.HomeTeamScore, awayGoals: event.AwayTeamScore }
+        : null;
+    const id = String(event.IdEvent ?? event.EventId ?? `${matchId}-${minute ?? "na"}-${type}-${playerId ?? playerName ?? index}`);
+    return {
+      id,
+      matchId,
+      minute,
+      period: event.Period ?? null,
+      type,
+      teamSide,
+      playerId: playerId ? String(playerId) : null,
+      playerProfileId,
+      playerName: playerName ?? null,
+      assistPlayerName: localizedMaybe(event.AssistPlayerName),
+      relatedPlayerName: localizedMaybe(event.RelatedPlayerName) ?? localizedMaybe(event.SubstitutionOffPlayerName),
+      scoreAfter,
+      source: "fifa" as const,
+      updatedAt: syncedAt,
+    };
+  });
 }
 
 type FifaTeamEntry = {
@@ -349,7 +601,10 @@ function mapSquadPlayer(player: FifaSquadPlayer): TeamSquadPlayer | null {
     heightCm: numberOrNull(player.Height),
     weightKg: numberOrNull(player.Weight),
     matchesPlayed: numberOrNull(player.MatchesPlayed),
+    minutesPlayed: numberOrNull(player.MinutesPlayed),
+    starts: numberOrNull(player.Starts),
     goals: numberOrNull(player.Goals),
+    assists: numberOrNull(player.Assists),
     yellowCards: numberOrNull(player.YellowCards),
     redCards: numberOrNull(player.RedCards),
     pictureUrl: fifaImageUrl(player.PlayerPicture?.PictureUrl ?? player.PictureUrl ?? player.ThumbnailUrl),
@@ -524,6 +779,7 @@ export function applyFifaMatchesToState(
   const byNumber = new Map(fifaMatches.filter((match) => match.MatchNumber).map((match) => [Number(match.MatchNumber), match]));
   const statsByMatchId = new Map(state.matchStats.map((stats) => [stats.matchId, stats]));
   const lineupsByMatchId = new Map(state.lineups.map((lineup) => [lineup.matchId, lineup]));
+  const eventsById = new Map(state.matchEvents.map((event) => [event.id, event]));
   let updatedMatches = 0;
 
   const matches = state.matches.map((match) => {
@@ -534,6 +790,9 @@ export function applyFifaMatchesToState(
     const fifaResult = mapFifaResult(fifaMatch, options.syncedAt);
     const fifaStats = mapFifaStats(match.id, fifaMatch, options.syncedAt);
     if (fifaStats) statsByMatchId.set(match.id, fifaStats);
+    for (const event of mapFifaEvents(match.id, fifaMatch, options.syncedAt)) {
+      eventsById.set(event.id, event);
+    }
     const fifaLineup = mapFifaLineup(match.id, fifaMatch, options.syncedAt);
     if (fifaLineup) {
       const existingLineup = lineupsByMatchId.get(match.id);
@@ -578,6 +837,7 @@ export function applyFifaMatchesToState(
       matches,
       matchStats: [...statsByMatchId.values()],
       lineups: [...lineupsByMatchId.values()],
+      matchEvents: [...eventsById.values()],
       tournamentStats: mergeTournamentStats(state.tournamentStats, options.syncedAt),
     },
     updatedMatches,
@@ -637,10 +897,18 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
     });
     const updatedMatches = applied.updatedMatches + resolved.updatedMatches;
     const tournamentStats = buildTournamentStatsFromTeamProfiles(resolved.state.tournamentStats, teamSync.teamProfiles, syncedAt);
-    const next = {
+    const withProfiles = {
       ...resolved.state,
       teamProfiles: teamSync.teamProfiles,
       tournamentStats,
+    };
+    const withManualData = applyManualWorldCupOverrides(withProfiles);
+    const withManualOverrides = applyManualWorldCupOverrides({
+      ...withManualData,
+      playerProfiles: derivePlayerProfilesFromState(withManualData, syncedAt),
+    });
+    const next = {
+      ...withManualOverrides,
       sync: syncState({
         status: "success",
         lastStartedAt: startedAt,

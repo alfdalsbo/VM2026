@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { FollowMatchButton } from "@/components/follow-match-button";
 import { LineupBoard } from "@/components/lineup-board";
+import { MatchEvents } from "@/components/match-events";
+import { ProjectedStandings } from "@/components/projected-standings";
 import { ShareButton } from "@/components/share-button";
 import { TeamLink } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
+import { isFollowingMatch } from "@/lib/followed-matches";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { createShareToken } from "@/lib/share-card";
 import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
@@ -27,6 +31,11 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
   const score = scorePrediction(match, prediction);
   const lineup = state.lineups.find((item) => item.matchId === match.id) ?? null;
   const stats = state.matchStats.find((item) => item.matchId === match.id) ?? null;
+  const events = state.matchEvents
+    .filter((event) => event.matchId === match.id)
+    .sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.id.localeCompare(b.id));
+  const isLive = match.status === "live" || match.status === "halftime";
+  const following = isFollowingMatch(state, player.id, match.id);
   const shareToken =
     match.result && prediction
       ? createShareToken({
@@ -49,6 +58,9 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         <p className="lead mt-4">
           {formatOsloDateTime(match.kickoffAt)} · {formatBroadcast(match)} · {formatMatchStatus(match)}
         </p>
+        <div className="match-actions">
+          <FollowMatchButton matchId={match.id} following={following} next={`/kamp/${match.id}`} />
+        </div>
       </Panel>
 
       <Panel>
@@ -56,7 +68,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
           <div>
             <p className="eyebrow">Ditt kort</p>
             <h1 className="section-title mt-2">{describePrediction(prediction)}</h1>
-            <p className="lead mt-3">Poeng: <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}</p>
+            <p className="lead mt-3">{isLive ? "Poeng hvis dette står:" : "Poeng:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}</p>
           </div>
           {shareToken ? (
             <ShareButton path={`/kort/${shareToken}`} text={shareText} title="Tippekjelleren-kort" />
@@ -64,6 +76,16 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
             <Link className="btn-secondary" href="/kamper">Til kampene</Link>
           )}
         </div>
+      </Panel>
+
+      {isLive ? (
+        <Panel>
+          <ProjectedStandings match={match} player={player} state={state} />
+        </Panel>
+      ) : null}
+
+      <Panel>
+        <MatchEvents events={events} />
       </Panel>
 
       <Panel>

@@ -4,9 +4,11 @@ import path from "node:path";
 import { get, put } from "@vercel/blob";
 import postgres from "postgres";
 
+import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
+import { derivePlayerProfilesFromState } from "@/lib/player-profiles";
 import { players } from "@/lib/players";
 import { createSeedTeamProfiles, mergeTeamProfiles } from "@/lib/teams";
-import type { AppState, Prediction, SyncState, TournamentStats } from "@/lib/types";
+import type { AppState, LineupPlayer, MatchLineup, MatchEvent, PlayerProfile, Prediction, SyncState, TournamentStats } from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
 
 const stateFile = process.env.VERCEL
@@ -41,8 +43,8 @@ export function emptyTournamentStats(): TournamentStats {
 }
 
 export function initialState(): AppState {
-  return {
-    version: 3,
+  const state: AppState = {
+    version: 4,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
@@ -50,9 +52,17 @@ export function initialState(): AppState {
     teamProfiles: createSeedTeamProfiles(worldCupMatches),
     lineups: [],
     matchStats: [],
+    matchEvents: [],
+    followedMatches: [],
+    playerProfiles: [],
     sync: emptySyncState(),
     tournamentStats: emptyTournamentStats(),
   };
+  const withManualData = applyManualWorldCupOverrides(state);
+  return applyManualWorldCupOverrides({
+    ...withManualData,
+    playerProfiles: derivePlayerProfilesFromState(withManualData),
+  });
 }
 
 type StoredPrediction = Prediction & {
@@ -79,6 +89,63 @@ function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[
   }));
 }
 
+type StoredLineupPlayer = Partial<LineupPlayer> & {
+  id: string;
+  name: string;
+  teamName?: string;
+};
+
+type StoredLineup = Partial<MatchLineup> & {
+  matchId: string;
+  players?: StoredLineupPlayer[];
+  homeBench?: StoredLineupPlayer[];
+  awayBench?: StoredLineupPlayer[];
+};
+
+function normalizeLineupPlayer(player: StoredLineupPlayer, fallback: { teamName: string; teamSide: "home" | "away" }): LineupPlayer {
+  return {
+    id: player.id,
+    name: player.name,
+    teamName: player.teamName ?? fallback.teamName,
+    teamSide: player.teamSide ?? fallback.teamSide,
+    playerProfileId: player.playerProfileId ?? null,
+    position: player.position ?? "",
+    role: player.role ?? "unknown",
+    shirtNumber: player.shirtNumber ?? null,
+    isStarter: player.isStarter ?? true,
+    isCaptain: player.isCaptain ?? false,
+    isConfirmed: player.isConfirmed ?? false,
+    x: player.x ?? null,
+    y: player.y ?? null,
+  };
+}
+
+function normalizeLineups(lineups: StoredLineup[] = [], matches: AppState["matches"]): MatchLineup[] {
+  return lineups.map((lineup) => {
+    const match = matches.find((item) => item.id === lineup.matchId);
+    const homeFallback = { teamName: match?.homeTeam ?? "Hjemmelag", teamSide: "home" as const };
+    const awayFallback = { teamName: match?.awayTeam ?? "Bortelag", teamSide: "away" as const };
+    const players = (lineup.players ?? []).map((player) =>
+      normalizeLineupPlayer(player, player.teamSide === "away" ? awayFallback : homeFallback),
+    );
+
+    return {
+      matchId: lineup.matchId,
+      formation: {
+        home: lineup.formation?.home ?? null,
+        away: lineup.formation?.away ?? null,
+      },
+      status: lineup.status ?? (players.length ? "expected" : "not_published"),
+      confirmedAt: lineup.confirmedAt ?? null,
+      players,
+      homeBench: (lineup.homeBench ?? []).map((player) => normalizeLineupPlayer({ ...player, isStarter: false }, homeFallback)),
+      awayBench: (lineup.awayBench ?? []).map((player) => normalizeLineupPlayer({ ...player, isStarter: false }, awayFallback)),
+      source: lineup.source ?? null,
+      updatedAt: lineup.updatedAt ?? null,
+    };
+  });
+}
+
 function mergeWithSeed(state: AppState): AppState {
   const storedById = new Map(state.matches.map((match) => [match.id, match]));
   const matches = worldCupMatches.map((seedMatch) => {
@@ -98,22 +165,33 @@ function mergeWithSeed(state: AppState): AppState {
           syncStatus: stored.syncStatus ?? seedMatch.syncStatus,
           broadcasts: stored.broadcasts?.length ? stored.broadcasts : seedMatch.broadcasts,
         }
-      : seedMatch;
+        : seedMatch;
   });
 
-  return {
+  const merged: AppState = {
     ...state,
-    version: 3,
+    version: 4,
     players,
     rounds: worldCupRounds,
     matches,
     predictions: normalizePredictions(state.predictions as StoredPrediction[]),
     teamProfiles: mergeTeamProfiles(createSeedTeamProfiles(matches), state.teamProfiles),
-    lineups: state.lineups ?? [],
+    lineups: normalizeLineups((state.lineups ?? []) as StoredLineup[], matches),
     matchStats: state.matchStats ?? [],
+    matchEvents: (state.matchEvents ?? []) as MatchEvent[],
+    followedMatches: state.followedMatches ?? [],
+    playerProfiles: (state.playerProfiles ?? []) as PlayerProfile[],
     sync: state.sync ?? emptySyncState(),
     tournamentStats: state.tournamentStats ?? emptyTournamentStats(),
   };
+
+  const withManualData = applyManualWorldCupOverrides(merged);
+  const withProfiles = {
+    ...withManualData,
+    playerProfiles: derivePlayerProfilesFromState(withManualData),
+  };
+
+  return applyManualWorldCupOverrides(withProfiles);
 }
 
 function getSql() {

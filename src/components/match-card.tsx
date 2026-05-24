@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 
+import { FollowMatchButton } from "@/components/follow-match-button";
 import { PredictionForm } from "@/components/prediction-form";
 import { TeamLink } from "@/components/team-link";
+import { isFollowingMatch } from "@/lib/followed-matches";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
@@ -13,15 +15,19 @@ export function MatchCard({
   player,
   state,
   showLockedPredictions = false,
+  next = "/",
 }: {
   match: WorldCupMatch;
   player: Player;
   state: AppState;
   showLockedPredictions?: boolean;
+  next?: string;
 }) {
   const prediction = getPrediction(state, player.id, match.id);
   const score = scorePrediction(match, prediction);
   const locked = isMatchLocked(match);
+  const following = isFollowingMatch(state, player.id, match.id);
+  const isLive = match.status === "live" || match.status === "halftime";
   const otherPredictions =
     showLockedPredictions && locked
       ? state.predictions.filter((item) => item.matchId === match.id && item.playerId !== player.id)
@@ -52,10 +58,13 @@ export function MatchCard({
         <MapPin className="h-4 w-4" aria-hidden="true" />
         {match.city} · {match.venue}
       </p>
+      <div className="match-actions">
+        <FollowMatchButton matchId={match.id} following={following} next={next} />
+      </div>
       <PredictionForm match={match} prediction={prediction} locked={locked} />
       {match.result && prediction ? (
         <p className="score-line">
-          Poeng: <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
+          {isLive ? "Hvis dette står:" : "Poeng:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
         </p>
       ) : null}
       {otherPredictions.length ? (

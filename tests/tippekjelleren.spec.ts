@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test("user can log in and tip from the match-first dashboard", async ({ page }) => {
+test("user can log in and tip from the match-first dashboard", async ({ page }, testInfo) => {
+  const playerId = testInfo.project.name === "mobile" ? "anders" : "alf";
   await page.goto("/");
   await expect(page.getByLabel("Spiller").locator("option")).toContainText([
     "Alf Kåre",
@@ -13,7 +14,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }) 
     "Sverre",
     "Vegard",
   ]);
-  await page.getByLabel("Spiller").selectOption("alf");
+  await page.getByLabel("Spiller").selectOption(playerId);
   await page.getByLabel("Felles kode").fill("Norge");
   await page.getByRole("button", { name: "Logg inn" }).click();
 
@@ -25,6 +26,10 @@ test("user can log in and tip from the match-first dashboard", async ({ page }) 
   await expect(firstMatch).toContainText("Mexico");
   await expect(firstMatch).toContainText("South Africa");
   await expect(firstMatch.getByRole("button", { name: /S Seier/ })).toHaveCount(0);
+  if (await firstMatch.getByRole("button", { name: "Følg kamp" }).count()) {
+    await firstMatch.getByRole("button", { name: "Følg kamp" }).click();
+  }
+  await expect(firstMatch.getByRole("button", { name: "Følger" })).toBeVisible();
   await firstMatch.getByLabel("Mexico mål").fill("2");
   await firstMatch.getByLabel("South Africa mål").fill("1");
   await expect(firstMatch.getByRole("button", { name: /Tipp kampen|Oppdater tips/ })).toBeVisible();

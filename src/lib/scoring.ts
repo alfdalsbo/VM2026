@@ -69,6 +69,10 @@ export function isMatchLocked(match: WorldCupMatch, now = new Date()) {
   return new Date(match.kickoffAt).getTime() <= now.getTime();
 }
 
+export function hasFinalResult(match: WorldCupMatch) {
+  return Boolean(match.result && (match.status === "finished" || match.result.source === "manual" || !match.result.source));
+}
+
 export function scorePrediction(match: WorldCupMatch, prediction?: Prediction | null): ScoreBreakdown {
   if (!prediction || !match.result) {
     return {
@@ -102,7 +106,7 @@ export function getPrediction(state: AppState, playerId: string, matchId: string
 
 export function computeStandings(state: AppState): Standing[] {
   const lastRoundId = [...state.matches]
-    .filter((match) => match.result)
+    .filter(hasFinalResult)
     .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))[0]?.roundId;
 
   const rows = state.players.map((player) => {
@@ -115,6 +119,7 @@ export function computeStandings(state: AppState): Standing[] {
     for (const match of state.matches) {
       const prediction = getPrediction(state, player.id, match.id);
       if (prediction) predictions += 1;
+      if (!hasFinalResult(match)) continue;
       const score = scorePrediction(match, prediction);
       totalPoints += score.total;
       if (score.exactResult) exactResults += 1;
@@ -136,7 +141,7 @@ export function computeStandings(state: AppState): Standing[] {
 
   const roundWins = new Map<string, number>();
   for (const round of state.rounds) {
-    const roundMatches = state.matches.filter((match) => match.roundId === round.id && match.result);
+    const roundMatches = state.matches.filter((match) => match.roundId === round.id && hasFinalResult(match));
     if (!roundMatches.length) continue;
     const roundScores = rows.map((row) => {
       const points = roundMatches.reduce((sum, match) => {
@@ -223,4 +228,35 @@ export function upsertMatchResultInState(
         : match,
     ),
   };
+}
+
+export function computeProjectedStandings(state: AppState, matchIds: string[]): Standing[] {
+  const projectedIds = new Set(matchIds);
+  const matches = state.matches.map((match) => {
+    if (!projectedIds.has(match.id) || !match.result) return match;
+    if (match.status !== "live" && match.status !== "halftime") return match;
+    return {
+      ...match,
+      status: "finished" as const,
+    };
+  });
+
+  return computeStandings({
+    ...state,
+    matches,
+  });
+}
+
+export function compareStandings(base: Standing[], projected: Standing[]) {
+  const baseByPlayer = new Map(base.map((row) => [row.player.id, row]));
+  return projected.map((row) => {
+    const before = baseByPlayer.get(row.player.id);
+    return {
+      ...row,
+      baseRank: before?.rank ?? row.rank,
+      basePoints: before?.totalPoints ?? 0,
+      rankDelta: (before?.rank ?? row.rank) - row.rank,
+      pointsDelta: row.totalPoints - (before?.totalPoints ?? 0),
+    };
+  });
 }

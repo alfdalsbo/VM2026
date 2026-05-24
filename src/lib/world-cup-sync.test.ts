@@ -59,6 +59,43 @@ describe("world cup sync", () => {
           },
           Home: { ...fifaFinished.Home, Tactics: "5-3-2" },
           Away: { ...fifaFinished.Away, Tactics: "4-4-2" },
+          HomeLineup: [
+            {
+              IdPlayer: "10",
+              PlayerName: [{ Locale: "en-GB", Description: "Mexico Captain" }],
+              JerseyNum: 10,
+              RealPositionLocalized: [{ Locale: "en-GB", Description: "Forward" }],
+              IsCaptain: true,
+            },
+          ],
+          AwayLineup: [
+            {
+              IdPlayer: "9",
+              PlayerName: [{ Locale: "en-GB", Description: "South Africa Striker" }],
+              JerseyNum: 9,
+              RealPositionLocalized: [{ Locale: "en-GB", Description: "Forward" }],
+            },
+          ],
+          HomeSubstitutes: [
+            {
+              IdPlayer: "12",
+              PlayerName: [{ Locale: "en-GB", Description: "Bench Player" }],
+              JerseyNum: 12,
+            },
+          ],
+          Events: [
+            {
+              IdEvent: "event-1",
+              EventTypeName: "Goal",
+              Minute: 12,
+              TeamId: "home",
+              PlayerId: "10",
+              PlayerName: [{ Locale: "en-GB", Description: "Mexico Captain" }],
+              AssistPlayerName: [{ Locale: "en-GB", Description: "Bench Player" }],
+              HomeTeamScore: 1,
+              AwayTeamScore: 0,
+            },
+          ],
           Officials: [
             {
               OfficialId: "315593",
@@ -85,6 +122,29 @@ describe("world cup sync", () => {
     expect(synced.state.lineups.find((lineup) => lineup.matchId === "m001")?.formation).toEqual({
       home: "5-3-2",
       away: "4-4-2",
+    });
+    expect(synced.state.lineups.find((lineup) => lineup.matchId === "m001")).toMatchObject({
+      status: "confirmed",
+      players: [
+        {
+          name: "Mexico Captain",
+          teamSide: "home",
+          playerProfileId: "fifa-10",
+          isCaptain: true,
+        },
+        {
+          name: "South Africa Striker",
+          teamSide: "away",
+          playerProfileId: "fifa-9",
+        },
+      ],
+      homeBench: [{ name: "Bench Player", isStarter: false }],
+    });
+    expect(synced.state.matchEvents.find((event) => event.id === "event-1")).toMatchObject({
+      type: "goal",
+      playerProfileId: "fifa-10",
+      assistPlayerName: "Bench Player",
+      scoreAfter: { homeGoals: 1, awayGoals: 0 },
     });
   });
 
@@ -125,7 +185,10 @@ describe("world cup sync", () => {
             RealPositionLocalized: [{ Locale: "en-GB", Description: "Goalkeeper" }],
             Height: 189,
             Weight: 88,
+            MinutesPlayed: 90,
+            Starts: 1,
             Goals: 0,
+            Assists: 1,
             YellowCards: 1,
             RedCards: 0,
             PlayerPicture: { PictureUrl: "https://digitalhub.fifa.com/player.png" },
@@ -155,6 +218,8 @@ describe("world cup sync", () => {
       name: "Franco ARMANI",
       position: "goalkeeper",
       heightCm: 189,
+      minutesPlayed: 90,
+      assists: 1,
       yellowCards: 1,
     });
   });

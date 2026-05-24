@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
+import { playerProfileIdFor } from "@/lib/player-profiles";
 import { getAppState } from "@/lib/state";
 import { getTeamProfile, groupSquadByPosition, matchesForTeam } from "@/lib/teams";
 import { formatMatchStatus } from "@/lib/tournament";
@@ -73,7 +74,9 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
                     <li key={player.id}>
                       <span>{player.shirtNumber ?? "-"}</span>
                       <div>
-                        <strong>{player.name}</strong>
+                        <Link href={`/spiller/${player.playerProfileId ?? playerProfileIdFor(profile.teamName, player.id, player.name)}`}>
+                          <strong>{player.name}</strong>
+                        </Link>
                         <small>
                           {[
                             player.positionDetail,

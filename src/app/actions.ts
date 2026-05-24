@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { createSession, destroySession, isCorrectPasscode, requireSession } from "@/lib/auth";
 import { footballCopy } from "@/lib/football-jargon";
+import { toggleFollowedMatchInState } from "@/lib/followed-matches";
 import { clampScore } from "@/lib/format";
 import { getPlayer } from "@/lib/players";
 import { inferPredictionOutcome, isKnockoutMatch, savePredictionInState } from "@/lib/scoring";
@@ -108,4 +109,20 @@ export async function savePredictionAction(formData: FormData) {
 
   revalidateApp(matchId);
   redirect(`${next}?status=${encodeURIComponent(footballCopy.predictionSaved)}#${matchId}`);
+}
+
+export async function toggleFollowMatchAction(formData: FormData) {
+  const player = await requireSession();
+  const matchId = field(formData, "matchId");
+  const next = safeNext(field(formData, "next"));
+  const state = await getAppState();
+
+  try {
+    await saveAppState(toggleFollowedMatchInState(state, player.id, matchId));
+  } catch (error) {
+    redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Kampen kunne ikke følges.")}#${matchId}`);
+  }
+
+  revalidateApp(matchId);
+  redirect(`${next}#${matchId}`);
 }

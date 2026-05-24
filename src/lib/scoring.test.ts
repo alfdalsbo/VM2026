@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { initialState } from "@/lib/state";
 import { footballCopy } from "@/lib/football-jargon";
-import { inferPredictionOutcome, savePredictionInState, scorePrediction, upsertMatchResultInState } from "@/lib/scoring";
+import {
+  compareStandings,
+  computeProjectedStandings,
+  computeStandings,
+  inferPredictionOutcome,
+  savePredictionInState,
+  scorePrediction,
+  upsertMatchResultInState,
+} from "@/lib/scoring";
 import type { Prediction } from "@/lib/types";
 
 const nowBeforeVm = new Date("2026-06-01T10:00:00Z");
@@ -131,5 +139,44 @@ describe("savePredictionInState", () => {
     expect(() => savePredictionInState(state, prediction("m001"), new Date("2026-06-11T19:00:01Z"))).toThrow(
       footballCopy.lockError,
     );
+  });
+});
+
+describe("projected standings", () => {
+  it("uses live scores for temporary standings without changing the base table", () => {
+    const state = {
+      ...initialState(),
+      matches: initialState().matches.map((match) =>
+        match.id === "m001"
+          ? {
+              ...match,
+              status: "live" as const,
+              result: {
+                homeGoals: 2,
+                awayGoals: 1,
+                decidedByPenalties: false,
+                advancingTeam: null,
+                updatedAt: "2026-06-11T20:00:00Z",
+                updatedBy: "sync:fifa",
+                source: "fifa" as const,
+              },
+            }
+          : match,
+      ),
+      predictions: [
+        prediction("m001", { playerId: "alf", homeGoals: 2, awayGoals: 1 }),
+        prediction("m001", { playerId: "anders", homeGoals: 0, awayGoals: 1 }),
+      ],
+    };
+
+    const base = computeStandings(state);
+    const projected = computeProjectedStandings(state, ["m001"]);
+    const comparison = compareStandings(base, projected);
+
+    expect(base.find((row) => row.player.id === "alf")?.totalPoints).toBe(0);
+    expect(projected.find((row) => row.player.id === "alf")?.totalPoints).toBe(10);
+    expect(comparison.find((row) => row.player.id === "alf")).toMatchObject({
+      pointsDelta: 10,
+    });
   });
 });

@@ -1,4 +1,5 @@
 import { formatScore } from "@/lib/format";
+import { hasFinalResult } from "@/lib/scoring";
 import type { AppState, BroadcastInfo, TournamentStage, WorldCupMatch } from "@/lib/types";
 import { worldCupMatches } from "@/lib/world-cup-2026";
 
@@ -67,12 +68,13 @@ export function computeGroupTables(state: AppState) {
       if (!table.has(team)) table.set(team, createStanding(group, team));
     }
 
-    if (!match.result) continue;
+    const result = match.result;
+    if (!result || !hasFinalResult(match)) continue;
 
     const home = table.get(match.homeTeam)!;
     const away = table.get(match.awayTeam)!;
-    const homeGoals = match.result.homeGoals;
-    const awayGoals = match.result.awayGoals;
+    const homeGoals = result.homeGoals;
+    const awayGoals = result.awayGoals;
     home.played += 1;
     away.played += 1;
     home.goalsFor += homeGoals;

@@ -10,7 +10,7 @@ Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felle
 - Tips låses automatisk ved kampstart i Europe/Oslo-tid.
 - Poeng: riktig utfall 3, riktig målforskjell +2, eksakt resultat +5.
 - Sluttspill støtter ekstraomganger og straffekonkurranse når ordinær tid tippes uavgjort.
-- FIFA-data kan synkes automatisk/best-effort via gratis offentlig API.
+- FIFA-data kan synkes automatisk/best-effort via gratis offentlig API: kampstatus/resultat, lagmetadata, tropp/trener når publisert, formasjon, dommere, tilskuertall, vær og enkel statistikk der FIFA eksponerer det.
 - VM-side med gruppetabeller, utslag, TV-guide og statistikkflater.
 - Kampkort, lagsider og delbare tippekort for skryt i vennegjengen.
 - Tabell, profil, badges og små interne kåringer.
@@ -61,7 +61,7 @@ gh auth login
 gh secret set CRON_SECRET --repo alfdalsbo/VM2026
 ```
 
-Lim inn samme hemmelighet som ligger i Vercel. Workflowen kan også kjøres manuelt fra fanen Actions i GitHub.
+Lim inn samme hemmelighet som ligger i Vercel. Workflowen kan også kjøres manuelt fra fanen Actions i GitHub. Velg `force` når du vil hente lag/troppdata utenfor VM-vinduet.
 
 ## Utslagsrunder
 
@@ -76,4 +76,5 @@ FIFA-sync forsøker å fylle ekte lag i sluttspillet når FIFAs offentlige kampd
 - Dette er kun en VM 2026-app i første versjon.
 - Ingen betaling, gambling, offentlige ligaer eller åpen registrering.
 - Automatisk kampdata er best-effort via gratis FIFA-data.
+- Per 24. mai 2026 svarer FIFAs 2026-squad-endepunkt med tomme spiller- og trenerlister, men appen er klar til å fylle dem når FIFA publiserer dataene.
 - Ingen offisiell FIFA-logo eller beskyttede VM-assets brukes.

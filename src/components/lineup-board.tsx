@@ -2,11 +2,16 @@ import type { MatchLineup, WorldCupMatch } from "@/lib/types";
 
 export function LineupBoard({ lineup, match }: { lineup: MatchLineup | null; match: WorldCupMatch }) {
   if (!lineup || !lineup.players.length) {
+    const hasFormation = Boolean(lineup?.formation.home || lineup?.formation.away);
     return (
       <div className="lineup-empty">
         <p className="eyebrow">Lagoppstilling</p>
-        <h3>Ikke publisert ennå</h3>
-        <p>Hvis gratisdata leverer lagoppstilling rundt kampstart, dukker den opp her.</p>
+        <h3>{hasFormation ? "Formasjon publisert" : "Ikke publisert ennå"}</h3>
+        <p>
+          {hasFormation
+            ? `${match.homeTeam}: ${lineup?.formation.home ?? "-"} · ${match.awayTeam}: ${lineup?.formation.away ?? "-"}`
+            : "Hvis gratisdata leverer lagoppstilling rundt kampstart, dukker den opp her."}
+        </p>
       </div>
     );
   }

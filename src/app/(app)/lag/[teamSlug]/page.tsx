@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { Panel } from "@/components/ui";
@@ -24,14 +25,39 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
   return (
     <div className="space-y-6">
       <Panel>
-        <p className="eyebrow">Lag</p>
-        <h1 className="section-title mt-2">{profile.teamName}</h1>
-        <p className="lead mt-3">
-          Trener: <strong>{profile.coach.name ?? "Ikke publisert i gratisdata ennå"}</strong>
-        </p>
+        <div className="team-profile-hero">
+          {profile.flagUrl ? <Image src={profile.flagUrl} alt="" className="team-flag" width={58} height={58} /> : null}
+          <div>
+            <p className="eyebrow">Lag</p>
+            <h1 className="section-title mt-2">{profile.teamName}</h1>
+            <p className="lead mt-3">
+              Trener: <strong>{profile.coach.name ?? "Ikke publisert i gratisdata ennå"}</strong>
+              {profile.coach.countryCode ? ` · ${profile.coach.countryCode}` : ""}
+            </p>
+          </div>
+        </div>
+        <dl className="team-facts mt-4">
+          <div>
+            <dt>Kortnavn</dt>
+            <dd>{profile.abbreviation ?? "-"}</dd>
+          </div>
+          <div>
+            <dt>Forbund</dt>
+            <dd>{profile.confederation ?? "-"}</dd>
+          </div>
+          <div>
+            <dt>Stiftet</dt>
+            <dd>{profile.foundationYear ?? "-"}</dd>
+          </div>
+          <div>
+            <dt>Base</dt>
+            <dd>{profile.city ?? "-"}</dd>
+          </div>
+        </dl>
         <div className="mt-4 flex flex-wrap gap-3">
           <a className="btn-secondary" href={profile.fifaUrl} target="_blank" rel="noreferrer">FIFA</a>
           <a className="btn-secondary" href={profile.fotmobUrl} target="_blank" rel="noreferrer">FotMob-søk</a>
+          {profile.officialSite ? <a className="btn-secondary" href={profile.officialSite} target="_blank" rel="noreferrer">Offisiell side</a> : null}
         </div>
       </Panel>
 
@@ -46,7 +72,20 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
                   {group.players.map((player) => (
                     <li key={player.id}>
                       <span>{player.shirtNumber ?? "-"}</span>
-                      <strong>{player.name}</strong>
+                      <div>
+                        <strong>{player.name}</strong>
+                        <small>
+                          {[
+                            player.positionDetail,
+                            player.heightCm ? `${player.heightCm} cm` : null,
+                            player.goals ? `${player.goals} mål` : null,
+                            player.yellowCards ? `${player.yellowCards} gule` : null,
+                            player.redCards ? `${player.redCards} røde` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
+                      </div>
                     </li>
                   ))}
                 </ul>

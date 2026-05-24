@@ -10,6 +10,7 @@ import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { createShareToken } from "@/lib/share-card";
 import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
+import type { MatchStats } from "@/lib/types";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
 
 export const metadata = {
@@ -68,12 +69,30 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
       <Panel>
         <h2 className="section-title">Kampstatistikk</h2>
         {stats ? (
-          <div className="stats-grid mt-4">
-            <StatLine label="Ballbesittelse" home={stats.homePossession} away={stats.awayPossession} suffix="%" />
-            <StatLine label="Skudd" home={stats.homeShots} away={stats.awayShots} />
-            <StatLine label="Skudd på mål" home={stats.homeShotsOnTarget} away={stats.awayShotsOnTarget} />
-            <StatLine label="Cornere" home={stats.homeCorners} away={stats.awayCorners} />
-          </div>
+          <>
+            <div className="stats-grid mt-4">
+              <StatLine label="Ballbesittelse" home={stats.homePossession} away={stats.awayPossession} suffix="%" />
+              <StatLine label="Skudd" home={stats.homeShots} away={stats.awayShots} />
+              <StatLine label="Skudd på mål" home={stats.homeShotsOnTarget} away={stats.awayShotsOnTarget} />
+              <StatLine label="Cornere" home={stats.homeCorners} away={stats.awayCorners} />
+            </div>
+            <div className="match-facts mt-4">
+              <Fact label="Tilskuere" value={stats.attendance != null ? stats.attendance.toLocaleString("nb-NO") : null} />
+              <Fact label="Vær" value={formatWeather(stats)} />
+              <Fact label={match.homeTeam} value={stats.homeFormation ? `Formasjon ${stats.homeFormation}` : null} />
+              <Fact label={match.awayTeam} value={stats.awayFormation ? `Formasjon ${stats.awayFormation}` : null} />
+            </div>
+            {(stats.officials ?? []).length ? (
+              <div className="official-list mt-4">
+                {(stats.officials ?? []).map((official) => (
+                  <span key={official.id}>
+                    <strong>{official.role}</strong>
+                    {official.name}{official.countryCode ? ` (${official.countryCode})` : ""}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </>
         ) : (
           <p className="lead mt-3">Enkel statistikk vises her når gratisdata har noe å komme med.</p>
         )}
@@ -89,9 +108,27 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
 function StatLine({ label, home, away, suffix = "" }: { label: string; home: number | null; away: number | null; suffix?: string }) {
   return (
     <div>
-      <span>{home === null ? "-" : `${home}${suffix}`}</span>
+      <span>{home == null ? "-" : `${home}${suffix}`}</span>
       <strong>{label}</strong>
-      <span>{away === null ? "-" : `${away}${suffix}`}</span>
+      <span>{away == null ? "-" : `${away}${suffix}`}</span>
     </div>
   );
+}
+
+function Fact({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value ?? "-"}</strong>
+    </div>
+  );
+}
+
+function formatWeather(stats: MatchStats) {
+  const parts = [
+    stats.weather,
+    stats.temperatureCelsius != null ? `${stats.temperatureCelsius} °C` : null,
+    stats.windSpeed != null ? `${stats.windSpeed} km/t vind` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
 }

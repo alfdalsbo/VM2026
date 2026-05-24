@@ -24,12 +24,23 @@ export function createTeamProfile(teamName: string): TeamProfile {
     slug,
     coach: {
       name: null,
+      countryCode: null,
+      pictureUrl: null,
       source: null,
       updatedAt: null,
     },
+    fifaTeamId: null,
+    abbreviation: null,
+    countryCode: null,
+    confederation: null,
+    flagUrl: null,
+    city: null,
+    foundationYear: null,
+    officialSite: null,
     squad: [],
     fifaUrl: `https://www.fifa.com/en/search?query=${query}`,
     fotmobUrl: `https://www.fotmob.com/search?q=${query}`,
+    source: null,
     updatedAt: null,
   };
 }

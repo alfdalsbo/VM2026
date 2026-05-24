@@ -456,6 +456,58 @@ select {
   font-weight: 950;
 }
 
+.match-facts,
+.team-facts {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.match-facts div,
+.team-facts div {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.match-facts span,
+.team-facts dt {
+  color: var(--ink-muted);
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.match-facts strong,
+.team-facts dd {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 950;
+  margin-left: 0;
+  margin-top: 4px;
+}
+
+.official-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.official-list span {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.84rem;
+  padding: 7px 10px;
+}
+
+.official-list strong {
+  color: var(--ink-muted);
+  margin-right: 6px;
+}
+
 .lineup-empty {
   background: linear-gradient(145deg, rgba(15, 47, 74, 0.08), rgba(180, 35, 47, 0.08));
   border: 1px solid var(--line);
@@ -499,6 +551,20 @@ select {
   transform: translate(-50%, -50%);
 }
 
+.team-profile-hero {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.team-flag {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  height: 58px;
+  object-fit: cover;
+  width: 58px;
+}
+
 .squad-grid {
   display: grid;
   gap: 14px;
@@ -523,7 +589,7 @@ select {
 }
 
 .squad-grid li {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 8px;
 }
@@ -532,6 +598,15 @@ select {
   color: var(--ink-muted);
   font-weight: 900;
   min-width: 24px;
+}
+
+.squad-grid li small {
+  color: var(--ink-muted);
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin-top: 2px;
 }
 
 .share-page {

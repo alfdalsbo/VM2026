@@ -65,6 +65,8 @@ export type BroadcastInfo = {
 
 export type CoachInfo = {
   name: string | null;
+  countryCode?: string | null;
+  pictureUrl?: string | null;
   source: string | null;
   updatedAt: string | null;
 };
@@ -74,16 +76,36 @@ export type TeamSquadPlayer = {
   name: string;
   position: "goalkeeper" | "defender" | "midfielder" | "forward" | "unknown";
   shirtNumber: number | null;
+  shortName?: string | null;
+  countryCode?: string | null;
+  birthDate?: string | null;
+  heightCm?: number | null;
+  weightKg?: number | null;
+  matchesPlayed?: number | null;
+  goals?: number | null;
+  yellowCards?: number | null;
+  redCards?: number | null;
+  pictureUrl?: string | null;
+  positionDetail?: string | null;
   source: string | null;
 };
 
 export type TeamProfile = {
   teamName: string;
   slug: string;
+  fifaTeamId: string | null;
+  abbreviation: string | null;
+  countryCode: string | null;
+  confederation: string | null;
+  flagUrl: string | null;
+  city: string | null;
+  foundationYear: number | null;
+  officialSite: string | null;
   coach: CoachInfo;
   squad: TeamSquadPlayer[];
   fifaUrl: string;
   fotmobUrl: string;
+  source: string | null;
   updatedAt: string | null;
 };
 
@@ -121,6 +143,22 @@ export type MatchStats = {
   awayShotsOnTarget: number | null;
   homeCorners: number | null;
   awayCorners: number | null;
+  attendance: number | null;
+  weather: string | null;
+  temperatureCelsius: number | null;
+  windSpeed: number | null;
+  officials: Array<{
+    id: string;
+    name: string;
+    role: string;
+    countryCode: string | null;
+  }>;
+  homeFormation: string | null;
+  awayFormation: string | null;
+  firstHalfStartedAt: string | null;
+  secondHalfStartedAt: string | null;
+  firstHalfExtraTimeStartedAt: string | null;
+  secondHalfExtraTimeStartedAt: string | null;
   source: string | null;
   updatedAt: string | null;
 };

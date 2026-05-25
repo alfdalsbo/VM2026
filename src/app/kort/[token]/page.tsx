@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Panel } from "@/components/ui";
+import { displayMatchup } from "@/lib/display";
 import { formatScore } from "@/lib/format";
 import { parseShareToken } from "@/lib/share-card";
 import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   if (!data) return { title: "Tippekort" };
   return {
     title: `${data.player.shortName}s tippekort`,
-    description: `${data.player.shortName} tippet ${describePrediction(data.prediction)}. Fasit ${formatScore(data.match.result?.homeGoals, data.match.result?.awayGoals)}.`,
+    description: `${data.player.shortName} tippet ${describePrediction(data.prediction)} på ${displayMatchup(data.match)}. Fasit ${formatScore(data.match.result?.homeGoals, data.match.result?.awayGoals)}.`,
   };
 }
 
@@ -26,7 +27,7 @@ export default async function ShareCardPage({ params }: { params: Promise<{ toke
       <Panel className="share-card">
         <p className="eyebrow">Tippekjelleren · VM 2026</p>
         <h1>{data.player.shortName}s tippekort</h1>
-        <p>{data.match.homeTeam} - {data.match.awayTeam}</p>
+        <p>{displayMatchup(data.match)}</p>
         <div className="share-score">
           <span>Tips: {describePrediction(data.prediction)}</span>
           <strong>Fasit: {formatScore(data.match.result?.homeGoals, data.match.result?.awayGoals)}</strong>

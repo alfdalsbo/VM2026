@@ -23,6 +23,25 @@ export type KnockoutMatch = {
   winner: string | null;
 };
 
+export type KnockoutFlowMatch = KnockoutMatch & {
+  nextLabels: string[];
+};
+
+export type KnockoutFlowRound = {
+  stage: TournamentStage;
+  stageLabel: string;
+  matches: KnockoutFlowMatch[];
+};
+
+const knockoutStageOrder: TournamentStage[] = [
+  "round_of_32",
+  "round_of_16",
+  "quarter_final",
+  "semi_final",
+  "third_place",
+  "final",
+];
+
 export function getBroadcastForMatch(match: WorldCupMatch): BroadcastInfo | null {
   return match.broadcasts[0] ?? null;
 }
@@ -39,7 +58,7 @@ export function formatMatchStatus(match: WorldCupMatch) {
   if (match.status === "finished") return "Full tid";
   if (match.status === "postponed") return "Utsatt";
   if (match.status === "cancelled") return "Avlyst";
-  return "Før avspark";
+  return "Kommer";
 }
 
 function createStanding(group: string, team: string): GroupStanding {
@@ -134,8 +153,41 @@ export function computeKnockoutBracket(state: AppState): KnockoutMatch[] {
     });
 }
 
+export function buildKnockoutFlow(state: AppState): KnockoutFlowRound[] {
+  const knockout = computeKnockoutBracket(state).map((item) => ({
+    ...item,
+    nextLabels: nextMatchLabels(item.match.matchNumber),
+  }));
+
+  return knockoutStageOrder
+    .map((stage) => {
+      const matches = knockout
+        .filter((item) => item.stage === stage)
+        .sort((a, b) => a.match.kickoffAt.localeCompare(b.match.kickoffAt));
+      return {
+        stage,
+        stageLabel: matches[0]?.stageLabel ?? stage,
+        matches,
+      };
+    })
+    .filter((round) => round.matches.length);
+}
+
 export function resultSummary(match: WorldCupMatch) {
   return match.result ? formatScore(match.result.homeGoals, match.result.awayGoals) : "Ikke spilt";
+}
+
+function nextMatchLabels(matchNumber: number) {
+  const tokens = [
+    { token: `W${matchNumber}`, label: "Vinner" },
+    { token: `RU${matchNumber}`, label: "Taper" },
+  ];
+
+  return tokens.flatMap(({ token, label }) =>
+    worldCupMatches
+      .filter((match) => match.stage !== "group" && (match.homeTeam === token || match.awayTeam === token))
+      .map((match) => `${label} til kamp ${match.matchNumber}`),
+  );
 }
 
 function matchWinner(match: WorldCupMatch) {

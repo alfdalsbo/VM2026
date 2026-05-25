@@ -1,8 +1,10 @@
+import { KnockoutFlow } from "@/components/knockout-flow";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
+import { displayGroupLabel, displayMatchup, displayTeamName } from "@/lib/display";
 import { formatOsloDateTime } from "@/lib/format";
 import { getAppState } from "@/lib/state";
-import { computeGroupTables, computeKnockoutBracket, formatBroadcast, formatMatchStatus, resultSummary } from "@/lib/tournament";
+import { buildKnockoutFlow, computeGroupTables, formatBroadcast, formatMatchStatus } from "@/lib/tournament";
 
 export const metadata = {
   title: "VM",
@@ -12,7 +14,7 @@ export default async function WorldCupPage() {
   await requireSession();
   const state = await getAppState();
   const groups = computeGroupTables(state);
-  const knockout = computeKnockoutBracket(state);
+  const knockout = buildKnockoutFlow(state);
   const tvMatches = [...state.matches].sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
   const stats = state.tournamentStats;
 
@@ -40,7 +42,7 @@ export default async function WorldCupPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {groups.map((group) => (
             <Panel key={group.group}>
-              <h3 className="text-xl font-black">{group.group}</h3>
+              <h3 className="text-xl font-black">{displayGroupLabel(group.group) ?? group.group}</h3>
               <div className="table-wrap mt-3">
                 <table className="compact-table">
                   <thead>
@@ -57,7 +59,7 @@ export default async function WorldCupPage() {
                   <tbody>
                     {group.rows.map((row) => (
                       <tr key={row.team}>
-                        <td className="font-bold">{row.team}</td>
+                        <td className="font-bold">{displayTeamName(row.team)}</td>
                         <td>{row.played}</td>
                         <td>{row.wins}</td>
                         <td>{row.draws}</td>
@@ -79,17 +81,7 @@ export default async function WorldCupPage() {
           <p className="eyebrow">Utslag</p>
           <h2 className="section-title">Veien til finalen</h2>
         </div>
-        <div className="bracket-grid">
-          {knockout.map(({ match, winner }) => (
-            <article key={match.id} className="bracket-card">
-              <p>#{match.matchNumber} · {match.stageLabel}</p>
-              <h3>{match.homeTeam} - {match.awayTeam}</h3>
-              <span>{formatOsloDateTime(match.kickoffAt)}</span>
-              <strong>{resultSummary(match)}</strong>
-              <em>{winner ? `Videre: ${winner}` : "Venter på fasit"}</em>
-            </article>
-          ))}
-        </div>
+        <KnockoutFlow rounds={knockout} />
       </section>
 
       <section id="tv" className="space-y-4">
@@ -111,7 +103,7 @@ export default async function WorldCupPage() {
               <tbody>
                 {tvMatches.map((match) => (
                   <tr key={match.id}>
-                    <td className="font-bold">#{match.matchNumber} {match.homeTeam} - {match.awayTeam}</td>
+                    <td className="font-bold">Kamp {match.matchNumber}: {displayMatchup(match)}</td>
                     <td>{formatOsloDateTime(match.kickoffAt)}</td>
                     <td>{formatBroadcast(match)}</td>
                     <td>{formatMatchStatus(match)}</td>
@@ -129,9 +121,9 @@ export default async function WorldCupPage() {
           <h2 className="section-title">Tall som kan brukes i diskusjoner</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
-          <StatsPanel title="Toppscorer" rows={stats.topScorers.map((row) => `${row.playerName}, ${row.teamName}: ${row.value}`)} empty={stats.unavailableReason} />
-          <StatsPanel title="Assist" rows={stats.assistMakers.map((row) => `${row.playerName}, ${row.teamName}: ${row.value}`)} empty={stats.unavailableReason} />
-          <StatsPanel title="Kortkongen" rows={stats.discipline.map((row) => `${row.teamName}: ${row.yellowCards} gule, ${row.redCards} røde`)} empty={stats.unavailableReason} />
+          <StatsPanel title="Toppscorer" rows={stats.topScorers.map((row) => `${row.playerName}, ${displayTeamName(row.teamName)}: ${row.value}`)} empty={stats.unavailableReason} />
+          <StatsPanel title="Assist" rows={stats.assistMakers.map((row) => `${row.playerName}, ${displayTeamName(row.teamName)}: ${row.value}`)} empty={stats.unavailableReason} />
+          <StatsPanel title="Kortkongen" rows={stats.discipline.map((row) => `${displayTeamName(row.teamName)}: ${row.yellowCards} gule, ${row.redCards} røde`)} empty={stats.unavailableReason} />
         </div>
       </section>
     </div>

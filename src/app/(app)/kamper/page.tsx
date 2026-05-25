@@ -45,7 +45,7 @@ export default async function MatchesPage({
             </div>
             <div className="grid gap-4">
               {matches.map((match) => (
-                <MatchCard key={match.id} match={match} player={player} state={state} showLockedPredictions next="/kamper" />
+                <MatchCard key={match.id} match={match} player={player} state={state} showLockedPredictions />
               ))}
             </div>
           </section>

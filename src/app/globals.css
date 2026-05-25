@@ -65,7 +65,7 @@ select {
 }
 
 .eyebrow {
-  color: #f5d083;
+  color: var(--red-dark);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -116,6 +116,7 @@ select {
   min-height: 40px;
   text-decoration: none;
   transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+  white-space: nowrap;
 }
 
 .nav-pill {
@@ -258,6 +259,7 @@ select {
 }
 
 .match-meta {
+  align-items: center;
   color: var(--ink-muted);
   display: flex;
   flex-wrap: wrap;
@@ -269,9 +271,69 @@ select {
 }
 
 .match-meta span {
-  background: rgba(180, 35, 47, 0.08);
+  background: rgba(17, 19, 15, 0.06);
   border-radius: 5px;
   padding: 5px 8px;
+}
+
+.status-pill {
+  border: 1px solid transparent;
+  color: #17130f;
+  position: relative;
+}
+
+.status-pill::before {
+  border-radius: 999px;
+  content: "";
+  display: inline-block;
+  height: 7px;
+  margin-right: 6px;
+  width: 7px;
+}
+
+.status-scheduled::before,
+.status-unknown::before {
+  background: #7a6a57;
+}
+
+.status-live {
+  background: rgba(180, 35, 47, 0.1) !important;
+  border-color: rgba(180, 35, 47, 0.18);
+  color: var(--red-dark);
+}
+
+.status-live::before {
+  background: var(--red);
+  box-shadow: 0 0 0 4px rgba(180, 35, 47, 0.12);
+}
+
+.status-halftime {
+  background: rgba(15, 47, 74, 0.1) !important;
+  color: var(--blue);
+}
+
+.status-halftime::before {
+  background: var(--blue);
+}
+
+.status-finished {
+  background: rgba(21, 128, 61, 0.1) !important;
+  color: #166534;
+}
+
+.status-finished::before {
+  background: #15803d;
+}
+
+.status-postponed,
+.status-cancelled {
+  background: rgba(17, 19, 15, 0.1) !important;
+  color: #3f3126;
+}
+
+.status-postponed::before,
+.status-cancelled::before {
+  background: #3f3126;
 }
 
 .teams-row {
@@ -350,8 +412,15 @@ select {
 .prediction-form {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: 1fr;
   margin-top: 16px;
+}
+
+.prediction-teams {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
 .prediction-form label,
@@ -368,6 +437,32 @@ select {
   text-transform: uppercase;
 }
 
+.prediction-side {
+  min-width: 0;
+}
+
+.prediction-side span {
+  overflow-wrap: anywhere;
+}
+
+.prediction-side-away span {
+  text-align: right;
+}
+
+.prediction-vs {
+  align-self: center;
+  color: var(--ink-muted);
+  font-size: 1.2rem !important;
+  font-weight: 950 !important;
+  padding-top: 20px;
+}
+
+.prediction-form input[type="number"] {
+  font-size: 1.35rem;
+  font-weight: 950;
+  text-align: center;
+}
+
 .prediction-note {
   align-self: center;
   color: var(--ink-muted);
@@ -375,6 +470,16 @@ select {
   font-weight: 800;
   grid-column: 1 / -1;
   line-height: 1.45;
+}
+
+.prediction-form-compact .prediction-note {
+  display: none;
+}
+
+.prediction-submit {
+  grid-column: 1 / -1;
+  min-height: 46px;
+  width: 100%;
 }
 
 input,
@@ -401,8 +506,9 @@ select {
   align-items: center;
   background: rgba(17, 24, 39, 0.06);
   border-radius: 6px;
-  display: flex;
+  display: grid;
   gap: 10px;
+  grid-template-columns: auto 1fr;
   margin-top: 16px;
   padding: 12px;
 }
@@ -467,7 +573,7 @@ select {
 }
 
 .result-row {
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
 }
 
@@ -1010,36 +1116,62 @@ th {
   text-decoration: none;
 }
 
-.bracket-grid {
+.knockout-flow {
+  align-items: start;
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  grid-template-columns: repeat(6, minmax(220px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
-.bracket-card {
-  background: rgba(255, 250, 242, 0.9);
+.knockout-round {
+  display: grid;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.knockout-round h3 {
+  color: #17130f;
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.knockout-round-matches {
+  display: grid;
+  gap: 10px;
+}
+
+.knockout-card {
+  background: rgba(255, 250, 242, 0.94);
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
-  gap: 8px;
-  padding: 14px;
+  gap: 9px;
+  padding: 12px;
 }
 
-.bracket-card p,
-.bracket-card span,
-.bracket-card em {
+.knockout-card p,
+.knockout-card em {
   color: var(--ink-muted);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 850;
 }
 
-.bracket-card h3 {
-  font-size: 1.05rem;
+.knockout-teams {
+  display: grid;
+  gap: 6px;
+}
+
+.knockout-teams span {
+  font-size: 0.95rem;
   font-weight: 950;
+  line-height: 1.2;
 }
 
-.bracket-card strong {
+.knockout-teams strong {
   background: #17130f;
   border-radius: 6px;
   color: white;
@@ -1049,15 +1181,32 @@ th {
 
 @media (max-width: 640px) {
   .teams-row {
-    grid-template-columns: 1fr;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    margin-top: 14px;
+  }
+
+  .teams-row strong {
+    font-size: 1.02rem;
+    overflow-wrap: anywhere;
   }
 
   .teams-row strong:last-child {
-    text-align: left;
+    text-align: right;
   }
 
-  .teams-row span {
-    width: max-content;
+  .score-link {
+    min-width: 68px;
+    padding: 7px 8px 6px;
+  }
+
+  .score-link span {
+    font-size: 1.1rem;
+    width: auto;
+  }
+
+  .score-link em {
+    font-size: 0.52rem;
   }
 
   .dashboard-top,
@@ -1073,5 +1222,56 @@ th {
   .event-list li,
   .projection-table div {
     grid-template-columns: 1fr;
+  }
+
+  .match-card {
+    padding: 14px;
+  }
+
+  .match-meta {
+    gap: 6px;
+  }
+
+  .match-meta span {
+    padding: 4px 7px;
+  }
+
+  .prediction-form {
+    margin-top: 14px;
+  }
+
+  .prediction-teams {
+    gap: 7px;
+  }
+
+  .prediction-form span {
+    font-size: 0.68rem;
+  }
+
+  .prediction-form input[type="number"] {
+    font-size: 1.25rem;
+    min-height: 46px;
+    padding: 0 6px;
+  }
+
+  .prediction-submit {
+    min-height: 48px;
+  }
+
+  .locked-tip {
+    grid-template-columns: 1fr;
+  }
+
+  .result-row {
+    grid-template-columns: 1fr;
+  }
+
+  .knockout-flow {
+    overflow-x: visible;
+    grid-template-columns: 1fr;
+  }
+
+  .knockout-round {
+    min-width: 0;
   }
 }

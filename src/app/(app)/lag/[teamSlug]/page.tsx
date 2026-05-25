@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
+import { displayMatchup, displayTeamName } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { playerProfileIdFor } from "@/lib/player-profiles";
 import { getAppState } from "@/lib/state";
@@ -30,7 +31,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
           {profile.flagUrl ? <Image src={profile.flagUrl} alt="" className="team-flag" width={58} height={58} /> : null}
           <div>
             <p className="eyebrow">Lag</p>
-            <h1 className="section-title mt-2">{profile.teamName}</h1>
+            <h1 className="section-title mt-2">{displayTeamName(profile.teamName)}</h1>
             <p className="lead mt-3">
               Trener: <strong>{profile.coach.name ?? "Ikke publisert i gratisdata ennå"}</strong>
               {profile.coach.countryCode ? ` · ${profile.coach.countryCode}` : ""}
@@ -105,7 +106,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
         <div className="team-match-list mt-4">
           {matches.map((match) => (
             <Link key={match.id} href={`/kamp/${match.id}`}>
-              <strong>{match.homeTeam} - {match.awayTeam}</strong>
+              <strong>{displayMatchup(match)}</strong>
               <span>{formatOsloDateTime(match.kickoffAt)} · {formatMatchStatus(match)} · {formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
             </Link>
           ))}

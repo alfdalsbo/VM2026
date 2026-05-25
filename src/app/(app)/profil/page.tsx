@@ -2,6 +2,7 @@ import { Medal, Star, Target } from "lucide-react";
 
 import { Panel, Stat } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
+import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { computeStandings, describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
@@ -85,7 +86,7 @@ export default async function ProfilePage() {
                 const score = scorePrediction(match, prediction);
                 return (
                   <tr key={match.id}>
-                    <td>{match.homeTeam} - {match.awayTeam}</td>
+                    <td>{displayMatchup(match)}</td>
                     <td>{formatOsloDateTime(match.kickoffAt)}</td>
                     <td>{describePrediction(prediction)}</td>
                     <td>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</td>

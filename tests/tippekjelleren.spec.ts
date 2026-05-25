@@ -24,25 +24,30 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
 
   const firstMatch = page.locator("#m001");
   await expect(firstMatch).toContainText("Mexico");
-  await expect(firstMatch).toContainText("South Africa");
+  await expect(firstMatch).toContainText("Sør-Afrika");
   await expect(firstMatch.getByRole("button", { name: /S Seier/ })).toHaveCount(0);
-  if (await firstMatch.getByRole("button", { name: "Følg kamp" }).count()) {
-    await firstMatch.getByRole("button", { name: "Følg kamp" }).click();
-  }
-  await expect(firstMatch.getByRole("button", { name: "Følger" })).toBeVisible();
+  await expect(firstMatch.getByRole("button", { name: "Følg kamp" })).toHaveCount(0);
+  await expect(firstMatch).not.toContainText("TV 2 Direkte");
+  await expect(firstMatch).not.toContainText("Før avspark");
+  await expect(firstMatch).not.toContainText("#1");
   await firstMatch.getByLabel("Mexico mål").fill("2");
-  await firstMatch.getByLabel("South Africa mål").fill("1");
-  await expect(firstMatch.getByRole("button", { name: /Tipp kampen|Oppdater tips/ })).toBeVisible();
-  await expect(firstMatch).toContainText("TV 2 Direkte");
+  await firstMatch.getByLabel("Sør-Afrika mål").fill("1");
+  await expect(firstMatch.getByRole("button", { name: /Tipp kampen|Oppdater tipset/ })).toBeVisible();
 
   await firstMatch.getByRole("link", { name: "Mexico", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mexico" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tropp" })).toBeVisible();
 
   await page.goto("/");
-  await page.locator("#m001").getByRole("link", { name: /Kampkort for Mexico mot South Africa/ }).click();
-  await expect(page.getByText("Kamp #1")).toBeVisible();
+  await page.locator("#m001").getByRole("link", { name: /Kampkort for Mexico - Sør-Afrika/ }).click();
+  await expect(page.getByText("Kamp 1")).toBeVisible();
+  await expect(page.getByText("TV 2 Direkte")).toBeVisible();
   await expect(page.getByText("Ikke publisert ennå")).toBeVisible();
+
+  await page.goto("/vm");
+  await expect(page.getByRole("heading", { name: "Veien til finalen" })).toBeVisible();
+  await expect(page.getByText("Vinner gruppe A").first()).toBeVisible();
+  await expect(page.getByText("Vinner til kamp").first()).toBeVisible();
 
   await expect(page.getByRole("navigation").getByRole("link", { name: "Admin", exact: true })).toHaveCount(0);
 });

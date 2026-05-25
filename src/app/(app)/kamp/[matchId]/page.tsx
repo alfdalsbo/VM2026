@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { FollowMatchButton } from "@/components/follow-match-button";
 import { LineupBoard } from "@/components/lineup-board";
 import { MatchEvents } from "@/components/match-events";
 import { ProjectedStandings } from "@/components/projected-standings";
@@ -9,7 +8,7 @@ import { ShareButton } from "@/components/share-button";
 import { TeamLink } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
-import { isFollowingMatch } from "@/lib/followed-matches";
+import { displayMatchup, displayTeamName } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { createShareToken } from "@/lib/share-card";
 import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
@@ -35,7 +34,6 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
     .filter((event) => event.matchId === match.id)
     .sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.id.localeCompare(b.id));
   const isLive = match.status === "live" || match.status === "halftime";
-  const following = isFollowingMatch(state, player.id, match.id);
   const shareToken =
     match.result && prediction
       ? createShareToken({
@@ -44,12 +42,12 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
           issuedAt: Date.parse(prediction.updatedAt),
         })
       : null;
-  const shareText = `${player.shortName} tippet ${describePrediction(prediction)} på ${match.homeTeam} - ${match.awayTeam}. Fasit: ${formatScore(match.result?.homeGoals, match.result?.awayGoals)}. ${score.total} poeng.`;
+  const shareText = `${player.shortName} tippet ${describePrediction(prediction)} på ${displayMatchup(match)}. Fasit: ${formatScore(match.result?.homeGoals, match.result?.awayGoals)}. ${score.total} poeng.`;
 
   return (
     <div className="space-y-6">
       <Panel>
-        <p className="eyebrow">Kamp #{match.matchNumber}</p>
+        <p className="eyebrow">Kamp {match.matchNumber}</p>
         <div className="teams-row">
           <strong><TeamLink teamName={match.homeTeam} /></strong>
           <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
@@ -58,9 +56,6 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         <p className="lead mt-4">
           {formatOsloDateTime(match.kickoffAt)} · {formatBroadcast(match)} · {formatMatchStatus(match)}
         </p>
-        <div className="match-actions">
-          <FollowMatchButton matchId={match.id} following={following} next={`/kamp/${match.id}`} />
-        </div>
       </Panel>
 
       <Panel>
@@ -101,8 +96,8 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
             <div className="match-facts mt-4">
               <Fact label="Tilskuere" value={stats.attendance != null ? stats.attendance.toLocaleString("nb-NO") : null} />
               <Fact label="Vær" value={formatWeather(stats)} />
-              <Fact label={match.homeTeam} value={stats.homeFormation ? `Formasjon ${stats.homeFormation}` : null} />
-              <Fact label={match.awayTeam} value={stats.awayFormation ? `Formasjon ${stats.awayFormation}` : null} />
+              <Fact label={displayTeamName(match.homeTeam)} value={stats.homeFormation ? `Formasjon ${stats.homeFormation}` : null} />
+              <Fact label={displayTeamName(match.awayTeam)} value={stats.awayFormation ? `Formasjon ${stats.awayFormation}` : null} />
             </div>
             {(stats.officials ?? []).length ? (
               <div className="official-list mt-4">

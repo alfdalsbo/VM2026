@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { upsertMatchResultInState } from "@/lib/scoring";
 import { initialState } from "@/lib/state";
-import { applyKnockoutResolversToState, computeGroupTables, getBroadcastForMatch } from "@/lib/tournament";
+import { applyKnockoutResolversToState, buildKnockoutFlow, computeGroupTables, getBroadcastForMatch } from "@/lib/tournament";
 import type { AppState } from "@/lib/types";
 
 function result(homeGoals: number, awayGoals: number) {
@@ -41,6 +41,12 @@ describe("tournament helpers", () => {
     const broadcast = getBroadcastForMatch(state.matches.find((match) => match.id === "m001")!);
     expect(broadcast?.channel).toBe("TV 2 Direkte");
     expect(broadcast?.service).toBe("TV 2 Play");
+  });
+
+  it("builds knockout flow with next match references", () => {
+    const flow = buildKnockoutFlow(initialState());
+    expect(flow[0].stage).toBe("round_of_32");
+    expect(flow[0].matches[0].nextLabels).toContain("Vinner til kamp 90");
   });
 
   it("fills direct knockout placeholders from completed group tables", () => {

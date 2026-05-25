@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { Panel, Stat } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
+import { displayMatchup, displayTeamName } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getPlayerProfile } from "@/lib/player-profiles";
 import { getAppState } from "@/lib/state";
@@ -33,7 +34,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
             <p className="eyebrow">Spillerkort</p>
             <h1 className="section-title mt-2">{profile.name}</h1>
             <p className="lead mt-3">
-              <Link href={`/lag/${profile.teamSlug}`}>{profile.teamName}</Link>
+              <Link href={`/lag/${profile.teamSlug}`}>{displayTeamName(profile.teamName)}</Link>
               {profile.shirtNumber ? ` · #${profile.shirtNumber}` : ""} · {profile.positionDetail ?? positionLabel(profile.position)}
             </p>
           </div>
@@ -80,7 +81,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
                   <strong>{eventName(event.type)}</strong>
                   <span>
                     {event.minute != null ? `${event.minute}' · ` : ""}
-                    {match ? `${match.homeTeam} - ${match.awayTeam}` : "Kamp"}
+                    {match ? displayMatchup(match) : "Kamp"}
                     {event.scoreAfter ? ` · ${formatScore(event.scoreAfter.homeGoals, event.scoreAfter.awayGoals)}` : ""}
                   </span>
                 </Link>
@@ -97,7 +98,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
         <div className="team-match-list mt-4">
           {matches.map((match) => (
             <Link key={match.id} href={`/kamp/${match.id}`}>
-              <strong>{match.homeTeam} - {match.awayTeam}</strong>
+              <strong>{displayMatchup(match)}</strong>
               <span>{formatOsloDateTime(match.kickoffAt)} · {formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
             </Link>
           ))}

@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 
-import { FollowMatchButton } from "@/components/follow-match-button";
 import { PredictionForm } from "@/components/prediction-form";
 import { TeamLink } from "@/components/team-link";
-import { isFollowingMatch } from "@/lib/followed-matches";
+import { displayMatchup, displayStageOrGroup, formatCompactMatchStatus } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
-import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
 import type { AppState, Player, WorldCupMatch } from "@/lib/types";
 
 export function MatchCard({
@@ -15,53 +12,42 @@ export function MatchCard({
   player,
   state,
   showLockedPredictions = false,
-  next = "/",
 }: {
   match: WorldCupMatch;
   player: Player;
   state: AppState;
   showLockedPredictions?: boolean;
-  next?: string;
 }) {
   const prediction = getPrediction(state, player.id, match.id);
   const score = scorePrediction(match, prediction);
   const locked = isMatchLocked(match);
-  const following = isFollowingMatch(state, player.id, match.id);
   const isLive = match.status === "live" || match.status === "halftime";
+  const compactStatus = formatCompactMatchStatus(match);
   const otherPredictions =
     showLockedPredictions && locked
       ? state.predictions.filter((item) => item.matchId === match.id && item.playerId !== player.id)
       : [];
 
   return (
-    <article id={match.id} className="match-card">
+    <article id={match.id} className={`match-card match-card-${compactStatus.tone}`}>
       <div className="match-meta">
-        <span>#{match.matchNumber}</span>
-        <span>{match.group ?? match.stageLabel}</span>
+        <span className={`status-pill status-${compactStatus.tone}`}>{compactStatus.label}</span>
         <span>{formatOsloDateTime(match.kickoffAt)}</span>
-        <span>{formatBroadcast(match)}</span>
-        <span>{formatMatchStatus(match)}</span>
+        <span>{displayStageOrGroup(match)}</span>
       </div>
       <div className="teams-row">
         <strong><TeamLink teamName={match.homeTeam} /></strong>
         <Link
           className="score-link"
           href={`/kamp/${match.id}`}
-          aria-label={`Kampkort for ${match.homeTeam} mot ${match.awayTeam}`}
+          aria-label={`Kampkort for ${displayMatchup(match)}`}
         >
           <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
           <em>Kampkort</em>
         </Link>
         <strong><TeamLink teamName={match.awayTeam} /></strong>
       </div>
-      <p className="venue">
-        <MapPin className="h-4 w-4" aria-hidden="true" />
-        {match.city} · {match.venue}
-      </p>
-      <div className="match-actions">
-        <FollowMatchButton matchId={match.id} following={following} next={next} />
-      </div>
-      <PredictionForm match={match} prediction={prediction} locked={locked} />
+      <PredictionForm match={match} prediction={prediction} locked={locked} compact />
       {match.result && prediction ? (
         <p className="score-line">
           {isLive ? "Hvis dette står:" : "Poeng:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}

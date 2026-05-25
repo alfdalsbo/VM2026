@@ -4,8 +4,8 @@ import { MatchCard } from "@/components/match-card";
 import { Notice, Panel } from "@/components/ui";
 import { getAwards } from "@/lib/awards";
 import { requireSession } from "@/lib/auth";
+import { displayMatchup } from "@/lib/display";
 import { footballCopy, pickDashboardLine } from "@/lib/football-jargon";
-import { followedMatchIdsForPlayer } from "@/lib/followed-matches";
 import { formatOsloDate, formatOsloDateTime, formatScore } from "@/lib/format";
 import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
@@ -32,15 +32,6 @@ function matchesOnDate(state: Awaited<ReturnType<typeof getAppState>>, key: stri
   return state.matches.filter((match) => osloDateKey(match.kickoffAt) === key).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
 }
 
-function uniqueMatches(matches: Awaited<ReturnType<typeof getAppState>>["matches"]) {
-  const seen = new Set<string>();
-  return matches.filter((match) => {
-    if (seen.has(match.id)) return false;
-    seen.add(match.id);
-    return true;
-  });
-}
-
 export default async function HomePage({
   searchParams,
 }: {
@@ -55,16 +46,7 @@ export default async function HomePage({
   const nextOpenMatch = state.matches.find((match) => new Date(match.kickoffAt).getTime() > now.getTime());
   const focusKey = todayMatches.length ? todayKey : nextOpenMatch ? osloDateKey(nextOpenMatch.kickoffAt) : todayKey;
   const focusMatches = todayMatches.length ? todayMatches : matchesOnDate(state, focusKey);
-  const followedIds = followedMatchIdsForPlayer(state, player.id);
-  const followWindowEnd = now.getTime() + 48 * 60 * 60 * 1000;
-  const followedFocusMatches = state.matches
-    .filter((match) => {
-      if (!followedIds.has(match.id)) return false;
-      const kickoff = new Date(match.kickoffAt).getTime();
-      return match.status === "live" || match.status === "halftime" || (kickoff >= now.getTime() && kickoff <= followWindowEnd);
-    })
-    .sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
-  const dashboardMatches = uniqueMatches([...followedFocusMatches, ...focusMatches]);
+  const dashboardMatches = focusMatches;
   const tomorrowKey = focusMatches[0] ? osloDateKey(new Date(new Date(focusMatches[0].kickoffAt).getTime() + 24 * 60 * 60 * 1000)) : todayKey;
   const tomorrowMatches = matchesOnDate(state, tomorrowKey);
   const completedMatches = state.matches
@@ -113,8 +95,7 @@ export default async function HomePage({
               const score = scorePrediction(match, prediction);
               return (
                 <Link key={match.id} href={`/kamp/${match.id}`} className="result-row">
-                  <span>#{match.matchNumber}</span>
-                  <strong>{match.homeTeam} - {match.awayTeam}</strong>
+                  <strong>{displayMatchup(match)}</strong>
                   <em>{formatScore(match.result?.homeGoals, match.result?.awayGoals)} · {score.total} p</em>
                 </Link>
               );
@@ -169,7 +150,7 @@ export default async function HomePage({
         <div className="tomorrow-grid">
           {tomorrowMatches.map((match) => (
             <Link key={match.id} href={`/kamp/${match.id}`}>
-              <strong>{match.homeTeam} - {match.awayTeam}</strong>
+              <strong>{displayMatchup(match)}</strong>
               <span>{formatOsloDateTime(match.kickoffAt)} · {formatMatchStatus(match)}</span>
             </Link>
           ))}

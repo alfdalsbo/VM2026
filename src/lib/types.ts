@@ -276,6 +276,10 @@ export type Prediction = {
   awayGoals: number;
   outcome?: PredictionOutcome;
   knockoutResolution?: KnockoutPredictionResolution | null;
+  homeScorers?: string[];
+  awayScorers?: string[];
+  homeAssists?: string[];
+  awayAssists?: string[];
   updatedAt: string;
 };
 
@@ -334,6 +338,8 @@ export type ScoreBreakdown = {
   outcome: number;
   goalDifference: number;
   exactResult: number;
+  scorer: number;
+  assist: number;
   base: number;
   total: number;
 };

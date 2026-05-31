@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useFormStatus } from "react-dom";
-import { usePathname } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { TicketCheck } from "lucide-react";
 
-import { savePredictionAction } from "@/app/actions";
+import { savePredictionAction, type SavePredictionState } from "@/app/actions";
 import { displayTeamName } from "@/lib/display";
-import { footballCopy } from "@/lib/football-jargon";
 import { cx } from "@/lib/format";
 import { describePrediction, isKnockoutMatch } from "@/lib/scoring";
 import type { Prediction, WorldCupMatch } from "@/lib/types";
+
+const INITIAL_SAVE_STATE: SavePredictionState = {};
 
 export function PredictionForm({
   match,
@@ -23,10 +23,19 @@ export function PredictionForm({
   locked: boolean;
   compact?: boolean;
 }) {
+  const router = useRouter();
   const pathname = usePathname();
   const [homeGoals, setHomeGoals] = useState(prediction?.homeGoals?.toString() ?? "");
   const [awayGoals, setAwayGoals] = useState(prediction?.awayGoals?.toString() ?? "");
   const [method, setMethod] = useState(prediction?.knockoutResolution?.method ?? "");
+  const [saveState, formAction, pending] = useActionState(savePredictionAction, INITIAL_SAVE_STATE);
+
+  useEffect(() => {
+    if (!saveState.status && !saveState.error) return;
+    const key = saveState.error ? "error" : "status";
+    const value = saveState.error ?? saveState.status ?? "";
+    router.replace(`${pathname}?${key}=${encodeURIComponent(value)}`, { scroll: false });
+  }, [saveState, router, pathname]);
   const isDraw = homeGoals !== "" && awayGoals !== "" && homeGoals === awayGoals;
   const needsKnockoutResolution = isKnockoutMatch(match) && isDraw;
   const extraTimeResolution = prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution : null;
@@ -43,9 +52,8 @@ export function PredictionForm({
   }
 
   return (
-    <form action={savePredictionAction} className={cx("prediction-form", compact && "prediction-form-compact")}>
+    <form action={formAction} className={cx("prediction-form", compact && "prediction-form-compact")}>
       <input type="hidden" name="matchId" value={match.id} />
-      <input type="hidden" name="next" value={pathname} />
       <div className="prediction-teams">
         <label className="prediction-side">
           <span>{homeTeam}</span>
@@ -131,14 +139,12 @@ export function PredictionForm({
         </div>
       ) : null}
 
-      <p className="prediction-note">{footballCopy.predictionNote}</p>
-      <TipSubmitButton hasPrediction={Boolean(prediction)} />
+      <TipSubmitButton hasPrediction={Boolean(prediction)} pending={pending} />
     </form>
   );
 }
 
-function TipSubmitButton({ hasPrediction }: { hasPrediction: boolean }) {
-  const { pending } = useFormStatus();
+function TipSubmitButton({ hasPrediction, pending }: { hasPrediction: boolean; pending: boolean }) {
   const label = hasPrediction ? "Oppdater tipset" : "Tipp kampen";
   return (
     <button className="btn-primary prediction-submit" type="submit" disabled={pending} aria-live="polite">

@@ -36,6 +36,57 @@ const teamDisplayNames: Record<string, string> = {
   USA: "USA",
 };
 
+const teamCountryCodes: Record<string, string> = {
+  Algeria: "DZ",
+  Argentina: "AR",
+  Australia: "AU",
+  Austria: "AT",
+  Belgium: "BE",
+  "Bosnia and Herzegovina": "BA",
+  Brazil: "BR",
+  "Cabo Verde": "CV",
+  Canada: "CA",
+  Colombia: "CO",
+  "Congo DR": "CD",
+  Croatia: "HR",
+  "Curaçao": "CW",
+  Czechia: "CZ",
+  "Côte d'Ivoire": "CI",
+  Ecuador: "EC",
+  Egypt: "EG",
+  England: "GB-ENG",
+  France: "FR",
+  Germany: "DE",
+  Ghana: "GH",
+  Haiti: "HT",
+  "IR Iran": "IR",
+  Iraq: "IQ",
+  Japan: "JP",
+  Jordan: "JO",
+  "Korea Republic": "KR",
+  Mexico: "MX",
+  Morocco: "MA",
+  Netherlands: "NL",
+  "New Zealand": "NZ",
+  Norway: "NO",
+  Panama: "PA",
+  Paraguay: "PY",
+  Portugal: "PT",
+  Qatar: "QA",
+  "Saudi Arabia": "SA",
+  Scotland: "GB-SCT",
+  Senegal: "SN",
+  "South Africa": "ZA",
+  Spain: "ES",
+  Sweden: "SE",
+  Switzerland: "CH",
+  Tunisia: "TN",
+  Türkiye: "TR",
+  Uruguay: "UY",
+  USA: "US",
+  Uzbekistan: "UZ",
+};
+
 const groupPattern = /^Group ([A-L])$/;
 const groupRankPattern = /^([12])([A-L])$/;
 const thirdPlacePattern = /^3([A-L]+)$/;
@@ -49,6 +100,25 @@ export type CompactMatchStatus = {
 
 export function displayTeamName(teamName: string) {
   return displayKnockoutPlaceholder(teamName) ?? teamDisplayNames[teamName] ?? teamName;
+}
+
+const subdivisionFlags: Record<string, string> = {
+  "GB-ENG": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}",
+  "GB-SCT": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}",
+  "GB-WLS": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}",
+};
+
+export function teamFlagEmoji(teamName: string): string {
+  const code = teamCountryCodes[teamName];
+  if (!code) return "";
+  if (subdivisionFlags[code]) return subdivisionFlags[code];
+  if (code.length !== 2) return "";
+  const base = 0x1f1e6;
+  const upper = code.toUpperCase();
+  return String.fromCodePoint(
+    base + upper.charCodeAt(0) - 65,
+    base + upper.charCodeAt(1) - 65,
+  );
 }
 
 export function displayMatchup(match: Pick<WorldCupMatch, "homeTeam" | "awayTeam">) {

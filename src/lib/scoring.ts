@@ -1,4 +1,4 @@
-import type { AppState, BroadcastInfo, Prediction, PredictionOutcome, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
+import type { AppState, BroadcastInfo, MatchEvent, Prediction, PredictionOutcome, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
 import { footballCopy } from "@/lib/football-jargon";
 
 export function inferPredictionOutcome(homeGoals: number, awayGoals: number): PredictionOutcome {
@@ -73,12 +73,18 @@ export function hasFinalResult(match: WorldCupMatch) {
   return Boolean(match.result && (match.status === "finished" || match.result.source === "manual" || !match.result.source));
 }
 
-export function scorePrediction(match: WorldCupMatch, prediction?: Prediction | null): ScoreBreakdown {
+export function scorePrediction(
+  match: WorldCupMatch,
+  prediction?: Prediction | null,
+  state?: AppState,
+): ScoreBreakdown {
   if (!prediction || !match.result) {
     return {
       outcome: 0,
       goalDifference: 0,
       exactResult: 0,
+      scorer: 0,
+      assist: 0,
       base: 0,
       total: 0,
     };
@@ -90,14 +96,87 @@ export function scorePrediction(match: WorldCupMatch, prediction?: Prediction | 
     match.result.homeGoals - match.result.awayGoals === finalPrediction.homeGoals - finalPrediction.awayGoals ? 2 : 0;
   const exactPoints =
     match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals ? 5 : 0;
+  const scorerPoints = state ? scoreScorer(match, prediction, state) : 0;
+  const assistPoints = state ? scoreAssist(match, prediction, state) : 0;
   const base = outcomePoints + diffPoints + exactPoints;
   return {
     outcome: outcomePoints,
     goalDifference: diffPoints,
     exactResult: exactPoints,
+    scorer: scorerPoints,
+    assist: assistPoints,
     base,
-    total: base,
+    total: base + scorerPoints + assistPoints,
   };
+}
+
+function findSquadPlayerName(state: AppState, playerId: string | null | undefined): string | null {
+  if (!playerId) return null;
+  for (const profile of state.teamProfiles) {
+    const found = profile.squad.find((player) => player.id === playerId);
+    if (found) return found.name;
+  }
+  return null;
+}
+
+function matchGoalEvents(state: AppState, matchId: string, side: "home" | "away"): MatchEvent[] {
+  return state.matchEvents.filter(
+    (event) =>
+      event.matchId === matchId &&
+      event.teamSide === side &&
+      (event.type === "goal" || event.type === "penalty_goal"),
+  );
+}
+
+function countPredictedByName(state: AppState, predictedIds: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const id of predictedIds) {
+    const name = findSquadPlayerName(state, id);
+    if (!name) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function sumHits(predicted: Map<string, number>, actual: Map<string, number>): number {
+  let hits = 0;
+  for (const [name, predictedCount] of predicted) {
+    const actualCount = actual.get(name) ?? 0;
+    hits += Math.min(predictedCount, actualCount);
+  }
+  return hits;
+}
+
+function scoreScorer(match: WorldCupMatch, prediction: Prediction, state: AppState): number {
+  let hits = 0;
+  for (const side of ["home", "away"] as const) {
+    const predictedIds = side === "home" ? prediction.homeScorers ?? [] : prediction.awayScorers ?? [];
+    if (!predictedIds.length) continue;
+    const predicted = countPredictedByName(state, predictedIds);
+    const actual = new Map<string, number>();
+    for (const event of matchGoalEvents(state, match.id, side)) {
+      if (!event.playerName) continue;
+      actual.set(event.playerName, (actual.get(event.playerName) ?? 0) + 1);
+    }
+    hits += sumHits(predicted, actual);
+  }
+  return hits * 2;
+}
+
+function scoreAssist(match: WorldCupMatch, prediction: Prediction, state: AppState): number {
+  let hits = 0;
+  for (const side of ["home", "away"] as const) {
+    const predictedIds = side === "home" ? prediction.homeAssists ?? [] : prediction.awayAssists ?? [];
+    if (!predictedIds.length) continue;
+    const predicted = countPredictedByName(state, predictedIds);
+    const actual = new Map<string, number>();
+    for (const event of matchGoalEvents(state, match.id, side)) {
+      if (!event.assistPlayerName) continue;
+      actual.set(event.assistPlayerName, (actual.get(event.assistPlayerName) ?? 0) + 1);
+    }
+    hits += sumHits(predicted, actual);
+  }
+  return hits;
 }
 
 export function getPrediction(state: AppState, playerId: string, matchId: string) {
@@ -120,7 +199,7 @@ export function computeStandings(state: AppState): Standing[] {
       const prediction = getPrediction(state, player.id, match.id);
       if (prediction) predictions += 1;
       if (!hasFinalResult(match)) continue;
-      const score = scorePrediction(match, prediction);
+      const score = scorePrediction(match, prediction, state);
       totalPoints += score.total;
       if (score.exactResult) exactResults += 1;
       if (score.outcome) outcomeHits += 1;
@@ -145,7 +224,7 @@ export function computeStandings(state: AppState): Standing[] {
     if (!roundMatches.length) continue;
     const roundScores = rows.map((row) => {
       const points = roundMatches.reduce((sum, match) => {
-        return sum + scorePrediction(match, getPrediction(state, row.player.id, match.id)).total;
+        return sum + scorePrediction(match, getPrediction(state, row.player.id, match.id), state).total;
       }, 0);
       return { playerId: row.player.id, points };
     });

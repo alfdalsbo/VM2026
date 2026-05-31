@@ -1,5 +1,5 @@
-import { MatchCard } from "@/components/match-card";
-import { Notice, Panel } from "@/components/ui";
+import { MatchTipCard } from "@/components/match-tip-card";
+import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
 import { formatOsloDate } from "@/lib/format";
 import { getAppState } from "@/lib/state";
@@ -8,17 +8,39 @@ export const metadata = {
   title: "Kamper",
 };
 
-export default async function MatchesPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ status?: string; error?: string }>;
-}) {
-  const params = (await searchParams) ?? {};
+const osloKeyFormatter = new Intl.DateTimeFormat("en-CA", {
+  day: "2-digit",
+  month: "2-digit",
+  timeZone: "Europe/Oslo",
+  year: "numeric",
+});
+
+function osloDateKey(value: string) {
+  const parts = osloKeyFormatter.formatToParts(new Date(value));
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${lookup.year}-${lookup.month}-${lookup.day}`;
+}
+
+export default async function MatchesPage() {
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
-  const grouped = state.rounds.map((round) => ({
-    round,
-    matches: state.matches.filter((match) => match.roundId === round.id),
-  }));
+
+  const buckets = new Map<string, { kickoff: string; matches: typeof state.matches }>();
+  for (const match of state.matches) {
+    const key = osloDateKey(match.kickoffAt);
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.matches.push(match);
+    } else {
+      buckets.set(key, { kickoff: match.kickoffAt, matches: [match] });
+    }
+  }
+  const groupedByDate = [...buckets.entries()]
+    .map(([key, value]) => ({
+      key,
+      kickoff: value.kickoff,
+      matches: value.matches.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt)),
+    }))
+    .sort((a, b) => a.key.localeCompare(b.key));
 
   return (
     <div className="space-y-6">
@@ -30,22 +52,13 @@ export default async function MatchesPage({
         </p>
       </Panel>
 
-      <Notice message={params.status} />
-      <Notice message={params.error} tone="error" />
-
-      <div className="space-y-5">
-        {grouped.map(({ round, matches }) => (
-          <section key={round.id} className="space-y-3">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="eyebrow">{matches[0]?.stageLabel ?? "Runde"}</p>
-                <h2 className="text-2xl font-black capitalize">{formatOsloDate(round.startsAt)}</h2>
-              </div>
-              <p className="lead text-sm">{matches.length} kamp{matches.length === 1 ? "" : "er"}</p>
-            </div>
-            <div className="grid gap-4">
+      <div className="tip-day-list">
+        {groupedByDate.map(({ key, kickoff, matches }) => (
+          <section key={key} className="tip-day">
+            <h2 className="tip-day-heading">{formatOsloDate(kickoff)}</h2>
+            <div className="tip-day-matches">
               {matches.map((match) => (
-                <MatchCard key={match.id} match={match} player={player} state={state} showLockedPredictions />
+                <MatchTipCard key={match.id} match={match} player={player} state={state} />
               ))}
             </div>
           </section>

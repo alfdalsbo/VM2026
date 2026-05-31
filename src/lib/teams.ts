@@ -1,3 +1,4 @@
+import { getPlaceholderSquad } from "@/lib/placeholder-squads";
 import type { AppState, TeamProfile, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
 const placeholderPattern = /^([12][A-L]|3[A-L]+|W\d+|RU\d+)$/;
@@ -37,7 +38,7 @@ export function createTeamProfile(teamName: string): TeamProfile {
     city: null,
     foundationYear: null,
     officialSite: null,
-    squad: [],
+    squad: getPlaceholderSquad(teamName),
     fifaUrl: `https://www.fifa.com/en/search?query=${query}`,
     fotmobUrl: `https://www.fotmob.com/search?q=${query}`,
     source: null,
@@ -68,7 +69,7 @@ export function mergeTeamProfiles(seedProfiles: TeamProfile[], storedProfiles: T
             ...seed.coach,
             ...stored.coach,
           },
-          squad: stored.squad ?? seed.squad,
+          squad: stored.squad && stored.squad.length > 0 ? stored.squad : seed.squad,
         }
       : seed;
   });

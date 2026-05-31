@@ -15,8 +15,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --font-sans: var(--font-geist-sans), "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono Fallback", ui-monospace, monospace;
 }
 
 * {
@@ -1072,6 +1072,92 @@ select {
   color: #8f1d2a;
 }
 
+.flash-toast {
+  align-items: center;
+  animation: flash-toast-in 220ms ease-out;
+  background: #fffaf2;
+  border: 1px solid var(--line);
+  border-left: 4px solid #15803d;
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(47, 30, 18, 0.18);
+  display: flex;
+  gap: 12px;
+  left: 50%;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 12px 14px;
+  position: fixed;
+  top: 18px;
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 60;
+}
+
+.flash-toast-error {
+  border-left-color: var(--red);
+}
+
+.flash-toast-icon {
+  color: #15803d;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.flash-toast-error .flash-toast-icon {
+  color: var(--red-dark);
+}
+
+.flash-toast-message {
+  color: var(--foreground);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.flash-toast-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  margin-left: auto;
+  width: 28px;
+}
+
+.flash-toast-close:hover {
+  background: rgba(17, 19, 15, 0.06);
+  color: var(--foreground);
+}
+
+.flash-toast-closing {
+  animation: flash-toast-out 220ms ease-in forwards;
+}
+
+@keyframes flash-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes flash-toast-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -1177,6 +1263,475 @@ th {
   color: white;
   justify-self: start;
   padding: 5px 9px;
+}
+
+.tip-day-list {
+  display: grid;
+  gap: 22px;
+}
+
+.tip-day {
+  display: grid;
+  gap: 10px;
+}
+
+.tip-day-heading {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 4px 4px 2px;
+  text-transform: capitalize;
+}
+
+.tip-day-matches {
+  display: grid;
+  gap: 10px;
+}
+
+.tip-card {
+  background: rgba(255, 250, 242, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 34px rgba(47, 30, 18, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.tip-card-header {
+  align-items: center;
+  background: rgba(17, 19, 15, 0.03);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 8px 14px;
+}
+
+.tip-card-header-start {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tip-card-time {
+  background: rgba(17, 19, 15, 0.08);
+  border-radius: 6px;
+  color: #17130f;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.tip-card-status {
+  border-radius: 5px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 7px;
+  text-transform: uppercase;
+}
+
+.tip-card-channel {
+  align-items: center;
+  background: rgba(17, 19, 15, 0.08);
+  border-radius: 6px;
+  color: #17130f;
+  display: inline-flex;
+  font-size: 0.85rem;
+  font-weight: 800;
+  gap: 4px;
+  padding: 5px 9px;
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.tip-card-channel-nrk,
+.tip-card-channel-tv2 {
+  background: #fff;
+  border: 1px solid rgba(17, 19, 15, 0.12);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  height: 20px;
+  padding: 0 6px;
+}
+
+.tip-card-channel-logo {
+  display: block;
+  width: auto;
+}
+
+.tip-card-channel-logo-nrk {
+  height: 10px;
+}
+
+.tip-card-channel-logo-tv2 {
+  height: 14px;
+}
+
+.tip-card-body {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.tip-form {
+  display: grid;
+  gap: 10px;
+}
+
+.tip-teams {
+  display: grid;
+  gap: 8px;
+}
+
+.tip-team-row {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.tip-team-name {
+  align-items: center;
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 700;
+  gap: 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tip-team-flag {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.tip-stepper {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.tip-stepper-btn {
+  align-items: center;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(17, 19, 15, 0.06);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #17130f;
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  -webkit-tap-highlight-color: rgba(180, 35, 47, 0.18);
+  touch-action: manipulation;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  user-select: none;
+  width: 34px;
+}
+
+.tip-stepper-btn svg {
+  pointer-events: none;
+}
+
+.tip-stepper-btn:hover {
+  background: rgba(17, 19, 15, 0.12);
+}
+
+.tip-stepper-btn:active {
+  background: rgba(17, 19, 15, 0.18);
+}
+
+.tip-stepper-btn:focus-visible {
+  border-color: var(--red);
+  outline: none;
+}
+
+.tip-stepper-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  min-width: 28px;
+  text-align: center;
+}
+
+.tip-team-row-locked .tip-locked-scores {
+  align-items: center;
+  display: inline-flex;
+  font-weight: 900;
+  gap: 10px;
+}
+
+.tip-locked-actual {
+  background: rgba(21, 128, 61, 0.12);
+  border-radius: 6px;
+  color: #166534;
+  font-size: 1rem;
+  padding: 4px 10px;
+}
+
+.tip-locked-tip {
+  background: rgba(17, 19, 15, 0.06);
+  border-radius: 6px;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  padding: 4px 10px;
+}
+
+.tip-knockout {
+  border-top: 1px dashed var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  padding-top: 10px;
+}
+
+.tip-knockout label {
+  display: grid;
+  gap: 4px;
+}
+
+.tip-knockout span {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scorer-form {
+  display: grid;
+  gap: 18px;
+}
+
+.scorer-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.scorer-team {
+  background: rgba(255, 250, 242, 0.6);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.scorer-team-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.scorer-team-flag {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.scorer-team-name {
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: 900;
+  margin: 0;
+}
+
+.scorer-team-goals {
+  background: rgba(17, 19, 15, 0.06);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 8px;
+}
+
+.scorer-block {
+  display: grid;
+  gap: 8px;
+}
+
+.scorer-block-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.scorer-block-label {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scorer-block-counter {
+  background: rgba(17, 19, 15, 0.08);
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 3px 7px;
+}
+
+.scorer-block-counter-ok {
+  background: rgba(21, 128, 61, 0.14);
+  color: #166534;
+}
+
+.scorer-block-counter-warn {
+  background: rgba(180, 35, 47, 0.14);
+  color: var(--red-dark);
+}
+
+.scorer-list {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scorer-row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  padding: 8px 10px;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.scorer-row-active {
+  background: rgba(200, 145, 42, 0.12);
+  border-color: rgba(200, 145, 42, 0.4);
+}
+
+.scorer-position {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.scorer-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.scorer-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tip-stepper-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.tip-form-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.tip-form-note {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  max-width: 22rem;
+}
+
+.tip-submit {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.tip-result-line {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tip-result-line-muted {
+  font-weight: 600;
+}
+
+.tip-card-stage {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tip-card-link {
+  color: var(--red-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  text-transform: uppercase;
+  text-underline-offset: 3px;
+}
+
+.tip-card-link:hover {
+  color: var(--red);
+}
+
+@media (max-width: 640px) {
+  .tip-card-header {
+    gap: 6px;
+    padding: 7px 12px;
+    row-gap: 4px;
+  }
+
+  .tip-card-stage,
+  .tip-card-link {
+    font-size: 0.66rem;
+  }
+
+  .tip-card-body {
+    padding: 12px 12px 10px;
+  }
+
+  .tip-team-flag {
+    font-size: 1.25rem;
+  }
+
+  .tip-team-name {
+    font-size: 0.95rem;
+    gap: 8px;
+  }
+
+  .tip-stepper {
+    gap: 6px;
+  }
+
+  .tip-stepper-btn {
+    height: 38px;
+    width: 38px;
+  }
 }
 
 @media (max-width: 640px) {

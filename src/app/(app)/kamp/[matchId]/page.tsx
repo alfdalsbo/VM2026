@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { LineupBoard } from "@/components/lineup-board";
 import { MatchEvents } from "@/components/match-events";
 import { ProjectedStandings } from "@/components/projected-standings";
+import { ScorerAssistPicker } from "@/components/scorer-assist-picker";
 import { ShareButton } from "@/components/share-button";
 import { TeamLink } from "@/components/team-link";
 import { Panel } from "@/components/ui";
@@ -11,7 +12,7 @@ import { requireSession } from "@/lib/auth";
 import { displayMatchup, displayTeamName } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { createShareToken } from "@/lib/share-card";
-import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
+import { describePrediction, getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 import type { MatchStats } from "@/lib/types";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
@@ -27,13 +28,16 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
   if (!match) notFound();
 
   const prediction = getPrediction(state, player.id, match.id);
-  const score = scorePrediction(match, prediction);
+  const score = scorePrediction(match, prediction, state);
   const lineup = state.lineups.find((item) => item.matchId === match.id) ?? null;
   const stats = state.matchStats.find((item) => item.matchId === match.id) ?? null;
   const events = state.matchEvents
     .filter((event) => event.matchId === match.id)
     .sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.id.localeCompare(b.id));
   const isLive = match.status === "live" || match.status === "halftime";
+  const locked = isMatchLocked(match);
+  const homeSquad = state.teamProfiles.find((profile) => profile.teamName === match.homeTeam)?.squad ?? [];
+  const awaySquad = state.teamProfiles.find((profile) => profile.teamName === match.awayTeam)?.squad ?? [];
   const shareToken =
     match.result && prediction
       ? createShareToken({
@@ -72,6 +76,24 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
           )}
         </div>
       </Panel>
+
+      {!locked ? (
+        <Panel>
+          <div className="mb-4">
+            <p className="eyebrow">Scorere & assister</p>
+            <h2 className="section-title">Mine spillere</h2>
+            <p className="lead mt-2 max-w-2xl">
+              Tipp hvem som scorer og hvem som setter dem opp. Rekkefølgen spiller ingen rolle — en treff for hver gang riktig spiller står for et mål/assist.
+            </p>
+          </div>
+          <ScorerAssistPicker
+            match={match}
+            prediction={prediction}
+            homeSquad={homeSquad}
+            awaySquad={awaySquad}
+          />
+        </Panel>
+      ) : null}
 
       {isLive ? (
         <Panel>

@@ -3,7 +3,7 @@ export const footballCopy = {
   lockedLabel: "Kupongen er låst",
   lockError: "Dommeren har blåst i gang. Kupongen er låst.",
   predictionNote: "Kupongen kan justeres helt til avspark. Etter fløyta er den del av arkivet.",
-  predictionSaved: "Tipset er levert til dommerbordet.",
+  predictionSaved: "Tipset er levert til dommerbordet. Kupongen kan justeres helt til avspark.",
 };
 
 export const dashboardLines = [

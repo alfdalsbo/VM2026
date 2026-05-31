@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { MatchCard } from "@/components/match-card";
-import { Notice, Panel } from "@/components/ui";
+import { MatchTipCard } from "@/components/match-tip-card";
+import { Panel } from "@/components/ui";
 import { getAwards } from "@/lib/awards";
 import { requireSession } from "@/lib/auth";
 import { displayMatchup } from "@/lib/display";
@@ -32,12 +32,7 @@ function matchesOnDate(state: Awaited<ReturnType<typeof getAppState>>, key: stri
   return state.matches.filter((match) => osloDateKey(match.kickoffAt) === key).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
 }
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ status?: string; error?: string }>;
-}) {
-  const params = (await searchParams) ?? {};
+export default async function HomePage() {
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
   const standings = computeStandings(state);
   const now = new Date();
@@ -58,9 +53,6 @@ export default async function HomePage({
 
   return (
     <div className="dashboard space-y-5">
-      <Notice message={params.status} />
-      <Notice message={params.error} tone="error" />
-
       <section className="dashboard-top">
         <div>
           <p className="eyebrow">Tippekjelleren · VM 2026</p>
@@ -73,9 +65,9 @@ export default async function HomePage({
         </Link>
       </section>
 
-      <div className="grid gap-3">
+      <div className="tip-day-matches">
         {dashboardMatches.map((match) => (
-          <MatchCard key={match.id} match={match} player={player} state={state} />
+          <MatchTipCard key={match.id} match={match} player={player} state={state} />
         ))}
         {!dashboardMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>

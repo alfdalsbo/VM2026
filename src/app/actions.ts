@@ -69,26 +69,37 @@ function parseKnockoutResolution(formData: FormData): KnockoutPredictionResoluti
   throw new Error("Velg ekstraomganger eller straffer.");
 }
 
-export async function savePredictionAction(formData: FormData) {
+export type SavePredictionState = {
+  status?: string;
+  error?: string;
+};
+
+export async function savePredictionAction(
+  _prevState: SavePredictionState,
+  formData: FormData,
+): Promise<SavePredictionState> {
   const player = await requireSession();
   const matchId = field(formData, "matchId");
-  const next = safeNext(field(formData, "next"));
   const homeGoals = clampScore(formData.get("homeGoals"));
   const awayGoals = clampScore(formData.get("awayGoals"));
+  const homeScorers = formData.getAll("homeScorers").map((value) => String(value)).filter(Boolean);
+  const awayScorers = formData.getAll("awayScorers").map((value) => String(value)).filter(Boolean);
+  const homeAssists = formData.getAll("homeAssists").map((value) => String(value)).filter(Boolean);
+  const awayAssists = formData.getAll("awayAssists").map((value) => String(value)).filter(Boolean);
 
   if (homeGoals === null || awayGoals === null) {
-    redirect(`${next}?error=${encodeURIComponent("Skriv inn gyldig resultat først.")}#${matchId}`);
+    return { error: "Skriv inn gyldig resultat først." };
   }
 
   const state = await getAppState();
   const match = state.matches.find((item) => item.id === matchId);
-  if (!match) redirect(`${next}?error=${encodeURIComponent("Kampen finnes ikke.")}`);
+  if (!match) return { error: "Kampen finnes ikke." };
 
   let knockoutResolution: KnockoutPredictionResolution | null = null;
   try {
     knockoutResolution = isKnockoutMatch(match) && homeGoals === awayGoals ? parseKnockoutResolution(formData) : null;
   } catch (error) {
-    redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Sluttspilltipset mangler.")}#${matchId}`);
+    return { error: error instanceof Error ? error.message : "Sluttspilltipset mangler." };
   }
 
   const prediction: Prediction = {
@@ -98,17 +109,21 @@ export async function savePredictionAction(formData: FormData) {
     awayGoals,
     outcome: inferPredictionOutcome(homeGoals, awayGoals),
     knockoutResolution,
+    homeScorers: homeScorers.slice(0, homeGoals),
+    awayScorers: awayScorers.slice(0, awayGoals),
+    homeAssists: homeAssists.slice(0, homeGoals),
+    awayAssists: awayAssists.slice(0, awayGoals),
     updatedAt: new Date().toISOString(),
   };
 
   try {
     await saveAppState(savePredictionInState(state, prediction));
   } catch (error) {
-    redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Tipset gikk ikke gjennom.")}#${matchId}`);
+    return { error: error instanceof Error ? error.message : "Tipset gikk ikke gjennom." };
   }
 
   revalidateApp(matchId);
-  redirect(`${next}?status=${encodeURIComponent(footballCopy.predictionSaved)}#${matchId}`);
+  return { status: footballCopy.predictionSaved };
 }
 
 export async function toggleFollowMatchAction(formData: FormData) {

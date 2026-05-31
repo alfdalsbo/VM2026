@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DailyMatchImage } from "@/components/daily-match-image";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { Panel } from "@/components/ui";
 import { getAwards } from "@/lib/awards";
@@ -53,6 +54,8 @@ export default async function HomePage() {
 
   return (
     <div className="dashboard space-y-5">
+      <DailyMatchImage focusDate={focusKey} />
+
       <section className="dashboard-top">
         <div>
           <p className="eyebrow">Tippekjelleren · VM 2026</p>

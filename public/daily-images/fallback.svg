@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2f4a"/>
+      <stop offset="60%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#c8912a"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b5b2d"/>
+      <stop offset="100%" stop-color="#0d3318"/>
+    </linearGradient>
+    <pattern id="stripes" width="180" height="120" patternUnits="userSpaceOnUse">
+      <rect width="180" height="120" fill="url(#grass)"/>
+      <rect x="0" width="90" height="120" fill="#22743a" opacity="0.35"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="320" fill="url(#sky)"/>
+  <rect y="320" width="1200" height="160" fill="url(#stripes)"/>
+  <g opacity="0.18" fill="white">
+    <circle cx="160" cy="120" r="3"/>
+    <circle cx="280" cy="60" r="2"/>
+    <circle cx="420" cy="170" r="2"/>
+    <circle cx="900" cy="80" r="3"/>
+    <circle cx="1040" cy="200" r="2"/>
+    <circle cx="1140" cy="140" r="2"/>
+  </g>
+  <g transform="translate(600 290)">
+    <circle r="58" fill="#fffaf2" stroke="#17130f" stroke-width="3"/>
+    <path d="M0 -58 L17 -33 L-17 -33 Z" fill="#17130f"/>
+    <path d="M55 -18 L34 6 L48 30 Z" fill="#17130f"/>
+    <path d="M-55 -18 L-34 6 L-48 30 Z" fill="#17130f"/>
+    <path d="M33 38 L0 25 L-33 38 L-15 56 L15 56 Z" fill="#17130f"/>
+  </g>
+  <g transform="translate(160 360)" fill="rgba(255,250,242,0.85)">
+    <rect x="0" y="0" width="320" height="6" rx="3"/>
+    <rect x="0" y="14" width="220" height="6" rx="3"/>
+  </g>
+</svg>

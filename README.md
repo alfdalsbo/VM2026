@@ -24,6 +24,24 @@ npm run dev
 
 Åpne `http://localhost:3000`. Lokal standardkode er `Norge`.
 
+## Samarbeid og deploy
+
+Vercel-prosjektet heter `tippekjelleren` og er koblet til GitHub-repoet `alfdalsbo/VM2026`. Push/merge til `main` lager production deployment automatisk. Pull requests og andre branches får preview deployments.
+
+Fast produksjonsadresse er `https://tippekjelleren.vercel.app`. Den adressen er lagt inn som prosjektdomene i Vercel og skal derfor følge siste grønne production deployment automatisk.
+
+Normal flyt:
+
+```bash
+git checkout main
+git pull
+git checkout -b min-endring
+npm run verify
+git push -u origin min-endring
+```
+
+Test Vercel preview-URL-en fra PR-en før merge til `main`. Se `CONTRIBUTING.md` for feilsøking når en endring ikke vises i produksjon.
+
 ## Miljøvariabler
 
 ```bash

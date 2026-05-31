@@ -1,6 +1,5 @@
-import { Trophy } from "lucide-react";
-
 import { loginAction } from "@/app/actions";
+import { WorldCupTrophyIcon } from "@/components/icons/world-cup-trophy-icon";
 import { Notice } from "@/components/ui";
 import { publicPlayers } from "@/lib/auth";
 
@@ -36,7 +35,7 @@ export default async function LoginPage({
           <div className="w-full">
             <div className="mb-8 flex items-center gap-4">
               <span className="grid h-14 w-14 place-items-center rounded bg-[#b4232f] text-white">
-                <Trophy className="h-7 w-7" aria-hidden="true" />
+                <WorldCupTrophyIcon className="h-10 w-10" aria-hidden="true" />
               </span>
               <div>
                 <p className="eyebrow">Adgangskontroll</p>

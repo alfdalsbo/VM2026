@@ -48,7 +48,7 @@ export default async function MatchesPage() {
         <p className="eyebrow">VM 2026</p>
         <h1 className="section-title mt-2">Alle kampene</h1>
         <p className="lead mt-3 max-w-3xl">
-          Tipp resultat helt til avspark. Når dommeren blåser i gang, blir kupongen stående der som en liten offentlig karaktertest.
+          Lever resultattips helt til avspark. Når dommeren blåser i gang, blir kupongen stående der som en liten offentlig karaktertest.
         </p>
       </Panel>
 

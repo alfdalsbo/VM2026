@@ -77,7 +77,7 @@ export function ScorerAssistPicker({
   if (homeGoals + awayGoals === 0) {
     return (
       <p className="lead">
-        Tipp et resultat på <a className="tip-card-link" href="/kamper">kampoversikten</a> først,
+        Lever et resultattips på <a className="tip-card-link" href="/kamper">kampoversikten</a> først,
         så åpner scorer- og assist-valgene seg her.
       </p>
     );
@@ -128,7 +128,7 @@ export function ScorerAssistPicker({
       <div className="scorer-form-actions">
         <button className="btn-primary tip-submit" type="submit" disabled={pending} aria-live="polite">
           <TicketCheck className="h-4 w-4" aria-hidden="true" />
-          {pending ? "Tipper..." : "Lagre scorere"}
+          {pending ? "Tipper..." : "Lagre bonustips"}
         </button>
       </div>
     </form>

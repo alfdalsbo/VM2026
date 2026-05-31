@@ -283,6 +283,16 @@ export type Prediction = {
   updatedAt: string;
 };
 
+export type LiveRedCardPrediction = "yes" | "no";
+
+export type LivePotTip = {
+  playerId: string;
+  matchId: string;
+  yellowCardsTotal: number;
+  redCard: LiveRedCardPrediction;
+  updatedAt: string;
+};
+
 export type SyncState = {
   status: "idle" | "success" | "error" | "skipped";
   source: string | null;
@@ -322,6 +332,7 @@ export type AppState = {
   lineups: MatchLineup[];
   matchStats: MatchStats[];
   matchEvents: MatchEvent[];
+  livePotTips: LivePotTip[];
   followedMatches: FollowedMatch[];
   playerProfiles: PlayerProfile[];
   sync: SyncState;
@@ -341,13 +352,24 @@ export type ScoreBreakdown = {
   scorer: number;
   assist: number;
   base: number;
+  bonus: number;
   total: number;
+  grandTotal: number;
 };
 
 export type Standing = {
   rank: number;
   player: Player;
   totalPoints: number;
+  resultTipPoints: number;
+  bonusPoints: number;
+  matchBonusPoints: number;
+  liveBonusPoints: number;
+  bonusWinnerAward: number;
+  bonusTips: number;
+  liveTips: number;
+  liveExactYellows: number;
+  liveRedCardHits: number;
   predictions: number;
   exactResults: number;
   outcomeHits: number;

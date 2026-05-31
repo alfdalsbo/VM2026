@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
 export default async function ShareCardPage({ params }: { params: Promise<{ token: string }> }) {
   const data = await getShareData((await params).token);
   if (!data) notFound();
-  const score = scorePrediction(data.match, data.prediction);
+  const score = scorePrediction(data.match, data.prediction, data.state);
 
   return (
     <main className="share-page">
@@ -31,7 +31,7 @@ export default async function ShareCardPage({ params }: { params: Promise<{ toke
         <div className="share-score">
           <span>Tips: {describePrediction(data.prediction)}</span>
           <strong>Fasit: {formatScore(data.match.result?.homeGoals, data.match.result?.awayGoals)}</strong>
-          <em>{score.total} poeng</em>
+          <em>{score.total} resultattips{score.bonus ? ` · ${score.bonus} bonustips` : ""}</em>
         </div>
         <Link href="/login" className="btn-primary">Åpne Tippekjelleren</Link>
       </Panel>
@@ -48,5 +48,5 @@ async function getShareData(token: string) {
   if (!player || !match || !match.result) return null;
   const prediction = getPrediction(state, player.id, match.id);
   if (!prediction) return null;
-  return { player, match, prediction };
+  return { player, match, prediction, state };
 }

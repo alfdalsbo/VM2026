@@ -346,10 +346,9 @@ function LockedView({
       ) : null}
       {prediction && hasResult ? (
         <p className="tip-result-line">
-          {isLive ? "Hvis det blir slik:" : "Poeng:"} <strong>{score.total}</strong>
+          {isLive ? "Resultattips hvis det blir slik:" : "Resultattips:"} <strong>{score.total}</strong>
           {" "}· utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
-          {score.scorer ? `, scorer ${score.scorer}` : ""}
-          {score.assist ? `, assist ${score.assist}` : ""}
+          {score.bonus ? ` · bonustips ${score.bonus}` : ""}
         </p>
       ) : !prediction ? (
         <p className="tip-result-line tip-result-line-muted">

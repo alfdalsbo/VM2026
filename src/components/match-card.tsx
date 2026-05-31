@@ -19,7 +19,7 @@ export function MatchCard({
   showLockedPredictions?: boolean;
 }) {
   const prediction = getPrediction(state, player.id, match.id);
-  const score = scorePrediction(match, prediction);
+  const score = scorePrediction(match, prediction, state);
   const locked = isMatchLocked(match);
   const isLive = match.status === "live" || match.status === "halftime";
   const compactStatus = formatCompactMatchStatus(match);
@@ -50,7 +50,8 @@ export function MatchCard({
       <PredictionForm match={match} prediction={prediction} locked={locked} compact />
       {match.result && prediction ? (
         <p className="score-line">
-          {isLive ? "Hvis dette står:" : "Poeng:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
+          {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
+          {score.bonus ? <> · bonustips <strong>{score.bonus}</strong></> : null}
         </p>
       ) : null}
       {otherPredictions.length ? (

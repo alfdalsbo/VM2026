@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LineupBoard } from "@/components/lineup-board";
+import { LiveAutoRefresh } from "@/components/live-auto-refresh";
+import { LivePotCard } from "@/components/live-pot-card";
 import { MatchEvents } from "@/components/match-events";
 import { ProjectedStandings } from "@/components/projected-standings";
 import { ScorerAssistPicker } from "@/components/scorer-assist-picker";
@@ -46,10 +48,12 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
           issuedAt: Date.parse(prediction.updatedAt),
         })
       : null;
-  const shareText = `${player.shortName} tippet ${describePrediction(prediction)} på ${displayMatchup(match)}. Fasit: ${formatScore(match.result?.homeGoals, match.result?.awayGoals)}. ${score.total} poeng.`;
+  const shareText = `${player.shortName} tippet ${describePrediction(prediction)} på ${displayMatchup(match)}. Fasit: ${formatScore(match.result?.homeGoals, match.result?.awayGoals)}. ${score.total} resultattips, ${score.bonus} bonustips.`;
 
   return (
     <div className="space-y-6">
+      {isLive ? <LiveAutoRefresh /> : null}
+
       <Panel>
         <p className="eyebrow">Kamp {match.matchNumber}</p>
         <div className="teams-row">
@@ -67,7 +71,10 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
           <div>
             <p className="eyebrow">Ditt kort</p>
             <h1 className="section-title mt-2">{describePrediction(prediction)}</h1>
-            <p className="lead mt-3">{isLive ? "Poeng hvis dette står:" : "Poeng:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}</p>
+            <p className="lead mt-3">
+              {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
+              {score.bonus ? <> · bonustips <strong>{score.bonus}</strong></> : null}
+            </p>
           </div>
           {shareToken ? (
             <ShareButton path={`/kort/${shareToken}`} text={shareText} title="Tippekjelleren-kort" />
@@ -80,7 +87,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
       {!locked ? (
         <Panel>
           <div className="mb-4">
-            <p className="eyebrow">Scorere & assister</p>
+            <p className="eyebrow">Bonustips</p>
             <h2 className="section-title">Mine spillere</h2>
             <p className="lead mt-2 max-w-2xl">
               Tipp hvem som scorer og hvem som setter dem opp. Rekkefølgen spiller ingen rolle — en treff for hver gang riktig spiller står for et mål/assist.
@@ -93,6 +100,10 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
             awaySquad={awaySquad}
           />
         </Panel>
+      ) : null}
+
+      {isLive ? (
+        <LivePotCard match={match} player={player} state={state} />
       ) : null}
 
       {isLive ? (

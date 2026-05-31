@@ -28,7 +28,7 @@ export function ProjectedStandings({
   return (
     <div>
       <p className="eyebrow">Hvis dette står seg</p>
-      <h2 className="section-title mt-2">Live tabell</h2>
+      <h2 className="section-title mt-2">Live resultattips-tabell</h2>
       <div className="projection-table mt-4">
         {comparison.map((row) => (
           <div key={row.player.id} className={row.player.id === player.id ? "projection-me" : undefined}>

@@ -1,5 +1,22 @@
 import type { AppState, BroadcastInfo, MatchEvent, Prediction, PredictionOutcome, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
 import { footballCopy } from "@/lib/football-jargon";
+import { scoreLivePotTip } from "@/lib/live-pot";
+import { BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
+
+export { BONUS_TIPS_WINNER_AWARD };
+
+export type BonusTipsStanding = {
+  rank: number;
+  player: Standing["player"];
+  points: number;
+  matchBonusPoints: number;
+  liveBonusPoints: number;
+  tips: number;
+  liveTips: number;
+  exactYellows: number;
+  redCardHits: number;
+  resultAward: number;
+};
 
 export function inferPredictionOutcome(homeGoals: number, awayGoals: number): PredictionOutcome {
   if (homeGoals > awayGoals) return "home";
@@ -73,6 +90,11 @@ export function hasFinalResult(match: WorldCupMatch) {
   return Boolean(match.result && (match.status === "finished" || match.result.source === "manual" || !match.result.source));
 }
 
+export function isTournamentComplete(state: AppState) {
+  const countedMatches = state.matches.filter((match) => match.status !== "cancelled" && match.status !== "postponed");
+  return countedMatches.length > 0 && countedMatches.every(hasFinalResult);
+}
+
 export function scorePrediction(
   match: WorldCupMatch,
   prediction?: Prediction | null,
@@ -86,19 +108,26 @@ export function scorePrediction(
       scorer: 0,
       assist: 0,
       base: 0,
+      bonus: 0,
       total: 0,
+      grandTotal: 0,
     };
   }
 
   const finalPrediction = predictionFinalScore(prediction);
-  const outcomePoints = actualOutcome(match) === predictionOutcome(prediction) ? 3 : 0;
+  const outcomePoints = actualOutcome(match) === predictionOutcome(prediction) ? SCORE_RULES.resultTips.outcome : 0;
   const diffPoints =
-    match.result.homeGoals - match.result.awayGoals === finalPrediction.homeGoals - finalPrediction.awayGoals ? 2 : 0;
+    match.result.homeGoals - match.result.awayGoals === finalPrediction.homeGoals - finalPrediction.awayGoals
+      ? SCORE_RULES.resultTips.goalDifference
+      : 0;
   const exactPoints =
-    match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals ? 5 : 0;
+    match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals
+      ? SCORE_RULES.resultTips.exactResult
+      : 0;
   const scorerPoints = state ? scoreScorer(match, prediction, state) : 0;
   const assistPoints = state ? scoreAssist(match, prediction, state) : 0;
   const base = outcomePoints + diffPoints + exactPoints;
+  const bonus = scorerPoints + assistPoints;
   return {
     outcome: outcomePoints,
     goalDifference: diffPoints,
@@ -106,7 +135,9 @@ export function scorePrediction(
     scorer: scorerPoints,
     assist: assistPoints,
     base,
-    total: base + scorerPoints + assistPoints,
+    bonus,
+    total: base,
+    grandTotal: base + bonus,
   };
 }
 
@@ -160,7 +191,7 @@ function scoreScorer(match: WorldCupMatch, prediction: Prediction, state: AppSta
     }
     hits += sumHits(predicted, actual);
   }
-  return hits * 2;
+  return hits * SCORE_RULES.bonusTips.scorer;
 }
 
 function scoreAssist(match: WorldCupMatch, prediction: Prediction, state: AppState): number {
@@ -176,7 +207,7 @@ function scoreAssist(match: WorldCupMatch, prediction: Prediction, state: AppSta
     }
     hits += sumHits(predicted, actual);
   }
-  return hits;
+  return hits * SCORE_RULES.bonusTips.assist;
 }
 
 export function getPrediction(state: AppState, playerId: string, matchId: string) {
@@ -188,28 +219,68 @@ export function computeStandings(state: AppState): Standing[] {
     .filter(hasFinalResult)
     .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))[0]?.roundId;
 
+  const tournamentComplete = isTournamentComplete(state);
   const rows = state.players.map((player) => {
-    let totalPoints = 0;
+    let resultTipPoints = 0;
+    let matchBonusPoints = 0;
+    let liveBonusPoints = 0;
     let exactResults = 0;
     let outcomeHits = 0;
     let predictions = 0;
+    let bonusTips = 0;
+    let liveTips = 0;
+    let liveExactYellows = 0;
+    let liveRedCardHits = 0;
     let lastRoundPoints = 0;
 
     for (const match of state.matches) {
       const prediction = getPrediction(state, player.id, match.id);
       if (prediction) predictions += 1;
+      if (
+        prediction?.homeScorers?.length ||
+        prediction?.awayScorers?.length ||
+        prediction?.homeAssists?.length ||
+        prediction?.awayAssists?.length
+      ) {
+        bonusTips += 1;
+      }
       if (!hasFinalResult(match)) continue;
       const score = scorePrediction(match, prediction, state);
-      totalPoints += score.total;
+      resultTipPoints += score.total;
+      matchBonusPoints += score.bonus;
       if (score.exactResult) exactResults += 1;
       if (score.outcome) outcomeHits += 1;
       if (match.roundId === lastRoundId) lastRoundPoints += score.total;
     }
 
+    for (const tip of state.livePotTips.filter((item) => item.playerId === player.id)) {
+      const match = state.matches.find((item) => item.id === tip.matchId);
+      if (!match) continue;
+      const score = scoreLivePotTip(match, tip, state);
+      liveBonusPoints += score.total;
+      liveTips += 1;
+      bonusTips += 1;
+      if (score.yellowCards === 3) liveExactYellows += 1;
+      if ((tip.redCard === "yes" && score.actualRedCard) || (tip.redCard === "no" && score.settled && !score.actualRedCard)) {
+        liveRedCardHits += 1;
+      }
+    }
+
+    const bonusPoints = matchBonusPoints + liveBonusPoints;
+
     return {
       rank: 0,
       player,
-      totalPoints,
+      totalPoints: resultTipPoints,
+      resultTipPoints,
+      bonusPoints,
+      matchBonusPoints,
+      liveBonusPoints,
+      bonusWinnerAward: 0,
+      bonusTips,
+      liveTips,
+      liveExactYellows,
+      liveRedCardHits,
       predictions,
       exactResults,
       outcomeHits,
@@ -217,6 +288,19 @@ export function computeStandings(state: AppState): Standing[] {
       lastRoundPoints,
     };
   });
+
+  if (tournamentComplete) {
+    const bonusRows = rows.filter((row) => row.bonusTips > 0);
+    const bestBonusScore = bonusRows.length ? Math.max(...bonusRows.map((row) => row.bonusPoints)) : null;
+    if (bestBonusScore !== null) {
+      rows
+        .filter((row) => row.bonusPoints === bestBonusScore && row.bonusTips > 0)
+        .forEach((row) => {
+          row.bonusWinnerAward = BONUS_TIPS_WINNER_AWARD;
+          row.totalPoints = row.resultTipPoints + row.bonusWinnerAward;
+        });
+    }
+  }
 
   const roundWins = new Map<string, number>();
   for (const round of state.rounds) {
@@ -255,6 +339,42 @@ export function computeStandings(state: AppState): Standing[] {
     if (row.totalPoints !== previousPoints) previousRank = index + 1;
     row.rank = previousRank;
     previousPoints = row.totalPoints;
+  });
+
+  return rows;
+}
+
+export function computeBonusTipStandings(state: AppState): BonusTipsStanding[] {
+  const rows = computeStandings(state).map((row) => ({
+    rank: 0,
+    player: row.player,
+    points: row.bonusPoints,
+    matchBonusPoints: row.matchBonusPoints,
+    liveBonusPoints: row.liveBonusPoints,
+    tips: row.bonusTips,
+    liveTips: row.liveTips,
+    exactYellows: row.liveExactYellows,
+    redCardHits: row.liveRedCardHits,
+    resultAward: row.bonusWinnerAward,
+  }));
+
+  rows.sort((a, b) => {
+    return (
+      b.points - a.points ||
+      b.matchBonusPoints - a.matchBonusPoints ||
+      b.liveBonusPoints - a.liveBonusPoints ||
+      b.exactYellows - a.exactYellows ||
+      b.redCardHits - a.redCardHits ||
+      a.player.shortName.localeCompare(b.player.shortName, "nb")
+    );
+  });
+
+  let previousPoints: number | null = null;
+  let previousRank = 0;
+  rows.forEach((row, index) => {
+    if (row.points !== previousPoints) previousRank = index + 1;
+    row.rank = previousRank;
+    previousPoints = row.points;
   });
 
   return rows;

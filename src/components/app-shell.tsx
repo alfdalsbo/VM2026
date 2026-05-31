@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { LogOut, Trophy } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import { logoutAction } from "@/app/actions";
+import { WorldCupTrophyIcon } from "@/components/icons/world-cup-trophy-icon";
 import type { Player } from "@/lib/types";
 
 const nav = [
   { href: "/", label: "Hjem" },
   { href: "/kamper", label: "Kamper" },
+  { href: "/live", label: "Bonustips" },
   { href: "/vm", label: "VM" },
-  { href: "/tabell", label: "Tabell" },
+  { href: "/tabell", label: "Resultattips" },
   { href: "/profil", label: "Profil" },
 ];
 
@@ -19,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode; player: Play
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded bg-[#b4232f] text-white shadow-sm">
-              <Trophy className="h-5 w-5" aria-hidden="true" />
+              <WorldCupTrophyIcon className="h-7 w-7" aria-hidden="true" />
             </span>
             <span className="min-w-0">
               <span className="block truncate font-black uppercase tracking-[0.08em]">Tippekjelleren</span>

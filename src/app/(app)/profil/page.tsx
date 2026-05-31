@@ -43,9 +43,11 @@ export default async function ProfilePage() {
         </p>
       </Panel>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-6">
         <Stat label="Plass" value={`#${standing?.rank ?? "-"}`} />
-        <Stat label="Poeng" value={standing?.totalPoints ?? 0} />
+        <Stat label="Resultattips" value={standing?.resultTipPoints ?? 0} />
+        <Stat label="Bonustips" value={standing?.bonusPoints ?? 0} />
+        <Stat label="Bonuspremie" value={standing?.bonusWinnerAward ?? 0} />
         <Stat label="Treffprosent" value={`${hitRate}%`} />
         <Stat label="Eksakte" value={standing?.exactResults ?? 0} />
       </div>
@@ -77,13 +79,14 @@ export default async function ProfilePage() {
                 <th>Tid</th>
                 <th>Tips</th>
                 <th>Fasit</th>
-                <th>Poeng</th>
+                <th>Resultattips</th>
+                <th>Bonustips</th>
               </tr>
             </thead>
             <tbody>
               {history.map((match) => {
                 const prediction = getPrediction(state, player.id, match.id);
-                const score = scorePrediction(match, prediction);
+                const score = scorePrediction(match, prediction, state);
                 return (
                   <tr key={match.id}>
                     <td>{displayMatchup(match)}</td>
@@ -91,6 +94,7 @@ export default async function ProfilePage() {
                     <td>{describePrediction(prediction)}</td>
                     <td>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</td>
                     <td className="font-black">{score.total}</td>
+                    <td>{score.bonus}</td>
                   </tr>
                 );
               })}

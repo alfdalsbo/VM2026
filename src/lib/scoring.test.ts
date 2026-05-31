@@ -60,7 +60,7 @@ describe("scorePrediction", () => {
       updatedBy: "alf",
     }).matches.find((item) => item.id === "m073");
 
-    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, knockoutResolution: { method: "penalties", winner: "away" } })).outcome).toBe(3);
+    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, knockoutResolution: { method: "penalties", winner: "away" } })).outcome).toBe(4);
     expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, knockoutResolution: { method: "penalties", winner: "home" } })).outcome).toBe(0);
   });
 

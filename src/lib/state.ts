@@ -8,7 +8,7 @@ import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
 import { derivePlayerProfilesFromState } from "@/lib/player-profiles";
 import { players } from "@/lib/players";
 import { createSeedTeamProfiles, mergeTeamProfiles } from "@/lib/teams";
-import type { AppState, LineupPlayer, MatchLineup, MatchEvent, PlayerProfile, Prediction, SyncState, TournamentStats } from "@/lib/types";
+import type { AppState, LineupPlayer, MatchLineup, MatchEvent, LivePotTip, PlayerProfile, Prediction, SyncState, TournamentStats } from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
 
 const stateFile = process.env.VERCEL
@@ -44,7 +44,7 @@ export function emptyTournamentStats(): TournamentStats {
 
 export function initialState(): AppState {
   const state: AppState = {
-    version: 4,
+    version: 5,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
@@ -53,6 +53,7 @@ export function initialState(): AppState {
     lineups: [],
     matchStats: [],
     matchEvents: [],
+    livePotTips: [],
     followedMatches: [],
     playerProfiles: [],
     sync: emptySyncState(),
@@ -85,6 +86,10 @@ function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[
             winner: prediction.advancingTeam,
           }
         : null),
+    homeScorers: prediction.homeScorers ?? [],
+    awayScorers: prediction.awayScorers ?? [],
+    homeAssists: prediction.homeAssists ?? [],
+    awayAssists: prediction.awayAssists ?? [],
     updatedAt: prediction.updatedAt,
   }));
 }
@@ -170,7 +175,7 @@ function mergeWithSeed(state: AppState): AppState {
 
   const merged: AppState = {
     ...state,
-    version: 4,
+    version: 5,
     players,
     rounds: worldCupRounds,
     matches,
@@ -179,6 +184,7 @@ function mergeWithSeed(state: AppState): AppState {
     lineups: normalizeLineups((state.lineups ?? []) as StoredLineup[], matches),
     matchStats: state.matchStats ?? [],
     matchEvents: (state.matchEvents ?? []) as MatchEvent[],
+    livePotTips: (state.livePotTips ?? []) as LivePotTip[],
     followedMatches: state.followedMatches ?? [],
     playerProfiles: (state.playerProfiles ?? []) as PlayerProfile[],
     sync: state.sync ?? emptySyncState(),

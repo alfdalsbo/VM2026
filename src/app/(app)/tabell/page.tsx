@@ -1,9 +1,10 @@
 import { Panel } from "@/components/ui";
-import { computeStandings } from "@/lib/scoring";
+import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
+import { BONUS_TIPS_WINNER_AWARD, computeStandings } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
-  title: "Tabell",
+  title: "Resultattips",
 };
 
 export default async function TablePage() {
@@ -13,12 +14,14 @@ export default async function TablePage() {
   return (
     <div className="space-y-6">
       <Panel>
-        <p className="eyebrow">Offisiell stilling</p>
-        <h1 className="section-title mt-2">Tabellen</h1>
+        <p className="eyebrow">Resultattips</p>
+        <h1 className="section-title mt-2">Resultattips-tabellen</h1>
         <p className="lead mt-3 max-w-3xl">
-          Sortert etter poeng, deretter eksakte resultater og riktig utfall. Med andre ord: akkurat nok system til at alle kan være uenige med verdighet.
+          Sortert etter resultatpoeng, deretter eksakte resultater og riktig utfall. Bonustips har egen tabell og egen score; vinneren får foreløpig {BONUS_TIPS_WINNER_AWARD} poeng ved VM-slutt.
         </p>
       </Panel>
+
+      <ScoringRulesPanel />
 
       <Panel>
         <div className="table-wrap">
@@ -27,7 +30,9 @@ export default async function TablePage() {
               <tr>
                 <th>#</th>
                 <th>Spiller</th>
-                <th>Poeng</th>
+                <th>Resultattips</th>
+                <th>Bonuspremie</th>
+                <th>Sum</th>
                 <th>Tips</th>
                 <th>Eksakte</th>
                 <th>Utfall</th>
@@ -46,6 +51,8 @@ export default async function TablePage() {
                       <span className="font-bold">{standing.player.shortName}</span>
                     </div>
                   </td>
+                  <td className="font-black">{standing.resultTipPoints}</td>
+                  <td>{standing.bonusWinnerAward}</td>
                   <td className="font-black">{standing.totalPoints}</td>
                   <td>{standing.predictions}</td>
                   <td>{standing.exactResults}</td>

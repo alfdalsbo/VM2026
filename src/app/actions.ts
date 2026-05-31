@@ -7,10 +7,11 @@ import { createSession, destroySession, isCorrectPasscode, requireSession } from
 import { footballCopy } from "@/lib/football-jargon";
 import { toggleFollowedMatchInState } from "@/lib/followed-matches";
 import { clampScore } from "@/lib/format";
+import { saveLivePotTipInState } from "@/lib/live-pot";
 import { getPlayer } from "@/lib/players";
 import { inferPredictionOutcome, isKnockoutMatch, savePredictionInState } from "@/lib/scoring";
 import { getAppState, saveAppState } from "@/lib/state";
-import type { KnockoutPredictionResolution, Prediction } from "@/lib/types";
+import type { KnockoutPredictionResolution, LivePotTip, LiveRedCardPrediction, Prediction } from "@/lib/types";
 
 function field(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -31,6 +32,7 @@ function revalidateApp(matchId?: string) {
   revalidatePath("/tabell");
   revalidatePath("/profil");
   revalidatePath("/vm");
+  revalidatePath("/live");
   if (matchId) revalidatePath(`/kamp/${matchId}`);
 }
 
@@ -70,6 +72,11 @@ function parseKnockoutResolution(formData: FormData): KnockoutPredictionResoluti
 }
 
 export type SavePredictionState = {
+  status?: string;
+  error?: string;
+};
+
+export type SaveLivePotTipState = {
   status?: string;
   error?: string;
 };
@@ -124,6 +131,38 @@ export async function savePredictionAction(
 
   revalidateApp(matchId);
   return { status: footballCopy.predictionSaved };
+}
+
+export async function saveLivePotTipAction(
+  _prevState: SaveLivePotTipState,
+  formData: FormData,
+): Promise<SaveLivePotTipState> {
+  const player = await requireSession();
+  const matchId = field(formData, "matchId");
+  const yellowCardsTotal = Number(field(formData, "yellowCardsTotal"));
+  const redCard = field(formData, "redCard") as LiveRedCardPrediction;
+
+  if (!Number.isInteger(yellowCardsTotal)) {
+    return { error: "Skriv inn et helt antall gule kort." };
+  }
+
+  const tip: LivePotTip = {
+    playerId: player.id,
+    matchId,
+    yellowCardsTotal,
+    redCard,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const state = await getAppState();
+    await saveAppState(saveLivePotTipInState(state, tip));
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Bonustipset gikk ikke gjennom." };
+  }
+
+  revalidateApp(matchId);
+  return { status: "Bonustipset er notert i dommerboka." };
 }
 
 export async function toggleFollowMatchAction(formData: FormData) {

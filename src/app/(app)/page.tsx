@@ -2,8 +2,9 @@ import Link from "next/link";
 
 import { DailyMatchImage } from "@/components/daily-match-image";
 import { MatchTipCard } from "@/components/match-tip-card";
+import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
 import { Panel } from "@/components/ui";
-import { getAwards } from "@/lib/awards";
+import { getAwards, getMatchdayWinner } from "@/lib/awards";
 import { requireSession } from "@/lib/auth";
 import { displayMatchup } from "@/lib/display";
 import { footballCopy, pickDashboardLine } from "@/lib/football-jargon";
@@ -51,6 +52,7 @@ export default async function HomePage() {
     .slice(0, 4);
   const topStandings = standings.slice(0, 5);
   const awards = getAwards(state);
+  const matchdayWinner = getMatchdayWinner(state, now);
 
   return (
     <div className="dashboard space-y-5">
@@ -75,6 +77,30 @@ export default async function HomePage() {
         {!dashboardMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
+        <Panel className="matchday-winner-panel">
+          <p className="eyebrow">Resultattips</p>
+          <h2 className="section-title mt-2">{matchdayWinner?.title ?? "Rundevinner venter"}</h2>
+          {matchdayWinner ? (
+            <>
+              <p className="lead mt-3">
+                {formatWinnerNames(matchdayWinner.winners)} tok {formatWinnerPoints(matchdayWinner.winners)} på {matchdayWinner.dateLabel}.
+                {matchdayWinner.isFallback ? " Gårsdagen hadde ingen ferdigspilte kamper, så kjelleren hentet siste kampdag." : ""}
+              </p>
+              <div className="matchday-winner-meta">
+                <span>{matchdayWinner.matchCount} kamper</span>
+                <span>{formatExactResults(matchdayWinner.winners)}</span>
+              </div>
+              <p className="matchday-winner-games">{matchdayWinner.matches.join(" · ")}</p>
+            </>
+          ) : (
+            <p className="lead mt-3">Ingen ferdige kamper ennå. Pokalen står og later som den er tung.</p>
+          )}
+        </Panel>
+
+        <ScoringRulesPanel />
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
         <Panel>
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -87,11 +113,11 @@ export default async function HomePage() {
           <div className="space-y-3">
             {completedMatches.map((match) => {
               const prediction = getPrediction(state, player.id, match.id);
-              const score = scorePrediction(match, prediction);
+              const score = scorePrediction(match, prediction, state);
               return (
                 <Link key={match.id} href={`/kamp/${match.id}`} className="result-row">
                   <strong>{displayMatchup(match)}</strong>
-                  <em>{formatScore(match.result?.homeGoals, match.result?.awayGoals)} · {score.total} p</em>
+                  <em>{formatScore(match.result?.homeGoals, match.result?.awayGoals)} · resultattips {score.total} p{score.bonus ? ` · bonustips ${score.bonus}` : ""}</em>
                 </Link>
               );
             })}
@@ -102,10 +128,10 @@ export default async function HomePage() {
         <Panel>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="eyebrow">Tabell</p>
+              <p className="eyebrow">Resultattips</p>
               <h2 className="section-title">Topp 5</h2>
             </div>
-            <Link href="/tabell" className="btn-secondary">Tabell</Link>
+            <Link href="/tabell" className="btn-secondary">Resultattips</Link>
           </div>
           <div className="standings-mini">
             {topStandings.map((standing) => (
@@ -154,4 +180,22 @@ export default async function HomePage() {
       </Panel>
     </div>
   );
+}
+
+function formatWinnerNames(winners: NonNullable<ReturnType<typeof getMatchdayWinner>>["winners"]) {
+  if (!winners.length) return "Ingen";
+  if (winners.length === 1) return winners[0].playerName;
+  if (winners.length === 2) return `${winners[0].playerName} og ${winners[1].playerName}`;
+  return `${winners.slice(0, -1).map((winner) => winner.playerName).join(", ")} og ${winners.at(-1)?.playerName}`;
+}
+
+function formatWinnerPoints(winners: NonNullable<ReturnType<typeof getMatchdayWinner>>["winners"]) {
+  if (!winners.length) return "0 poeng";
+  return `${winners[0].points} poeng`;
+}
+
+function formatExactResults(winners: NonNullable<ReturnType<typeof getMatchdayWinner>>["winners"]) {
+  if (!winners.length) return "0 eksakte";
+  const exact = winners[0].exactResults;
+  return `${exact} eksakt${exact === 1 ? "" : "e"}`;
 }

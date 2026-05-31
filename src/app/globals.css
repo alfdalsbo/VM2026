@@ -1061,67 +1061,34 @@ select {
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 18px 40px rgba(47, 30, 18, 0.12);
-  margin: 0;
+  margin: 0 0 12px;
   overflow: hidden;
   position: relative;
 }
 
+@media (max-width: 640px) {
+  .daily-image {
+    margin-bottom: 22px;
+  }
+}
+
+.daily-image[data-interactive="true"] {
+  cursor: pointer;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .daily-image-photo {
-  aspect-ratio: 5 / 2;
+  aspect-ratio: 2 / 1;
   display: block;
   height: auto;
   object-fit: cover;
   object-position: center;
+  -webkit-user-drag: none;
   width: 100%;
 }
 
-.daily-image-caption {
-  background: linear-gradient(180deg, rgba(17, 19, 15, 0) 0%, rgba(17, 19, 15, 0.85) 100%);
-  bottom: 0;
-  color: #fffaf2;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  left: 0;
-  padding: 18px 18px 14px;
-  position: absolute;
-  right: 0;
-}
-
-.daily-image-caption-text {
-  font-size: clamp(1.05rem, 2.6vw, 1.45rem);
-  font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1.2;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-}
-
-.daily-image-credit {
-  color: rgba(255, 250, 242, 0.78);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.daily-image-credit a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.daily-image-credit a:hover {
-  color: #fffaf2;
-}
-
-@media (max-width: 640px) {
-  .daily-image-photo {
-    aspect-ratio: 4 / 3;
-  }
-
-  .daily-image-caption {
-    padding: 14px 14px 12px;
-  }
-}
 
 .notice {
   background: rgba(15, 47, 74, 0.08);

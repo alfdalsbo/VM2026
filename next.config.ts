@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.1.80"],
+  // Ensure the daily-images folder is bundled with server functions so the
+  // dashboard can read its contents at runtime on Vercel.
+  outputFileTracingIncludes: {
+    "/*": ["./public/daily-images/**"],
+  },
   images: {
     remotePatterns: [
       {

@@ -1,72 +1,46 @@
-export type DailyImage = {
-  /**
-   * Path under /public, e.g. "/daily-images/maradona.jpg".
-   */
-  src: string;
-  /**
-   * Short caption shown over the image.
-   */
-  caption: string;
-  /**
-   * Photo credit line. Required for Wikimedia Commons / CC photos.
-   */
-  attribution?: string;
-  /**
-   * Optional URL to the source / license terms.
-   */
-  source?: string;
-};
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".svg"]);
+const FALLBACK_FILE = "fallback.svg";
+const IMAGE_DIR = join(process.cwd(), "public", "daily-images");
+
+function isImageFile(name: string): boolean {
+  const dot = name.lastIndexOf(".");
+  if (dot < 0) return false;
+  return IMAGE_EXTENSIONS.has(name.slice(dot).toLowerCase());
+}
+
+function listImageFiles(): string[] {
+  try {
+    return readdirSync(IMAGE_DIR)
+      .filter(isImageFile)
+      .sort((a, b) => a.localeCompare(b, "nb"));
+  } catch {
+    return [];
+  }
+}
 
 /**
- * Curated bank of images used as the "dagens bilde" banner on the dashboard.
- * - Add free-licensed images here with proper attribution.
- * - Multiple entries per team are fine; the rotator picks deterministically by date.
+ * Every image found in public/daily-images/ (fallback.svg only when the folder
+ * is otherwise empty). Returns public paths ready for an <img src>.
  */
-export const dailyImages: DailyImage[] = [
-  {
-    src: "/daily-images/argentina-maradona.jpg",
-    caption: "Diego Maradona under VM 2006 i Leipzig.",
-    attribution: "Armando Tovar (CC BY 2.0)",
-    source: "https://commons.wikimedia.org/wiki/File:Diego_Maradona.jpg",
-  },
-  {
-    src: "/daily-images/brasil-pele.jpg",
-    caption: "Pelé i Brasil-drakten — El Gráfico, 1970.",
-    attribution: "El Gráfico (public domain)",
-    source: "https://commons.wikimedia.org/wiki/File:Pele_con_brasil_(cropped).jpg",
-  },
-  {
-    src: "/daily-images/nederland-cruyff.jpg",
-    caption: "Johan Cruyff på Schiphol, november 1973.",
-    attribution: "Rob Mieremet / Anefo (CC0)",
-    source: "https://commons.wikimedia.org/wiki/File:Johan_Cruyff_met_dochter_Chantal_op_de_arm,_Bestanddeelnr_926-8208.jpg",
-  },
-  {
-    src: "/daily-images/tyskland-beckenbauer.jpg",
-    caption: "Franz Beckenbauer — Der Kaiser, 2006.",
-    attribution: "Florian K (CC BY-SA 3.0)",
-    source: "https://commons.wikimedia.org/wiki/File:Franz_Beckenbauer.JPG",
-  },
-  {
-    src: "/daily-images/frankrike-zidane.jpg",
-    caption: "Zinedine Zidane, VM-finalen 2006 i Berlin.",
-    attribution: "David Ruddell (CC BY 2.0)",
-    source: "https://commons.wikimedia.org/wiki/File:Zinedine_zidane_wcf_2006-edit.jpg",
-  },
-  {
-    src: "/daily-images/fallback.svg",
-    caption: "VM 2026 — vi varmer opp.",
-  },
-];
+export function getDailyImages(): string[] {
+  const files = listImageFiles();
+  const gallery = files.filter((file) => file !== FALLBACK_FILE);
+  const pool = gallery.length > 0 ? gallery : files;
+  return pool.map((file) => `/daily-images/${encodeURIComponent(file)}`);
+}
 
 /**
  * Deterministic rotation across the full image bank — same date always picks
  * the same image, so alle ser samme bilde samme dag.
  */
-export function pickDailyImage(today: string): DailyImage | null {
-  if (dailyImages.length === 0) return null;
+export function pickDailyImage(today: string): string | null {
+  const images = getDailyImages();
+  if (images.length === 0) return null;
   const seed = hashString(today);
-  return dailyImages[seed % dailyImages.length];
+  return images[seed % images.length];
 }
 
 function hashString(value: string): number {

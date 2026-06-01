@@ -108,8 +108,7 @@ const subdivisionFlags: Record<string, string> = {
   "GB-WLS": "\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}",
 };
 
-export function teamFlagEmoji(teamName: string): string {
-  const code = teamCountryCodes[teamName];
+export function flagEmojiFromCode(code: string | null | undefined): string {
   if (!code) return "";
   if (subdivisionFlags[code]) return subdivisionFlags[code];
   if (code.length !== 2) return "";
@@ -119,6 +118,34 @@ export function teamFlagEmoji(teamName: string): string {
     base + upper.charCodeAt(0) - 65,
     base + upper.charCodeAt(1) - 65,
   );
+}
+
+export function teamFlagEmoji(teamName: string): string {
+  return flagEmojiFromCode(teamCountryCodes[teamName]);
+}
+
+const HOST_BY_CITY: Record<string, { country: string; code: string }> = {
+  Atlanta: { country: "USA", code: "US" },
+  Boston: { country: "USA", code: "US" },
+  Dallas: { country: "USA", code: "US" },
+  Houston: { country: "USA", code: "US" },
+  "Kansas City": { country: "USA", code: "US" },
+  "Los Angeles": { country: "USA", code: "US" },
+  Miami: { country: "USA", code: "US" },
+  "New York": { country: "USA", code: "US" },
+  Philadelphia: { country: "USA", code: "US" },
+  "San Francisco Bay Area": { country: "USA", code: "US" },
+  Seattle: { country: "USA", code: "US" },
+  Toronto: { country: "Canada", code: "CA" },
+  Vancouver: { country: "Canada", code: "CA" },
+  "Mexico City": { country: "Mexico", code: "MX" },
+  Guadalajara: { country: "Mexico", code: "MX" },
+  Monterrey: { country: "Mexico", code: "MX" },
+};
+
+export function hostForCity(city: string | null | undefined): { country: string; code: string } | null {
+  if (!city) return null;
+  return HOST_BY_CITY[city] ?? null;
 }
 
 export function displayMatchup(match: Pick<WorldCupMatch, "homeTeam" | "awayTeam">) {

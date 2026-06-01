@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { DailyMatchImage } from "@/components/daily-match-image";
 import { MatchTipCard } from "@/components/match-tip-card";
+import { NextMatchCard } from "@/components/next-match-card";
 import { NostalgiaHero } from "@/components/nostalgia";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
 import { MatchupLinks } from "@/components/team-link";
@@ -10,11 +11,10 @@ import { Panel } from "@/components/ui";
 import { getAwards, getMatchdayVerdict } from "@/lib/awards";
 import { requireSession } from "@/lib/auth";
 import { footballCopy, pickDashboardLine } from "@/lib/football-jargon";
-import { formatOsloDate, formatOsloDateTime, formatScore } from "@/lib/format";
+import { formatOsloDate, formatScore } from "@/lib/format";
 import { getAvatarMap } from "@/lib/avatars";
 import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
-import { formatMatchStatus } from "@/lib/tournament";
 import { pickDailyNostalgiaMoment } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
@@ -182,13 +182,9 @@ export default async function HomePage() {
           </div>
           <span className="lead text-sm">{formatOsloDate(tomorrowMatches[0]?.kickoffAt ?? focusMatches[0]?.kickoffAt ?? new Date().toISOString())}</span>
         </div>
-        <div className="tomorrow-grid">
+        <div className="next-match-grid">
           {tomorrowMatches.map((match) => (
-            <article key={match.id} className="tomorrow-card">
-              <strong><MatchupLinks match={match} /></strong>
-              <span>{formatOsloDateTime(match.kickoffAt)} · {formatMatchStatus(match)}</span>
-              <Link href={`/kamp/${match.id}`} className="tomorrow-card-action">Kampkort</Link>
-            </article>
+            <NextMatchCard key={match.id} match={match} />
           ))}
           {!tomorrowMatches.length ? <p className="lead">Ingen kamper dagen etter denne kampdagen.</p> : null}
         </div>

@@ -631,6 +631,119 @@ select {
   gap: 10px;
 }
 
+.next-match-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.next-match-card {
+  align-items: stretch;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(47, 30, 18, 0.08);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  overflow: hidden;
+  padding: 12px;
+}
+
+.next-match-thumb {
+  align-self: center;
+  border-radius: 8px;
+  display: block;
+  height: 96px;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+  width: 96px;
+}
+
+.next-match-thumb-img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.next-match-time {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  background: rgba(17, 19, 15, 0.78);
+  border-radius: 999px;
+  bottom: 6px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  left: 50%;
+  padding: 3px 8px;
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.next-match-content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.next-match-place {
+  align-items: center;
+  display: flex;
+  gap: 9px;
+}
+
+.next-match-host-flag {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.next-match-place strong {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.next-match-place span {
+  color: var(--ink-muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.next-match-teams {
+  display: grid;
+  gap: 4px;
+}
+
+.next-match-team {
+  align-items: center;
+  display: flex;
+  font-weight: 800;
+  gap: 8px;
+  min-width: 0;
+}
+
+.next-match-flag {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.next-match-foot {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  font-weight: 700;
+  gap: 6px 10px;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
 .awards-grid {
   display: grid;
   gap: 10px;
@@ -1508,10 +1621,10 @@ select {
   box-shadow: 0 24px 60px rgba(17, 19, 15, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   max-height: calc(100dvh - 32px);
   max-width: 420px;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 20px;
   width: 100%;
 }
@@ -1520,10 +1633,22 @@ select {
 .avatar-preview,
 .avatar-preview-tip,
 .avatar-zoom,
-.avatar-picker-grid,
 .avatar-modal-actions,
 .avatar-picker-error {
   flex: 0 0 auto;
+}
+
+.avatar-picker-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 2px;
+}
+
+.avatar-modal-actions {
+  border-top: 1px solid var(--line);
+  margin-top: 2px;
+  padding-top: 12px;
 }
 
 .avatar-modal-head {
@@ -1605,6 +1730,7 @@ select {
 
 .avatar-zoom input {
   flex: 1;
+  height: 28px;
 }
 
 .avatar-modal-actions {

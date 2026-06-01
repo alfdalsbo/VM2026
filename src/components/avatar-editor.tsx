@@ -10,7 +10,7 @@ import type { AvatarDisplay } from "@/lib/avatars";
 import { cx } from "@/lib/format";
 import type { Player } from "@/lib/types";
 
-const PREVIEW_SIZE = 180;
+const PREVIEW_SIZE = 150;
 
 export function AvatarEditor({
   player,

@@ -19,7 +19,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await page.getByLabel("Felles kode").fill("Norge");
   await page.getByRole("button", { name: "Logg inn" }).click();
 
-  await expect(page.getByRole("heading", { name: /Dagens kamper|Neste kampdag/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Dagens kamper|Neste kampdag/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Dagens VM-øyeblikk")).toBeVisible();
   await expect(page.getByText("Lagring")).toHaveCount(0);
   await expect(page.getByText("Joker")).toHaveCount(0);

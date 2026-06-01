@@ -1901,7 +1901,7 @@ select {
 .team-nostalgia-pass {
   align-items: stretch;
   display: grid;
-  gap: clamp(18px, 4vw, 28px);
+  gap: 24px;
 }
 
 .nostalgia-hero {
@@ -1919,14 +1919,16 @@ select {
 
 .nostalgia-hero-copy {
   align-self: center;
+  min-width: 0;
 }
 
 .nostalgia-hero h2 {
-  font-size: clamp(2rem, 6vw, 4.8rem);
+  font-size: 4rem;
   font-weight: 950;
   letter-spacing: 0;
   line-height: 0.92;
   margin-top: 10px;
+  overflow-wrap: break-word;
 }
 
 .nostalgia-hero p:not(.eyebrow) {
@@ -1972,10 +1974,13 @@ select {
   border-radius: 8px;
   color: #fffaf2;
   display: grid;
+  box-sizing: border-box;
   min-height: 180px;
+  min-width: 0;
   overflow: hidden;
   padding: 18px;
   position: relative;
+  width: 100%;
 }
 
 .archive-poster::before {
@@ -2026,7 +2031,7 @@ select {
 
 .archive-poster-fallback strong {
   font-family: var(--font-mono);
-  font-size: clamp(3rem, 10vw, 5.4rem);
+  font-size: 5rem;
   font-weight: 950;
   letter-spacing: 0;
   line-height: 0.88;
@@ -2041,6 +2046,11 @@ select {
 
 .archive-poster-large {
   min-height: 260px;
+}
+
+.nostalgia-hero .archive-poster-large {
+  justify-self: start;
+  max-width: min(100%, 420px);
 }
 
 .match-nostalgia-note {

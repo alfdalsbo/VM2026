@@ -2,15 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 
-import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LineupBoard } from "@/components/lineup-board";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
-import { LivePotCard } from "@/components/live-pot-card";
 import { MatchEvents } from "@/components/match-events";
+import { MatchTipCard } from "@/components/match-tip-card";
 import { MatchNostalgiaPanel } from "@/components/nostalgia";
 import { PostMatchAnalysis } from "@/components/post-match-analysis";
 import { ProjectedStandings } from "@/components/projected-standings";
-import { ScorerAssistPicker } from "@/components/scorer-assist-picker";
 import { ShareButton } from "@/components/share-button";
 import { TeamLink } from "@/components/team-link";
 import { Panel } from "@/components/ui";
@@ -19,11 +17,10 @@ import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getMatchAnalysisForMatch } from "@/lib/match-analysis";
 import { createShareToken } from "@/lib/share-card";
-import { describePrediction, getPrediction, getPredictionUnavailableMessage, isMatchLocked, scorePrediction } from "@/lib/scoring";
+import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 import type { MatchStats } from "@/lib/types";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
-import { isLivePotVisible } from "@/lib/live-pot";
 import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
@@ -46,12 +43,6 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
     .sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.id.localeCompare(b.id));
   const postMatchAnalysis = getMatchAnalysisForMatch({ match, stats, lineup, events });
   const isLive = match.status === "live" || match.status === "halftime";
-  const locked = isMatchLocked(match);
-  const predictionUnavailableMessage = getPredictionUnavailableMessage(match);
-  const predictionPending = Boolean(predictionUnavailableMessage && !locked);
-  const showCardBonus = isLivePotVisible(match, state);
-  const homeSquad = state.teamProfiles.find((profile) => profile.teamName === match.homeTeam)?.squad ?? [];
-  const awaySquad = state.teamProfiles.find((profile) => profile.teamName === match.awayTeam)?.squad ?? [];
   const shareToken =
     match.result && prediction
       ? createShareToken({
@@ -86,51 +77,39 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         </Panel>
       ) : null}
 
-      <Panel>
-        <div className="match-detail-grid">
-          <div>
-            <p className="eyebrow">Ditt kort</p>
-            <h1 className="section-title mt-2">{predictionPending ? "Venter på lagene" : describePrediction(prediction)}</h1>
-            {predictionPending ? (
-              <p className="lead mt-3">{predictionUnavailableMessage}</p>
-            ) : (
-              <p className="lead mt-3">
-                {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, eksakt {score.exactResult}
-                {score.bonus ? <> · bonustips <strong>{score.bonus}</strong></> : null}
-              </p>
-            )}
-          </div>
-          {shareToken ? (
-            <ShareButton path={`/kort/${shareToken}`} text={shareText} title="Tippekjelleren-kort" />
-          ) : (
-            <Link className="btn-secondary" href="/kamper">Til kampene</Link>
-          )}
-        </div>
-      </Panel>
+      <MatchTipCard
+        match={match}
+        player={player}
+        state={state}
+        bonusNext={`/kamp/${match.id}`}
+        showDetailLink={false}
+        showNostalgiaNote={false}
+      />
 
-      {!predictionUnavailableMessage ? (
+      {shareToken ? (
         <Panel>
-          <div className="bonus-panel-heading mb-4">
+          <div className="match-detail-grid">
             <div>
-              <p className="eyebrow">Bonustips</p>
-              <h2 className="section-title">Mine spillere</h2>
-              <p className="lead mt-2 max-w-2xl">
-                Tipp hvem som scorer og hvem som setter dem opp. Rekkefølgen spiller ingen rolle — en treff for hver gang riktig spiller står for et mål/assist.
-              </p>
+              <p className="eyebrow">Deling</p>
+              <h2 className="section-title mt-2">Tippekjelleren-kort</h2>
+              <p className="lead mt-3">Når fasiten er inne, kan dommen sendes videre med akkurat passe høytidelig mine.</p>
             </div>
-            <BonusAutofillButton matchId={match.id} next={`/kamp/${match.id}`} />
+            <ShareButton path={`/kort/${shareToken}`} text={shareText} title="Tippekjelleren-kort" />
           </div>
-          <ScorerAssistPicker
-            match={match}
-            prediction={prediction}
-            homeSquad={homeSquad}
-            awaySquad={awaySquad}
-          />
         </Panel>
       ) : null}
 
-      {showCardBonus ? (
-        <LivePotCard match={match} player={player} state={state} />
+      {!shareToken ? (
+        <Panel>
+          <div className="match-detail-grid">
+            <div>
+              <p className="eyebrow">Navigasjon</p>
+              <h2 className="section-title mt-2">Til kampene</h2>
+              <p className="lead mt-3">Hele kupongen ligger samlet på kampoversikten.</p>
+            </div>
+            <Link className="btn-secondary" href="/kamper">Til kampene</Link>
+          </div>
+        </Panel>
       ) : null}
 
       {isLive ? (

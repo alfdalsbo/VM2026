@@ -2,6 +2,9 @@ import { isLivePotOpen, saveLivePotTipInState } from "@/lib/live-pot";
 import { getPrediction, savePredictionInState } from "@/lib/scoring";
 import type { AppState, LivePotTip, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
+export const BONUS_AUTOFILL_ALL_OPEN = "__all_open__";
+export const BONUS_AUTOFILL_PREDICTED_OPEN = "__all_predicted_open__";
+
 export type BonusAutofillSource = "odds" | "fallback";
 
 type OddsPick = {
@@ -37,6 +40,16 @@ export type BonusAutofillSummary = {
   playerSlotsFilled: number;
   cardTipsFilled: number;
 };
+
+export function getPredictedOpenMatchIdsForBonusAutofill(
+  state: AppState,
+  playerId: string,
+  now = new Date(),
+) {
+  return state.matches
+    .filter((match) => isLivePotOpen(match, now) && Boolean(getPrediction(state, playerId, match.id)))
+    .map((match) => match.id);
+}
 
 function hashNumber(value: string) {
   let hash = 2166136261;

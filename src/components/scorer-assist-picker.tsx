@@ -78,8 +78,7 @@ export function ScorerAssistPicker({
   if (homeGoals + awayGoals === 0) {
     return (
       <p className="lead">
-        Resultattipset står på 0-0. Sett et tips med mål på <a className="tip-card-link" href="/kamper">kampoversikten</a>,
-        så åpner scorer- og assist-valgene seg her.
+        Resultattipset står på 0-0. Sett et tips med mål på kampen, så åpner scorer- og assist-valgene seg her.
       </p>
     );
   }

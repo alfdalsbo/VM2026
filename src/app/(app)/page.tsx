@@ -78,7 +78,7 @@ export default async function HomePage() {
 
       <div className="tip-day-matches">
         {dashboardMatches.map((match) => (
-          <MatchTipCard key={match.id} match={match} player={player} state={state} />
+          <MatchTipCard key={match.id} match={match} player={player} state={state} bonusNext="/" />
         ))}
         {!dashboardMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>

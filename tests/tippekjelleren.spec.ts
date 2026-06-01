@@ -41,7 +41,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await page.goto("/kamp/m001");
   await expect(page.getByText("Kamp 1")).toBeVisible();
   await expect(page.getByText("Historisk ekko")).toBeVisible();
-  await expect(page.getByText("TV 2 Direkte")).toBeVisible();
+  await expect(page.getByTitle(/TV 2 Direkte/).first()).toBeVisible();
   await expect(page.getByText("Ikke publisert ennå")).toBeVisible();
   await expect(page.getByText("Taktisk rapport")).toHaveCount(0);
 
@@ -49,6 +49,28 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await page.locator("#m001").getByRole("button", { name: "Legg til Mexico" }).click();
   await page.locator("#m001").getByRole("button", { name: "Legg til Mexico" }).click();
   await page.locator("#m001").getByRole("button", { name: "Legg til Sør-Afrika" }).click();
+  await expect(page.locator("#m001").getByText("Registrert")).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/kamper");
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Bonustabell", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Bonustips", exact: true })).toHaveCount(0);
+  const firstListedMatch = page.locator("#m001");
+  await expect(firstListedMatch).toContainText("Bonustips");
+  await expect(firstListedMatch.getByRole("button", { name: "Åpne bonus" })).toBeVisible();
+  await firstListedMatch.getByRole("button", { name: "Åpne bonus" }).click();
+  await expect(firstListedMatch.getByRole("heading", { name: "Scorere og assister" })).toBeVisible();
+  await expect(firstListedMatch.getByRole("heading", { name: "Gule og røde kort" })).toBeVisible();
+  await firstListedMatch.getByRole("button", { name: "Autofyll bonus" }).click();
+  await expect(page.getByText(/Autofylte|Ingen tomme bonustips/)).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/kamper");
+  await page.getByRole("button", { name: "Autofyll bonus for tippede kamper" }).click();
+  await expect(page.getByText(/Autofylte|Ingen tomme bonustips/)).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/live");
+  await expect(page.getByRole("heading", { name: "Bonustabell" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Autofyll/ })).toHaveCount(0);
+  await expect(page.getByText("Selve tippinga skjer nå inne på kampkortet")).toBeVisible();
 
   await page.goto("/kamper");
   const firstKnockout = page.locator("#m073");

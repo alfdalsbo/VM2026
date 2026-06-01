@@ -1,31 +1,25 @@
+import Link from "next/link";
+
 import { Avatar } from "@/components/avatar";
-import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
-import { LivePotCard } from "@/components/live-pot-card";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
 import { Panel, Stat } from "@/components/ui";
 import { getAvatarMap } from "@/lib/avatars";
 import { requireSession } from "@/lib/auth";
-import { isLivePotOpen, isLivePotVisible } from "@/lib/live-pot";
+import { displayMatchup } from "@/lib/display";
+import { formatOsloDateTime } from "@/lib/format";
+import { isLivePotOpen } from "@/lib/live-pot";
 import { BONUS_TIPS_WINNER_AWARD, computeBonusTipStandings } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
-  title: "Bonustips",
+  title: "Bonustabell",
 };
 
 export default async function LivePage() {
-  const [player, state] = await Promise.all([requireSession(), getAppState()]);
+  const [, state] = await Promise.all([requireSession(), getAppState()]);
   const openMatches = state.matches.filter((match) => isLivePotOpen(match));
   const liveMatches = state.matches.filter((match) => match.status === "live" || match.status === "halftime");
-  const potMatches = state.matches
-    .filter((match) => isLivePotVisible(match, state))
-    .sort((a, b) => {
-      const aOpen = isLivePotOpen(a) ? 0 : 1;
-      const bOpen = isLivePotOpen(b) ? 0 : 1;
-      return aOpen - bOpen || a.kickoffAt.localeCompare(b.kickoffAt);
-    })
-    .slice(0, 8);
   const standings = computeBonusTipStandings(state);
   const avatars = getAvatarMap(state);
   const leader = standings.find((row) => row.tips > 0);
@@ -37,13 +31,12 @@ export default async function LivePage() {
       <Panel>
         <div className="bonus-page-heading">
           <div>
-            <p className="eyebrow">Bonustips</p>
-            <h1 className="section-title mt-2">Bonustips</h1>
+            <p className="eyebrow">Bonustabell</p>
+            <h1 className="section-title mt-2">Bonustabell</h1>
             <p className="lead mt-3 max-w-3xl">
-              Egen score for alt som ikke er rent resultattips: målscorere, assister og bonustips på antall gule og røde kort. Ingen penger, bare privat VM-jury med litt for høy selvtillit.
+              Egen score for målscorere, assister og kort. Selve tippinga skjer nå inne på kampkortet, slik en privat VM-jury med orden i papirene ville ønsket.
             </p>
           </div>
-          <BonusAutofillButton matchId="__all_open__" next="/live" />
         </div>
       </Panel>
 
@@ -59,18 +52,22 @@ export default async function LivePage() {
         />
       </div>
 
-      <div className="live-pot-list">
-        {potMatches.map((match) => (
-          <LivePotCard key={match.id} match={match} player={player} state={state} />
-        ))}
-        {!potMatches.length ? (
-          <Panel>
-            <p className="eyebrow">Avspark mangler</p>
-            <h2 className="section-title mt-2">Ingen kort-bonustips å dømme ennå</h2>
-            <p className="lead mt-3">Når kampoppsettet nærmer seg, ligger kort-bonustipsene klare her før avspark.</p>
-          </Panel>
-        ) : null}
-      </div>
+      <Panel>
+        <p className="eyebrow">Rediger på kampen</p>
+        <h2 className="section-title mt-2">Åpne bonuskamper</h2>
+        {openMatches.length ? (
+          <div className="bonus-match-links mt-4">
+            {openMatches.slice(0, 8).map((match) => (
+              <Link key={match.id} href={`/kamp/${match.id}`} className="bonus-match-link">
+                <strong>{displayMatchup(match)}</strong>
+                <span>{formatOsloDateTime(match.kickoffAt)}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="lead mt-3">Ingen åpne bonuskamper akkurat nå. Dommerboka holder linjene rette til neste avspark.</p>
+        )}
+      </Panel>
 
       <Panel>
         <p className="eyebrow">Egen score</p>

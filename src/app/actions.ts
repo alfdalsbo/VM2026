@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 
 import { createSession, destroySession, isCorrectPasscode, requireSession } from "@/lib/auth";
 import { getAvatarOptions } from "@/lib/avatars";
-import { autofillBonusTipsInState } from "@/lib/bonus-autofill";
+import {
+  autofillBonusTipsInState,
+  BONUS_AUTOFILL_ALL_OPEN,
+  BONUS_AUTOFILL_PREDICTED_OPEN,
+  getPredictedOpenMatchIdsForBonusAutofill,
+} from "@/lib/bonus-autofill";
 import { footballCopy } from "@/lib/football-jargon";
 import { toggleFollowedMatchInState } from "@/lib/followed-matches";
 import { clampScore } from "@/lib/format";
@@ -318,7 +323,9 @@ export async function autofillBonusTipsAction(formData: FormData) {
   const next = safeNext(field(formData, "next") || "/live");
   const state = await getAppState();
   const matchIds =
-    matchId === "__all_open__"
+    matchId === BONUS_AUTOFILL_PREDICTED_OPEN
+      ? getPredictedOpenMatchIdsForBonusAutofill(state, player.id)
+      : matchId === BONUS_AUTOFILL_ALL_OPEN
       ? state.matches.map((match) => match.id)
       : [matchId].filter(Boolean);
   let message = "Ingen tomme bonustips å autofylle.";

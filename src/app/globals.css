@@ -701,6 +701,11 @@ select {
   white-space: nowrap;
 }
 
+.bonus-page-heading .bonus-autofill-button {
+  justify-content: center;
+  white-space: normal;
+}
+
 .bonus-autofill-button-compact {
   min-height: 38px;
   padding-inline: 10px;
@@ -2808,6 +2813,85 @@ th {
   gap: 10px;
 }
 
+.tip-bonus {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 12px;
+}
+
+.tip-bonus-summary {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.tip-bonus-copy {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  font-weight: 750;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tip-bonus-label {
+  background: rgba(180, 35, 47, 0.1);
+  border-radius: 6px;
+  color: var(--red-dark);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 4px 7px;
+  text-transform: uppercase;
+}
+
+.tip-bonus-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.tip-bonus-toggle {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  min-height: 38px;
+  padding-inline: 10px;
+}
+
+.tip-bonus-detail {
+  border-top: 1px dashed rgba(17, 19, 15, 0.16);
+  display: grid;
+  gap: 14px;
+  padding-top: 12px;
+}
+
+.tip-bonus-section {
+  display: grid;
+  gap: 12px;
+}
+
+.tip-bonus-section h3 {
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.tip-bonus .live-pot-form {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.tip-bonus .live-pot-submit {
+  justify-content: center;
+}
+
 .tip-teams {
   display: grid;
   gap: 8px;
@@ -3135,6 +3219,37 @@ th {
   gap: 14px;
 }
 
+.bonus-match-links {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.bonus-match-link {
+  background: rgba(255, 250, 242, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: inherit;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  text-decoration: none;
+}
+
+.bonus-match-link:hover {
+  border-color: rgba(180, 35, 47, 0.35);
+}
+
+.bonus-match-link strong {
+  font-weight: 950;
+}
+
+.bonus-match-link span {
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
 .bonus-card-matchup {
   align-items: center;
   display: flex;
@@ -3235,6 +3350,22 @@ th {
 
   .tip-card-body {
     padding: 12px 12px 10px;
+  }
+
+  .tip-bonus-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tip-bonus-actions {
+    justify-content: stretch;
+  }
+
+  .tip-bonus-actions form,
+  .tip-bonus-actions button,
+  .tip-bonus-actions .bonus-autofill-button {
+    justify-content: center;
+    width: 100%;
   }
 
   .tip-team-flag {

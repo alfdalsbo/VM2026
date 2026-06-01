@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Minus, Plus } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { saveResultPredictionAction, type SaveResultPredictionInput } from "@/app/actions";
+import { BonusAutofillButton } from "@/components/bonus-autofill-button";
+import { LivePotForm } from "@/components/live-pot-form";
 import { MatchNostalgiaNote } from "@/components/nostalgia";
+import { ScorerAssistPicker } from "@/components/scorer-assist-picker";
 import { TeamLink } from "@/components/team-link";
 import {
   displayStageOrGroup,
@@ -17,14 +20,21 @@ import { footballCopy } from "@/lib/football-jargon";
 import { cx } from "@/lib/format";
 import { hasUnresolvedKnockoutTeams } from "@/lib/knockout-placeholders";
 import {
+  countYellowCards,
+  formatLiveRedCardsPrediction,
+  getLivePotTip,
+  isLivePotOpen,
+} from "@/lib/live-pot";
+import {
   getPrediction,
   getPredictionOrDefault,
+  inferPredictionOutcome,
   isKnockoutMatch,
   isMatchLocked,
   scorePrediction,
 } from "@/lib/scoring";
 import { getBroadcastForMatch } from "@/lib/tournament";
-import type { AppState, Player, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
+import type { AppState, KnockoutPredictionResolution, Player, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
 
 const timeFormatter = new Intl.DateTimeFormat("nb-NO", {
@@ -80,17 +90,35 @@ function ChannelBadge({ channel, service }: { channel: string; service?: string 
   );
 }
 
+function predictionTimestamp(prediction: Prediction | null) {
+  if (!prediction) return Number.NEGATIVE_INFINITY;
+  const timestamp = Date.parse(prediction.updatedAt);
+  return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
+}
+
+function newestPrediction(stored: Prediction | null, local: Prediction | null) {
+  return predictionTimestamp(local) >= predictionTimestamp(stored) ? local : stored;
+}
+
 export function MatchTipCard({
   match,
   player,
   state,
+  bonusNext = "/kamper",
+  showDetailLink = true,
+  showNostalgiaNote = true,
 }: {
   match: WorldCupMatch;
   player: Player;
   state: AppState;
+  bonusNext?: string;
+  showDetailLink?: boolean;
+  showNostalgiaNote?: boolean;
 }) {
-  const prediction = getPrediction(state, player.id, match.id);
-  const displayedPrediction = getPredictionOrDefault(state, player.id, match.id);
+  const storedPrediction = getPrediction(state, player.id, match.id);
+  const [localPrediction, setLocalPrediction] = useState<Prediction | null>(null);
+  const optimisticPrediction = newestPrediction(storedPrediction, localPrediction);
+  const displayedPrediction = optimisticPrediction ?? getPredictionOrDefault(state, player.id, match.id);
   const locked = isMatchLocked(match);
   const knockoutPending = hasUnresolvedKnockoutTeams(match);
   const status = formatCompactMatchStatus(match);
@@ -113,23 +141,52 @@ export function MatchTipCard({
             <span className={`tip-card-status status-${status.tone}`}>{status.label}</span>
           ) : null}
         </div>
-        <Link href={`/kamp/${match.id}`} className="tip-card-link">Kampkort</Link>
+        {showDetailLink ? <Link href={`/kamp/${match.id}`} className="tip-card-link">Kampkort</Link> : null}
       </div>
       <div className="tip-card-body">
         <span className="tip-card-stage">{stageLabel}</span>
-        <MatchNostalgiaNote moment={nostalgia} />
+        {showNostalgiaNote ? <MatchNostalgiaNote moment={nostalgia} /> : null}
         {locked ? (
-          <LockedView
-            match={match}
-            prediction={displayedPrediction}
-            state={state}
-            homeSquad={homeSquad}
-            awaySquad={awaySquad}
-          />
+          <>
+            <LockedView
+              match={match}
+              prediction={displayedPrediction}
+              state={state}
+              homeSquad={homeSquad}
+              awaySquad={awaySquad}
+            />
+            <MatchBonusPanel
+              match={match}
+              player={player}
+              state={state}
+              prediction={storedPrediction}
+              homeSquad={homeSquad}
+              awaySquad={awaySquad}
+              next={bonusNext}
+              canEdit={false}
+            />
+          </>
         ) : knockoutPending ? (
           <PendingKnockoutView match={match} />
         ) : (
-          <EditableForm match={match} prediction={prediction} />
+          <>
+            <EditableForm
+              match={match}
+              playerId={player.id}
+              prediction={optimisticPrediction}
+              onSavedPrediction={setLocalPrediction}
+            />
+            <MatchBonusPanel
+              match={match}
+              player={player}
+              state={state}
+              prediction={optimisticPrediction}
+              homeSquad={homeSquad}
+              awaySquad={awaySquad}
+              next={bonusNext}
+              canEdit
+            />
+          </>
         )}
       </div>
     </article>
@@ -215,10 +272,14 @@ function saveKey(input: SaveResultPredictionInput) {
 
 function EditableForm({
   match,
+  playerId,
   prediction,
+  onSavedPrediction,
 }: {
   match: WorldCupMatch;
+  playerId: string;
   prediction: Prediction | null;
+  onSavedPrediction: (prediction: Prediction) => void;
 }) {
   const [homeGoals, setHomeGoals] = useState(prediction?.homeGoals ?? 0);
   const [awayGoals, setAwayGoals] = useState(prediction?.awayGoals ?? 0);
@@ -285,12 +346,18 @@ function EditableForm({
           }
           setLastSavedKey(key);
           setSaveDisplay({ key, signal: "saved", message: "Registrert" });
+          onSavedPrediction(buildOptimisticPrediction({
+            existing: prediction,
+            input,
+            playerId,
+            updatedAt: result.updatedAt ?? new Date().toISOString(),
+          }));
         });
       });
     }, 450);
 
     return () => window.clearTimeout(timeout);
-  }, [lastSavedKey, prepared, startTransition]);
+  }, [lastSavedKey, onSavedPrediction, playerId, prediction, prepared, startTransition]);
 
   return (
     <div className="tip-form">
@@ -362,6 +429,155 @@ function EditableForm({
 
       <SaveSignal signal={displayedSignal.signal} message={displayedSignal.message} />
     </div>
+  );
+}
+
+function buildOptimisticPrediction({
+  existing,
+  input,
+  playerId,
+  updatedAt,
+}: {
+  existing: Prediction | null;
+  input: SaveResultPredictionInput;
+  playerId: string;
+  updatedAt: string;
+}): Prediction {
+  return {
+    playerId,
+    matchId: input.matchId,
+    homeGoals: input.homeGoals,
+    awayGoals: input.awayGoals,
+    outcome: inferPredictionOutcome(input.homeGoals, input.awayGoals),
+    knockoutResolution: knockoutResolutionFromInput(input),
+    homeScorers: (existing?.homeScorers ?? []).slice(0, input.homeGoals),
+    awayScorers: (existing?.awayScorers ?? []).slice(0, input.awayGoals),
+    homeAssists: (existing?.homeAssists ?? []).slice(0, input.homeGoals),
+    awayAssists: (existing?.awayAssists ?? []).slice(0, input.awayGoals),
+    updatedAt,
+  };
+}
+
+function knockoutResolutionFromInput(input: SaveResultPredictionInput): KnockoutPredictionResolution | null {
+  if (input.homeGoals !== input.awayGoals) return null;
+  if (input.knockoutMethod === "penalties" && input.knockoutWinner) {
+    return { method: "penalties", winner: input.knockoutWinner };
+  }
+  if (
+    input.knockoutMethod === "extra_time" &&
+    input.knockoutWinner &&
+    typeof input.extraTimeHomeGoals === "number" &&
+    typeof input.extraTimeAwayGoals === "number"
+  ) {
+    return {
+      method: "extra_time",
+      winner: input.knockoutWinner,
+      homeGoals: input.extraTimeHomeGoals,
+      awayGoals: input.extraTimeAwayGoals,
+    };
+  }
+  return null;
+}
+
+function MatchBonusPanel({
+  match,
+  player,
+  state,
+  prediction,
+  homeSquad,
+  awaySquad,
+  next,
+  canEdit,
+}: {
+  match: WorldCupMatch;
+  player: Player;
+  state: AppState;
+  prediction: Prediction | null;
+  homeSquad: TeamSquadPlayer[];
+  awaySquad: TeamSquadPlayer[];
+  next: string;
+  canEdit: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const liveTip = getLivePotTip(state, player.id, match.id);
+  const currentYellowCards = countYellowCards(state.matchEvents, match.id);
+  const cardOpen = canEdit && isLivePotOpen(match);
+  const goals = (prediction?.homeGoals ?? 0) + (prediction?.awayGoals ?? 0);
+  const playerSlotsMax = goals * 2;
+  const playerSlotsUsed =
+    (prediction?.homeScorers?.length ?? 0) +
+    (prediction?.awayScorers?.length ?? 0) +
+    (prediction?.homeAssists?.length ?? 0) +
+    (prediction?.awayAssists?.length ?? 0);
+  const playerStatus = playerSlotsMax > 0 ? `${playerSlotsUsed}/${playerSlotsMax} spillervalg` : "0-0: ingen spillervalg";
+  const cardStatus = liveTip
+    ? `${liveTip.yellowCardsTotal} gule · ${formatLiveRedCardsPrediction(liveTip.redCardsTotal)}`
+    : "kort ikke satt";
+  const hasVisibleBonus = canEdit || playerSlotsUsed > 0 || Boolean(liveTip);
+
+  if (!hasVisibleBonus) return null;
+
+  return (
+    <section className={cx("tip-bonus", open && "tip-bonus-open")}>
+      <div className="tip-bonus-summary">
+        <div className="tip-bonus-copy">
+          <span className="tip-bonus-label">Bonustips</span>
+          <span>{playerStatus}</span>
+          <span>{cardStatus}</span>
+        </div>
+        <div className="tip-bonus-actions">
+          {canEdit ? <BonusAutofillButton matchId={match.id} next={next} compact label="Autofyll bonus" /> : null}
+          <button
+            type="button"
+            className="btn-secondary tip-bonus-toggle"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {open ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+            {open ? "Lukk bonus" : "Åpne bonus"}
+          </button>
+        </div>
+      </div>
+
+      {open ? (
+        <div className="tip-bonus-detail">
+          <section className="tip-bonus-section">
+            <header>
+              <p className="eyebrow">Mine spillere</p>
+              <h3>Scorere og assister</h3>
+            </header>
+            {canEdit ? (
+              <ScorerAssistPicker
+                match={match}
+                prediction={prediction}
+                homeSquad={homeSquad}
+                awaySquad={awaySquad}
+              />
+            ) : (
+              <p className="lead">
+                {playerSlotsUsed > 0 ? `${playerSlotsUsed} spillervalg er låst i dommerboka.` : "Ingen scorer- eller assistbonus registrert."}
+              </p>
+            )}
+          </section>
+
+          <section className="tip-bonus-section">
+            <header>
+              <p className="eyebrow">Kortbonus</p>
+              <h3>Gule og røde kort</h3>
+            </header>
+            {cardOpen ? (
+              <LivePotForm match={match} tip={liveTip} currentYellowCards={currentYellowCards} />
+            ) : liveTip ? (
+              <p className="lead">
+                {liveTip.yellowCardsTotal} gule · {formatLiveRedCardsPrediction(liveTip.redCardsTotal)}.
+              </p>
+            ) : (
+              <p className="lead">{canEdit ? "Kortbonusen er ikke notert ennå." : "Ingen kortbonus registrert."}</p>
+            )}
+          </section>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

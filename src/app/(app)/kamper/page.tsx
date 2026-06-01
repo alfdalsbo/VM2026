@@ -1,6 +1,8 @@
+import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
+import { BONUS_AUTOFILL_PREDICTED_OPEN } from "@/lib/bonus-autofill";
 import { formatOsloDate } from "@/lib/format";
 import { getAppState } from "@/lib/state";
 
@@ -45,11 +47,20 @@ export default async function MatchesPage() {
   return (
     <div className="space-y-6">
       <Panel>
-        <p className="eyebrow">VM 2026</p>
-        <h1 className="section-title mt-2">Alle kampene</h1>
-        <p className="lead mt-3 max-w-3xl">
-          Lever resultattips helt til avspark. Når dommeren blåser i gang, blir kupongen stående der som en liten offentlig karaktertest.
-        </p>
+        <div className="bonus-page-heading">
+          <div>
+            <p className="eyebrow">VM 2026</p>
+            <h1 className="section-title mt-2">Alle kampene</h1>
+            <p className="lead mt-3 max-w-3xl">
+              Lever resultattips helt til avspark. Bonustips ligger inne på samme kamp for dem som vil føre den litt mer selvhøytidelige protokollen.
+            </p>
+          </div>
+          <BonusAutofillButton
+            matchId={BONUS_AUTOFILL_PREDICTED_OPEN}
+            next="/kamper"
+            label="Autofyll bonus for tippede kamper"
+          />
+        </div>
       </Panel>
 
       <div className="tip-day-list">
@@ -58,7 +69,7 @@ export default async function MatchesPage() {
             <h2 className="tip-day-heading">{formatOsloDate(kickoff)}</h2>
             <div className="tip-day-matches">
               {matches.map((match) => (
-                <MatchTipCard key={match.id} match={match} player={player} state={state} />
+                <MatchTipCard key={match.id} match={match} player={player} state={state} bonusNext="/kamper" />
               ))}
             </div>
           </section>

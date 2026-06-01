@@ -34,8 +34,8 @@ export default async function LoginPage({
         <section className="flex items-center bg-[#f7f1e8] p-6 text-[#17130f] lg:p-10">
           <div className="w-full">
             <div className="mb-8 flex items-center gap-4">
-              <span className="grid h-14 w-14 place-items-center rounded bg-[#b4232f] text-white">
-                <WorldCupTrophyIcon className="h-10 w-10" aria-hidden="true" />
+              <span className="grid h-14 w-14 place-items-center">
+                <WorldCupTrophyIcon className="h-14 w-14" aria-hidden="true" />
               </span>
               <div>
                 <p className="eyebrow">Adgangskontroll</p>

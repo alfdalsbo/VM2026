@@ -8,11 +8,8 @@ export function ScoringRulesPanel({ compact = false }: { compact?: boolean }) {
   return (
     <Panel className="scoring-rules-panel">
       <div className="scoring-rules-heading">
-        <div>
-          <p className="eyebrow">Poengregler</p>
-          <h2 className="section-title mt-2">Slik telles poengene</h2>
-        </div>
-        <span>Enkelt nok til at dommerbordet kan lese det høyt</span>
+        <p className="eyebrow">Poengregler</p>
+        <h2 className="scoring-rules-title">Slik telles poengene</h2>
       </div>
 
       <div className="scoring-rules-grid">

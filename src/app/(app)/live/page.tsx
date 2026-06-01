@@ -1,8 +1,10 @@
+import { Avatar } from "@/components/avatar";
 import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
 import { LivePotCard } from "@/components/live-pot-card";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
 import { Panel, Stat } from "@/components/ui";
+import { getAvatarMap } from "@/lib/avatars";
 import { requireSession } from "@/lib/auth";
 import { isLivePotOpen, isLivePotVisible } from "@/lib/live-pot";
 import { BONUS_TIPS_WINNER_AWARD, computeBonusTipStandings } from "@/lib/scoring";
@@ -25,6 +27,7 @@ export default async function LivePage() {
     })
     .slice(0, 8);
   const standings = computeBonusTipStandings(state);
+  const avatars = getAvatarMap(state);
   const leader = standings.find((row) => row.tips > 0);
 
   return (
@@ -91,7 +94,12 @@ export default async function LivePage() {
               {standings.map((standing) => (
                 <tr key={standing.player.id}>
                   <td className="font-black">{standing.rank}</td>
-                  <td className="font-black">{standing.player.shortName}</td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <Avatar player={standing.player} display={avatars[standing.player.id]} size={36} />
+                      <span className="font-bold">{standing.player.shortName}</span>
+                    </div>
+                  </td>
                   <td className="font-black">{standing.points}</td>
                   <td>{standing.matchBonusPoints}</td>
                   <td>{standing.liveBonusPoints}</td>

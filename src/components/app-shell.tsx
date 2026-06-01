@@ -20,8 +20,8 @@ export function AppShell({ children }: { children: React.ReactNode; player: Play
       <header className="sticky top-0 z-30 border-b border-black/10 bg-[#f7f1e8]/92 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded bg-[#b4232f] text-white shadow-sm">
-              <WorldCupTrophyIcon className="h-7 w-7" aria-hidden="true" />
+            <span className="grid h-10 w-10 shrink-0 place-items-center">
+              <WorldCupTrophyIcon className="h-10 w-10" aria-hidden="true" />
             </span>
             <span className="min-w-0">
               <span className="block truncate font-black uppercase tracking-[0.08em]">Tippekjelleren</span>

@@ -52,59 +52,49 @@ export function LivePotCard({
     .sort((a, b) => b.score.total - a.score.total || a.player.shortName.localeCompare(b.player.shortName, "nb"));
 
   return (
-    <article className="live-pot-card">
-      <header className="live-pot-header">
-        <div>
-          <p className="eyebrow">Kort-bonustips</p>
-          <h2 className="live-pot-title">
-            <TeamLink teamName={match.homeTeam} /> <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>{" "}
-            <TeamLink teamName={match.awayTeam} />
-          </h2>
-          <p className="lead mt-2">
-            {formatOsloDateTime(match.kickoffAt)} · {displayStageOrGroup(match)} · {compactStatus.label}
-          </p>
+    <article className="tip-card">
+      <div className="tip-card-header">
+        <div className="tip-card-header-start">
+          <span className="tip-card-time">{formatOsloDateTime(match.kickoffAt)}</span>
+          {compactStatus.tone !== "scheduled" ? (
+            <span className={`tip-card-status status-${compactStatus.tone}`}>{compactStatus.label}</span>
+          ) : null}
         </div>
-        <div className="live-pot-actions">
-          {open ? <BonusAutofillButton matchId={match.id} next="/live" compact /> : null}
-          <Link className="btn-secondary" href={`/kamp/${match.id}`}>Kampkort</Link>
-        </div>
-      </header>
-
-      <div className="live-pot-facts">
-        <div>
-          <span>Gule nå</span>
-          <strong>{currentYellowCards}</strong>
-        </div>
-        <div>
-          <span>Røde nå</span>
-          <strong>{currentRedCards}</strong>
-        </div>
-        <div>
-          <span>Din score</span>
-          <strong>{ownScore.total > 0 ? `+${ownScore.total}` : ownScore.total}</strong>
-        </div>
+        <Link className="tip-card-link" href={`/kamp/${match.id}`}>Kampkort</Link>
       </div>
 
-      <div className="live-pot-body">
-        <section className="live-pot-entry">
-          <h3>Ditt kort-bonustips</h3>
-          {open ? (
-            <LivePotForm match={match} tip={tip} currentYellowCards={currentYellowCards} />
-          ) : tip ? (
-            <p className="lead">
-              {tip.yellowCardsTotal} gule · {formatLiveRedCardsPrediction(tip.redCardsTotal)} · {formatSigned(ownScore.total)} poeng.
-            </p>
-          ) : (
-            <p className="lead">Dette bonustipset er låst uten din håndskrift.</p>
-          )}
-          <p className="live-pot-rules">
-            Eksakt antall gule +{SCORE_RULES.bonusTips.yellowExact}. Eksakt antall røde +{SCORE_RULES.bonusTips.redExact}. Bom gir 0.
-          </p>
-        </section>
+      <div className="tip-card-body">
+        <span className="tip-card-stage">{displayStageOrGroup(match)}</span>
 
-        <section className="live-pot-board">
-          <h3>Åpent bonusbord</h3>
-          {rows.length ? (
+        <p className="bonus-card-matchup">
+          <TeamLink teamName={match.homeTeam} /> <strong>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</strong>{" "}
+          <TeamLink teamName={match.awayTeam} />
+        </p>
+
+        <div className="bonus-card-facts">
+          <div><span>Gule nå</span><strong>{currentYellowCards}</strong></div>
+          <div><span>Røde nå</span><strong>{currentRedCards}</strong></div>
+          <div><span>Din score</span><strong>{formatSigned(ownScore.total)}</strong></div>
+        </div>
+
+        {open ? (
+          <>
+            <LivePotForm match={match} tip={tip} currentYellowCards={currentYellowCards} />
+            <div className="bonus-card-autofill">
+              <BonusAutofillButton matchId={match.id} next="/live" compact />
+            </div>
+          </>
+        ) : tip ? (
+          <p className="tip-result-line">
+            Ditt bonustips: <strong>{tip.yellowCardsTotal} gule · {formatLiveRedCardsPrediction(tip.redCardsTotal)}</strong> · {formatSigned(ownScore.total)} poeng
+          </p>
+        ) : (
+          <p className="tip-result-line tip-result-line-muted">Dette bonustipset er låst uten din håndskrift.</p>
+        )}
+
+        {rows.length ? (
+          <div className="bonus-card-board">
+            <span className="tip-card-stage">Åpent bonusbord</span>
             <div className="table-wrap">
               <table className="compact-table">
                 <thead>
@@ -127,10 +117,12 @@ export function LivePotCard({
                 </tbody>
               </table>
             </div>
-          ) : (
-            <p className="lead">Ingen kort-bonustips på bordet ennå.</p>
-          )}
-        </section>
+          </div>
+        ) : null}
+
+        <p className="tip-card-footer-note">
+          Eksakt antall gule +{SCORE_RULES.bonusTips.yellowExact} · eksakt antall røde +{SCORE_RULES.bonusTips.redExact} · bom gir 0.
+        </p>
       </div>
     </article>
   );

@@ -1,7 +1,9 @@
 import { Medal, Star, Target } from "lucide-react";
 
+import { AvatarEditor } from "@/components/avatar-editor";
 import { MatchupLinks } from "@/components/team-link";
 import { Panel, Stat } from "@/components/ui";
+import { getAvatarDisplay, getAvatarOptions } from "@/lib/avatars";
 import { requireSession } from "@/lib/auth";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { computeStandings, describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
@@ -14,6 +16,8 @@ export const metadata = {
 
 export default async function ProfilePage() {
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
+  const avatarOptions = getAvatarOptions();
+  const avatarDisplay = getAvatarDisplay(state, player.id);
   const standings = computeStandings(state);
   const standing = standings.find((row) => row.player.id === player.id);
   const myPredictions = state.predictions.filter((prediction) => prediction.playerId === player.id);
@@ -47,11 +51,16 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-6">
       <Panel>
-        <p className="eyebrow">Profil</p>
-        <h1 className="section-title mt-2">{player.shortName}</h1>
-        <p className="lead mt-3 max-w-3xl">
-          Her ligger dine poeng, treff og sporene etter tipsene du senere kommer til å forklare som taktiske.
-        </p>
+        <div className="profile-hero">
+          <AvatarEditor player={player} display={avatarDisplay} options={avatarOptions} size={72} />
+          <div>
+            <p className="eyebrow">Profil</p>
+            <h1 className="section-title mt-2">{player.shortName}</h1>
+            <p className="lead mt-3 max-w-3xl">
+              Trykk på sirkelen for å velge og plassere din egen avatar.
+            </p>
+          </div>
+        </div>
       </Panel>
 
       <div className="grid gap-4 md:grid-cols-6">

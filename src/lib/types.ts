@@ -292,6 +292,18 @@ export type LivePotTip = {
   updatedAt: string;
 };
 
+export type AvatarSelection = {
+  playerId: string;
+  avatar: string;
+  /** Horizontal focal point 0-100 (%). Default 50. */
+  posX: number;
+  /** Vertical focal point 0-100 (%). Default 50. */
+  posY: number;
+  /** Zoom factor, 1 = fit. Default 1. */
+  scale: number;
+  updatedAt: string;
+};
+
 export type SyncState = {
   status: "idle" | "success" | "error" | "skipped";
   source: string | null;
@@ -332,6 +344,7 @@ export type AppState = {
   matchStats: MatchStats[];
   matchEvents: MatchEvent[];
   livePotTips: LivePotTip[];
+  avatarSelections: AvatarSelection[];
   followedMatches: FollowedMatch[];
   playerProfiles: PlayerProfile[];
   sync: SyncState;

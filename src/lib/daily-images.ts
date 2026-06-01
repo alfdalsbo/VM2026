@@ -33,20 +33,10 @@ export function getDailyImages(): string[] {
 }
 
 /**
- * Deterministic rotation across the full image bank — same date always picks
- * the same image, so alle ser samme bilde samme dag.
+ * Picks a random image from the bank — fresh on every page load.
  */
-export function pickDailyImage(today: string): string | null {
+export function pickRandomDailyImage(): string | null {
   const images = getDailyImages();
   if (images.length === 0) return null;
-  const seed = hashString(today);
-  return images[seed % images.length];
-}
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-  }
-  return hash;
+  return images[Math.floor(Math.random() * images.length)];
 }

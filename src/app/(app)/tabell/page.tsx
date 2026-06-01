@@ -1,5 +1,7 @@
-import { Panel } from "@/components/ui";
+import { Avatar } from "@/components/avatar";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
+import { Panel } from "@/components/ui";
+import { getAvatarMap } from "@/lib/avatars";
 import { BONUS_TIPS_WINNER_AWARD, computeStandings } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
@@ -10,6 +12,7 @@ export const metadata = {
 export default async function TablePage() {
   const state = await getAppState();
   const standings = computeStandings(state);
+  const avatars = getAvatarMap(state);
 
   return (
     <div className="space-y-6">
@@ -45,9 +48,7 @@ export default async function TablePage() {
                   <td className="font-black">{standing.rank}</td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <span className="grid h-9 w-9 place-items-center rounded text-sm font-black text-white" style={{ backgroundColor: standing.player.color }}>
-                        {standing.player.avatar}
-                      </span>
+                      <Avatar player={standing.player} display={avatars[standing.player.id]} size={36} />
                       <span className="font-bold">{standing.player.shortName}</span>
                     </div>
                   </td>

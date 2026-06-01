@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // Ensure the daily-images folder is bundled with server functions so the
   // dashboard can read its contents at runtime on Vercel.
   outputFileTracingIncludes: {
-    "/*": ["./public/daily-images/**"],
+    "/*": ["./public/daily-images/**", "./public/avatars/**"],
   },
   images: {
     remotePatterns: [

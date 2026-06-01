@@ -1,5 +1,6 @@
 "use client";
 
+import { Shuffle } from "lucide-react";
 import { useRef, useState } from "react";
 
 const SWIPE_THRESHOLD = 40;
@@ -48,6 +49,20 @@ export function DailyImageViewer({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt="" className="daily-image-photo" draggable={false} />
+      {interactive ? (
+        <button
+          type="button"
+          className="daily-image-shuffle"
+          onClick={(event) => {
+            event.stopPropagation();
+            showRandom();
+          }}
+          aria-label="Bytt til et tilfeldig bilde"
+        >
+          <Shuffle className="h-4 w-4" aria-hidden="true" />
+          <span>Shuffle</span>
+        </button>
+      ) : null}
     </figure>
   );
 }

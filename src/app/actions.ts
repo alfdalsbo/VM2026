@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createSession, destroySession, isCorrectPasscode, requireSession } from "@/lib/auth";
+import { getAvatarOptions } from "@/lib/avatars";
 import { autofillBonusTipsInState } from "@/lib/bonus-autofill";
 import { footballCopy } from "@/lib/football-jargon";
 import { toggleFollowedMatchInState } from "@/lib/followed-matches";
@@ -18,7 +19,7 @@ import {
   savePredictionInState,
 } from "@/lib/scoring";
 import { getAppState, saveAppState } from "@/lib/state";
-import type { KnockoutPredictionResolution, LivePotTip, Prediction } from "@/lib/types";
+import type { AvatarSelection, KnockoutPredictionResolution, LivePotTip, Prediction } from "@/lib/types";
 
 function field(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -227,6 +228,53 @@ export async function saveResultPredictionAction(input: SaveResultPredictionInpu
 
   revalidateApp(matchId);
   return { status: "Registrert", updatedAt };
+}
+
+export type SaveAvatarState = {
+  status?: string;
+  error?: string;
+};
+
+export type SaveAvatarInput = {
+  avatar: string;
+  posX?: number;
+  posY?: number;
+  scale?: number;
+};
+
+function clampRange(value: unknown, min: number, max: number, fallback: number): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.min(max, Math.max(min, num));
+}
+
+export async function saveAvatarAction(input: SaveAvatarInput): Promise<SaveAvatarState> {
+  const player = await requireSession();
+  const file = String(input?.avatar ?? "").trim();
+
+  if (!file) return { error: "Velg en avatar." };
+  if (!getAvatarOptions().includes(file)) {
+    return { error: "Avataren finnes ikke." };
+  }
+
+  try {
+    const state = await getAppState();
+    const others = (state.avatarSelections ?? []).filter((item) => item.playerId !== player.id);
+    const selection: AvatarSelection = {
+      playerId: player.id,
+      avatar: file,
+      posX: clampRange(input.posX, 0, 100, 50),
+      posY: clampRange(input.posY, 0, 100, 50),
+      scale: clampRange(input.scale, 1, 3, 1),
+      updatedAt: new Date().toISOString(),
+    };
+    await saveAppState({ ...state, avatarSelections: [...others, selection] });
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Avataren ble ikke lagret." };
+  }
+
+  revalidateApp();
+  return { status: "Avatar oppdatert." };
 }
 
 export async function saveLivePotTipAction(

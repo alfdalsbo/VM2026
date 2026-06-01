@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Avatar } from "@/components/avatar";
+import { DailyMatchImage } from "@/components/daily-match-image";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { NostalgiaHero } from "@/components/nostalgia";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
@@ -9,6 +11,7 @@ import { getAwards, getMatchdayVerdict } from "@/lib/awards";
 import { requireSession } from "@/lib/auth";
 import { footballCopy, pickDashboardLine } from "@/lib/football-jargon";
 import { formatOsloDate, formatOsloDateTime, formatScore } from "@/lib/format";
+import { getAvatarMap } from "@/lib/avatars";
 import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 import { formatMatchStatus } from "@/lib/tournament";
@@ -53,12 +56,13 @@ export default async function HomePage() {
     .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))
     .slice(0, 4);
   const topStandings = standings.slice(0, 5);
+  const avatars = getAvatarMap(state);
   const awards = getAwards(state);
   const matchdayVerdict = getMatchdayVerdict(state, now);
 
   return (
     <div className="dashboard space-y-5">
-      <NostalgiaHero moment={dailyNostalgia} />
+      <DailyMatchImage />
 
       <section className="dashboard-top">
         <div>
@@ -105,6 +109,8 @@ export default async function HomePage() {
         <ScoringRulesPanel />
       </div>
 
+      <NostalgiaHero moment={dailyNostalgia} />
+
       <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
         <Panel>
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -144,6 +150,7 @@ export default async function HomePage() {
             {topStandings.map((standing) => (
               <div key={standing.player.id}>
                 <span>#{standing.rank}</span>
+                <Avatar player={standing.player} display={avatars[standing.player.id]} size={28} />
                 <strong>{standing.player.shortName}</strong>
                 <em>{standing.totalPoints} p</em>
               </div>

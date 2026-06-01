@@ -48,14 +48,16 @@ export function AvatarEditor({
     reset();
   }
 
-  function onPointerDown(event: React.PointerEvent) {
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (!previewSrc) return;
+    event.preventDefault();
     drag.current = { x: event.clientX, y: event.clientY };
-    (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    event.currentTarget.setPointerCapture(event.pointerId);
   }
 
-  function onPointerMove(event: React.PointerEvent) {
+  function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
     if (!drag.current) return;
+    event.preventDefault();
     const dx = event.clientX - drag.current.x;
     const dy = event.clientY - drag.current.y;
     drag.current = { x: event.clientX, y: event.clientY };
@@ -63,8 +65,11 @@ export function AvatarEditor({
     setPosY((value) => clamp(value - (dy / PREVIEW_SIZE) * 100));
   }
 
-  function onPointerUp() {
+  function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     drag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   function save() {

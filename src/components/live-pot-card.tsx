@@ -1,14 +1,15 @@
 import Link from "next/link";
 
+import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LivePotForm } from "@/components/live-pot-form";
 import { TeamLink } from "@/components/team-link";
 import { displayStageOrGroup, formatCompactMatchStatus } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import {
+  countRedCards,
   countYellowCards,
-  formatLiveRedCardPrediction,
+  formatLiveRedCardsPrediction,
   getLivePotTip,
-  hasRedCard,
   isLivePotOpen,
   scoreLivePotTip,
 } from "@/lib/live-pot";
@@ -35,7 +36,7 @@ export function LivePotCard({
   const tip = getLivePotTip(state, player.id, match.id);
   const ownScore = scoreLivePotTip(match, tip, state);
   const currentYellowCards = countYellowCards(state.matchEvents, match.id);
-  const currentRedCard = hasRedCard(state.matchEvents, match.id);
+  const currentRedCards = countRedCards(state.matchEvents, match.id);
   const rows = state.livePotTips
     .filter((item) => item.matchId === match.id)
     .map((item): LivePotRow | null => {
@@ -54,7 +55,7 @@ export function LivePotCard({
     <article className="live-pot-card">
       <header className="live-pot-header">
         <div>
-          <p className="eyebrow">Live-bonustips</p>
+          <p className="eyebrow">Kort-bonustips</p>
           <h2 className="live-pot-title">
             <TeamLink teamName={match.homeTeam} /> <span>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>{" "}
             <TeamLink teamName={match.awayTeam} />
@@ -63,7 +64,10 @@ export function LivePotCard({
             {formatOsloDateTime(match.kickoffAt)} · {displayStageOrGroup(match)} · {compactStatus.label}
           </p>
         </div>
-        <Link className="btn-secondary" href={`/kamp/${match.id}`}>Kampkort</Link>
+        <div className="live-pot-actions">
+          {open ? <BonusAutofillButton matchId={match.id} next="/live" compact /> : null}
+          <Link className="btn-secondary" href={`/kamp/${match.id}`}>Kampkort</Link>
+        </div>
       </header>
 
       <div className="live-pot-facts">
@@ -72,8 +76,8 @@ export function LivePotCard({
           <strong>{currentYellowCards}</strong>
         </div>
         <div>
-          <span>Rødt nå</span>
-          <strong>{currentRedCard ? "Ja" : "Nei"}</strong>
+          <span>Røde nå</span>
+          <strong>{currentRedCards}</strong>
         </div>
         <div>
           <span>Din score</span>
@@ -83,19 +87,18 @@ export function LivePotCard({
 
       <div className="live-pot-body">
         <section className="live-pot-entry">
-          <h3>Ditt live-bonustips</h3>
+          <h3>Ditt kort-bonustips</h3>
           {open ? (
             <LivePotForm match={match} tip={tip} currentYellowCards={currentYellowCards} />
           ) : tip ? (
             <p className="lead">
-              {tip.yellowCardsTotal} gule · rødt kort {formatLiveRedCardPrediction(tip.redCard).toLowerCase()} · {formatSigned(ownScore.total)} poeng.
+              {tip.yellowCardsTotal} gule · {formatLiveRedCardsPrediction(tip.redCardsTotal)} · {formatSigned(ownScore.total)} poeng.
             </p>
           ) : (
-            <p className="lead">Dette bonustipset er lukket uten din håndskrift.</p>
+            <p className="lead">Dette bonustipset er låst uten din håndskrift.</p>
           )}
           <p className="live-pot-rules">
-            Gule: eksakt +{SCORE_RULES.bonusTips.yellowExact}, én unna +{SCORE_RULES.bonusTips.yellowClose}, bom {SCORE_RULES.bonusTips.yellowMiss}.
-            {" "}Rødt: treff +{SCORE_RULES.bonusTips.redCardYesHit}/+{SCORE_RULES.bonusTips.redCardNoHit}, bom {SCORE_RULES.bonusTips.redCardMiss}.
+            Eksakt antall gule +{SCORE_RULES.bonusTips.yellowExact}. Eksakt antall røde +{SCORE_RULES.bonusTips.redExact}. Bom gir 0.
           </p>
         </section>
 
@@ -108,7 +111,7 @@ export function LivePotCard({
                   <tr>
                     <th>Spiller</th>
                     <th>Gule</th>
-                    <th>Rødt</th>
+                    <th>Røde</th>
                     <th>Score</th>
                   </tr>
                 </thead>
@@ -117,7 +120,7 @@ export function LivePotCard({
                     <tr key={row.player.id} className={row.player.id === player.id ? "live-pot-me" : undefined}>
                       <td className="font-black">{row.player.shortName}</td>
                       <td>{row.tip.yellowCardsTotal}</td>
-                      <td>{formatLiveRedCardPrediction(row.tip.redCard)}</td>
+                      <td>{row.tip.redCardsTotal}</td>
                       <td className="font-black">{formatSigned(row.score.total)}</td>
                     </tr>
                   ))}
@@ -125,7 +128,7 @@ export function LivePotCard({
               </table>
             </div>
           ) : (
-            <p className="lead">Ingen live-bonustips på bordet ennå.</p>
+            <p className="lead">Ingen kort-bonustips på bordet ennå.</p>
           )}
         </section>
       </div>

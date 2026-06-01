@@ -7,6 +7,7 @@ import postgres from "postgres";
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
 import { derivePlayerProfilesFromState } from "@/lib/player-profiles";
 import { players } from "@/lib/players";
+import { isPredictionForCurrentMatchup } from "@/lib/scoring";
 import { createSeedTeamProfiles, mergeTeamProfiles } from "@/lib/teams";
 import type { AppState, LineupPlayer, MatchLineup, MatchEvent, LivePotTip, PlayerProfile, Prediction, SyncState, TournamentStats } from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
@@ -44,7 +45,7 @@ export function emptyTournamentStats(): TournamentStats {
 
 export function initialState(): AppState {
   const state: AppState = {
-    version: 5,
+    version: 6,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
@@ -71,6 +72,15 @@ type StoredPrediction = Prediction & {
   joker?: boolean;
 };
 
+type StoredLivePotTip = Partial<LivePotTip> & {
+  playerId: string;
+  matchId: string;
+  yellowCardsTotal?: number;
+  redCard?: "yes" | "no";
+  redCardsTotal?: number;
+  updatedAt?: string;
+};
+
 function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[] {
   return predictions.map((prediction) => ({
     playerId: prediction.playerId,
@@ -78,6 +88,7 @@ function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[
     homeGoals: prediction.homeGoals,
     awayGoals: prediction.awayGoals,
     outcome: prediction.outcome,
+    matchupKey: prediction.matchupKey ?? null,
     knockoutResolution:
       prediction.knockoutResolution ??
       (prediction.advancingTeam
@@ -91,6 +102,21 @@ function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[
     homeAssists: prediction.homeAssists ?? [],
     awayAssists: prediction.awayAssists ?? [],
     updatedAt: prediction.updatedAt,
+  }));
+}
+
+function normalizeLivePotTips(tips: StoredLivePotTip[] = []): LivePotTip[] {
+  return tips.map((tip) => ({
+    playerId: tip.playerId,
+    matchId: tip.matchId,
+    yellowCardsTotal: Number.isInteger(tip.yellowCardsTotal) ? tip.yellowCardsTotal! : 0,
+    redCardsTotal:
+      Number.isInteger(tip.redCardsTotal)
+        ? tip.redCardsTotal!
+        : tip.redCard === "yes"
+          ? 1
+          : 0,
+    updatedAt: tip.updatedAt ?? new Date(0).toISOString(),
   }));
 }
 
@@ -172,19 +198,23 @@ function mergeWithSeed(state: AppState): AppState {
         }
         : seedMatch;
   });
+  const predictions = normalizePredictions(state.predictions as StoredPrediction[]).filter((prediction) => {
+    const match = matches.find((item) => item.id === prediction.matchId);
+    return match ? isPredictionForCurrentMatchup(match, prediction) : false;
+  });
 
   const merged: AppState = {
     ...state,
-    version: 5,
+    version: 6,
     players,
     rounds: worldCupRounds,
     matches,
-    predictions: normalizePredictions(state.predictions as StoredPrediction[]),
+    predictions,
     teamProfiles: mergeTeamProfiles(createSeedTeamProfiles(matches), state.teamProfiles),
     lineups: normalizeLineups((state.lineups ?? []) as StoredLineup[], matches),
     matchStats: state.matchStats ?? [],
     matchEvents: (state.matchEvents ?? []) as MatchEvent[],
-    livePotTips: (state.livePotTips ?? []) as LivePotTip[],
+    livePotTips: normalizeLivePotTips((state.livePotTips ?? []) as StoredLivePotTip[]),
     followedMatches: state.followedMatches ?? [],
     playerProfiles: (state.playerProfiles ?? []) as PlayerProfile[],
     sync: state.sync ?? emptySyncState(),

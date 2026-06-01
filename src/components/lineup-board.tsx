@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
+import { TeamLink } from "@/components/team-link";
 import { displayTeamName } from "@/lib/display";
 import type { LineupPlayer, LineupStatus, MatchLineup, WorldCupMatch } from "@/lib/types";
 
@@ -28,7 +30,7 @@ export function LineupBoard({ lineup, match }: { lineup: MatchLineup | null; mat
           <span>{statusLabel(lineup.status)}</span>
         </div>
         <p>
-          {displayTeamName(match.homeTeam)}: {lineup.formation.home ?? "-"} · {displayTeamName(match.awayTeam)}: {lineup.formation.away ?? "-"}
+          <TeamLink teamName={match.homeTeam} />: {lineup.formation.home ?? "-"} · <TeamLink teamName={match.awayTeam} />: {lineup.formation.away ?? "-"}
         </p>
       </div>
     );
@@ -48,8 +50,8 @@ export function LineupBoard({ lineup, match }: { lineup: MatchLineup | null; mat
         <span>{statusLabel(lineup.status)}</span>
       </div>
       <div className="lineup-formations">
-        <strong>{displayTeamName(match.homeTeam)}: {lineup.formation.home ?? "-"}</strong>
-        <strong>{displayTeamName(match.awayTeam)}: {lineup.formation.away ?? "-"}</strong>
+        <strong><TeamLink teamName={match.homeTeam} />: {lineup.formation.home ?? "-"}</strong>
+        <strong><TeamLink teamName={match.awayTeam} />: {lineup.formation.away ?? "-"}</strong>
       </div>
       <div className="lineup-pitch" aria-label={`Taktikkbilde for ${displayTeamName(match.homeTeam)} mot ${displayTeamName(match.awayTeam)}`}>
         {starters.map((player) => (
@@ -57,8 +59,8 @@ export function LineupBoard({ lineup, match }: { lineup: MatchLineup | null; mat
         ))}
       </div>
       <div className="bench-grid">
-        <Bench title={`${displayTeamName(match.homeTeam)} benk`} players={homeBench} />
-        <Bench title={`${displayTeamName(match.awayTeam)} benk`} players={awayBench} />
+        <Bench title={<><TeamLink teamName={match.homeTeam} /> benk</>} players={homeBench} />
+        <Bench title={<><TeamLink teamName={match.awayTeam} /> benk</>} players={awayBench} />
       </div>
     </div>
   );
@@ -92,7 +94,7 @@ function PlayerDot({ player }: { player: LineupPlayer }) {
   );
 }
 
-function Bench({ title, players }: { title: string; players: LineupPlayer[] }) {
+function Bench({ title, players }: { title: ReactNode; players: LineupPlayer[] }) {
   return (
     <section>
       <h3>{title}</h3>

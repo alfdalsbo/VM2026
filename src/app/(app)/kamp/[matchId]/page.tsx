@@ -1,23 +1,30 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 
+import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LineupBoard } from "@/components/lineup-board";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
 import { LivePotCard } from "@/components/live-pot-card";
 import { MatchEvents } from "@/components/match-events";
+import { MatchNostalgiaPanel } from "@/components/nostalgia";
+import { PostMatchAnalysis } from "@/components/post-match-analysis";
 import { ProjectedStandings } from "@/components/projected-standings";
 import { ScorerAssistPicker } from "@/components/scorer-assist-picker";
 import { ShareButton } from "@/components/share-button";
 import { TeamLink } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
-import { displayMatchup, displayTeamName } from "@/lib/display";
+import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
+import { getMatchAnalysisForMatch } from "@/lib/match-analysis";
 import { createShareToken } from "@/lib/share-card";
-import { describePrediction, getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
+import { describePrediction, getPrediction, getPredictionUnavailableMessage, isMatchLocked, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 import type { MatchStats } from "@/lib/types";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
+import { isLivePotVisible } from "@/lib/live-pot";
+import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
   title: "Kampkort",
@@ -29,6 +36,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
   const match = state.matches.find((item) => item.id === matchId);
   if (!match) notFound();
 
+  const nostalgia = getMatchNostalgia(match);
   const prediction = getPrediction(state, player.id, match.id);
   const score = scorePrediction(match, prediction, state);
   const lineup = state.lineups.find((item) => item.matchId === match.id) ?? null;
@@ -36,8 +44,12 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
   const events = state.matchEvents
     .filter((event) => event.matchId === match.id)
     .sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.id.localeCompare(b.id));
+  const postMatchAnalysis = getMatchAnalysisForMatch({ match, stats, lineup, events });
   const isLive = match.status === "live" || match.status === "halftime";
   const locked = isMatchLocked(match);
+  const predictionUnavailableMessage = getPredictionUnavailableMessage(match);
+  const predictionPending = Boolean(predictionUnavailableMessage && !locked);
+  const showCardBonus = isLivePotVisible(match, state);
   const homeSquad = state.teamProfiles.find((profile) => profile.teamName === match.homeTeam)?.squad ?? [];
   const awaySquad = state.teamProfiles.find((profile) => profile.teamName === match.awayTeam)?.squad ?? [];
   const shareToken =
@@ -66,15 +78,27 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         </p>
       </Panel>
 
+      <MatchNostalgiaPanel moment={nostalgia} />
+
+      {postMatchAnalysis ? (
+        <Panel>
+          <PostMatchAnalysis analysis={postMatchAnalysis} match={match} stats={stats} lineup={lineup} events={events} />
+        </Panel>
+      ) : null}
+
       <Panel>
         <div className="match-detail-grid">
           <div>
             <p className="eyebrow">Ditt kort</p>
-            <h1 className="section-title mt-2">{describePrediction(prediction)}</h1>
-            <p className="lead mt-3">
-              {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
-              {score.bonus ? <> · bonustips <strong>{score.bonus}</strong></> : null}
-            </p>
+            <h1 className="section-title mt-2">{predictionPending ? "Venter på lagene" : describePrediction(prediction)}</h1>
+            {predictionPending ? (
+              <p className="lead mt-3">{predictionUnavailableMessage}</p>
+            ) : (
+              <p className="lead mt-3">
+                {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, eksakt {score.exactResult}
+                {score.bonus ? <> · bonustips <strong>{score.bonus}</strong></> : null}
+              </p>
+            )}
           </div>
           {shareToken ? (
             <ShareButton path={`/kort/${shareToken}`} text={shareText} title="Tippekjelleren-kort" />
@@ -84,14 +108,17 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         </div>
       </Panel>
 
-      {!locked ? (
+      {!predictionUnavailableMessage ? (
         <Panel>
-          <div className="mb-4">
-            <p className="eyebrow">Bonustips</p>
-            <h2 className="section-title">Mine spillere</h2>
-            <p className="lead mt-2 max-w-2xl">
-              Tipp hvem som scorer og hvem som setter dem opp. Rekkefølgen spiller ingen rolle — en treff for hver gang riktig spiller står for et mål/assist.
-            </p>
+          <div className="bonus-panel-heading mb-4">
+            <div>
+              <p className="eyebrow">Bonustips</p>
+              <h2 className="section-title">Mine spillere</h2>
+              <p className="lead mt-2 max-w-2xl">
+                Tipp hvem som scorer og hvem som setter dem opp. Rekkefølgen spiller ingen rolle — en treff for hver gang riktig spiller står for et mål/assist.
+              </p>
+            </div>
+            <BonusAutofillButton matchId={match.id} next={`/kamp/${match.id}`} />
           </div>
           <ScorerAssistPicker
             match={match}
@@ -102,7 +129,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         </Panel>
       ) : null}
 
-      {isLive ? (
+      {showCardBonus ? (
         <LivePotCard match={match} player={player} state={state} />
       ) : null}
 
@@ -129,8 +156,8 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
             <div className="match-facts mt-4">
               <Fact label="Tilskuere" value={stats.attendance != null ? stats.attendance.toLocaleString("nb-NO") : null} />
               <Fact label="Vær" value={formatWeather(stats)} />
-              <Fact label={displayTeamName(match.homeTeam)} value={stats.homeFormation ? `Formasjon ${stats.homeFormation}` : null} />
-              <Fact label={displayTeamName(match.awayTeam)} value={stats.awayFormation ? `Formasjon ${stats.awayFormation}` : null} />
+              <Fact label={<TeamLink teamName={match.homeTeam} />} value={stats.homeFormation ? `Formasjon ${stats.homeFormation}` : null} />
+              <Fact label={<TeamLink teamName={match.awayTeam} />} value={stats.awayFormation ? `Formasjon ${stats.awayFormation}` : null} />
             </div>
             {(stats.officials ?? []).length ? (
               <div className="official-list mt-4">
@@ -165,7 +192,7 @@ function StatLine({ label, home, away, suffix = "" }: { label: string; home: num
   );
 }
 
-function Fact({ label, value }: { label: string; value: string | null }) {
+function Fact({ label, value }: { label: ReactNode; value: string | null }) {
   return (
     <div>
       <span>{label}</span>

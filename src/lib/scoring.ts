@@ -1,5 +1,6 @@
 import type { AppState, BroadcastInfo, MatchEvent, Prediction, PredictionOutcome, ScoreBreakdown, Standing, WorldCupMatch } from "@/lib/types";
 import { footballCopy } from "@/lib/football-jargon";
+import { hasUnresolvedKnockoutTeams, matchupKeyForMatch } from "@/lib/knockout-placeholders";
 import { scoreLivePotTip } from "@/lib/live-pot";
 import { BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
 
@@ -56,13 +57,30 @@ function predictionFinalScore(prediction: Prediction) {
 }
 
 export function describePrediction(prediction: Prediction | null | undefined) {
-  if (!prediction) return "Ikke levert";
+  if (!prediction) return "0-0";
   const base = `${prediction.homeGoals}-${prediction.awayGoals}`;
   if (prediction.homeGoals !== prediction.awayGoals || !prediction.knockoutResolution) return base;
   if (prediction.knockoutResolution.method === "extra_time") {
     return `${base}, ${prediction.knockoutResolution.homeGoals}-${prediction.knockoutResolution.awayGoals} etter ekstraomganger`;
   }
   return `${base}, videre på straffer`;
+}
+
+export function defaultPrediction(playerId: string, matchId: string): Prediction {
+  return {
+    playerId,
+    matchId,
+    homeGoals: 0,
+    awayGoals: 0,
+    outcome: "draw",
+    matchupKey: null,
+    knockoutResolution: null,
+    homeScorers: [],
+    awayScorers: [],
+    homeAssists: [],
+    awayAssists: [],
+    updatedAt: new Date(0).toISOString(),
+  };
 }
 
 export function validatePredictionForMatch(match: WorldCupMatch, prediction: Prediction) {
@@ -86,6 +104,23 @@ export function isMatchLocked(match: WorldCupMatch, now = new Date()) {
   return new Date(match.kickoffAt).getTime() <= now.getTime();
 }
 
+export function getPredictionUnavailableMessage(match: WorldCupMatch, now = new Date()) {
+  if (isMatchLocked(match, now)) return footballCopy.lockError;
+  if (hasUnresolvedKnockoutTeams(match)) return footballCopy.knockoutPending;
+  return null;
+}
+
+export function isMatchPredictable(match: WorldCupMatch, now = new Date()) {
+  return getPredictionUnavailableMessage(match, now) === null;
+}
+
+export function isPredictionForCurrentMatchup(match: WorldCupMatch, prediction: Prediction | null | undefined) {
+  if (!prediction) return false;
+  const matchupKey = matchupKeyForMatch(match);
+  if (!matchupKey) return match.stage === "group";
+  return prediction.matchupKey === matchupKey;
+}
+
 export function hasFinalResult(match: WorldCupMatch) {
   return Boolean(match.result && (match.status === "finished" || match.result.source === "manual" || !match.result.source));
 }
@@ -100,7 +135,7 @@ export function scorePrediction(
   prediction?: Prediction | null,
   state?: AppState,
 ): ScoreBreakdown {
-  if (!prediction || !match.result) {
+  if (!match.result) {
     return {
       outcome: 0,
       goalDifference: 0,
@@ -114,18 +149,17 @@ export function scorePrediction(
     };
   }
 
-  const finalPrediction = predictionFinalScore(prediction);
-  const outcomePoints = actualOutcome(match) === predictionOutcome(prediction) ? SCORE_RULES.resultTips.outcome : 0;
-  const diffPoints =
-    match.result.homeGoals - match.result.awayGoals === finalPrediction.homeGoals - finalPrediction.awayGoals
-      ? SCORE_RULES.resultTips.goalDifference
-      : 0;
+  const scoreablePrediction = isPredictionForCurrentMatchup(match, prediction) ? prediction : null;
+  const tip = scoreablePrediction ?? defaultPrediction("", match.id);
+  const finalPrediction = predictionFinalScore(tip);
+  const outcomePoints = actualOutcome(match) === predictionOutcome(tip) ? SCORE_RULES.resultTips.outcome : 0;
+  const diffPoints = 0;
   const exactPoints =
     match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals
       ? SCORE_RULES.resultTips.exactResult
       : 0;
-  const scorerPoints = state ? scoreScorer(match, prediction, state) : 0;
-  const assistPoints = state ? scoreAssist(match, prediction, state) : 0;
+  const scorerPoints = state && scoreablePrediction ? scoreScorer(match, scoreablePrediction, state) : 0;
+  const assistPoints = state && scoreablePrediction ? scoreAssist(match, scoreablePrediction, state) : 0;
   const base = outcomePoints + diffPoints + exactPoints;
   const bonus = scorerPoints + assistPoints;
   return {
@@ -211,7 +245,14 @@ function scoreAssist(match: WorldCupMatch, prediction: Prediction, state: AppSta
 }
 
 export function getPrediction(state: AppState, playerId: string, matchId: string) {
-  return state.predictions.find((prediction) => prediction.playerId === playerId && prediction.matchId === matchId) ?? null;
+  const match = state.matches.find((item) => item.id === matchId);
+  const prediction = state.predictions.find((item) => item.playerId === playerId && item.matchId === matchId) ?? null;
+  if (!match || !prediction) return null;
+  return isPredictionForCurrentMatchup(match, prediction) ? prediction : null;
+}
+
+export function getPredictionOrDefault(state: AppState, playerId: string, matchId: string) {
+  return getPrediction(state, playerId, matchId) ?? defaultPrediction(playerId, matchId);
 }
 
 export function computeStandings(state: AppState): Standing[] {
@@ -235,7 +276,8 @@ export function computeStandings(state: AppState): Standing[] {
 
     for (const match of state.matches) {
       const prediction = getPrediction(state, player.id, match.id);
-      if (prediction) predictions += 1;
+      const scoreablePrediction = prediction ?? defaultPrediction(player.id, match.id);
+      if (match.status !== "cancelled" && match.status !== "postponed") predictions += 1;
       if (
         prediction?.homeScorers?.length ||
         prediction?.awayScorers?.length ||
@@ -245,7 +287,7 @@ export function computeStandings(state: AppState): Standing[] {
         bonusTips += 1;
       }
       if (!hasFinalResult(match)) continue;
-      const score = scorePrediction(match, prediction, state);
+      const score = scorePrediction(match, scoreablePrediction, state);
       resultTipPoints += score.total;
       matchBonusPoints += score.bonus;
       if (score.exactResult) exactResults += 1;
@@ -260,8 +302,8 @@ export function computeStandings(state: AppState): Standing[] {
       liveBonusPoints += score.total;
       liveTips += 1;
       bonusTips += 1;
-      if (score.yellowCards === 3) liveExactYellows += 1;
-      if ((tip.redCard === "yes" && score.actualRedCard) || (tip.redCard === "no" && score.settled && !score.actualRedCard)) {
+      if (score.yellowCards === SCORE_RULES.bonusTips.yellowExact) liveExactYellows += 1;
+      if (score.redCards === SCORE_RULES.bonusTips.redExact) {
         liveRedCardHits += 1;
       }
     }
@@ -308,7 +350,7 @@ export function computeStandings(state: AppState): Standing[] {
     if (!roundMatches.length) continue;
     const roundScores = rows.map((row) => {
       const points = roundMatches.reduce((sum, match) => {
-        return sum + scorePrediction(match, getPrediction(state, row.player.id, match.id), state).total;
+        return sum + scorePrediction(match, getPredictionOrDefault(state, row.player.id, match.id), state).total;
       }, 0);
       return { playerId: row.player.id, points };
     });
@@ -387,7 +429,8 @@ export function savePredictionInState(
 ): AppState {
   const match = state.matches.find((item) => item.id === prediction.matchId);
   if (!match) throw new Error("Kampen finnes ikke.");
-  if (isMatchLocked(match, now)) throw new Error(footballCopy.lockError);
+  const unavailableMessage = getPredictionUnavailableMessage(match, now);
+  if (unavailableMessage) throw new Error(unavailableMessage);
   validatePredictionForMatch(match, prediction);
 
   const predictions = state.predictions.filter((item) => {
@@ -397,6 +440,7 @@ export function savePredictionInState(
   const normalizedPrediction = {
     ...prediction,
     outcome: prediction.outcome ?? inferPredictionOutcome(prediction.homeGoals, prediction.awayGoals),
+    matchupKey: matchupKeyForMatch(match),
   };
 
   return {

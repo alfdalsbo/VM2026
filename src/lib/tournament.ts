@@ -1,4 +1,5 @@
 import { formatScore } from "@/lib/format";
+import { isKnockoutPlaceholder } from "@/lib/knockout-placeholders";
 import { hasFinalResult } from "@/lib/scoring";
 import type { AppState, BroadcastInfo, TournamentStage, WorldCupMatch } from "@/lib/types";
 import { worldCupMatches } from "@/lib/world-cup-2026";
@@ -204,10 +205,6 @@ function matchRunnerUp(match: WorldCupMatch) {
   const winner = matchWinner(match);
   if (!winner) return null;
   return winner === match.homeTeam ? match.awayTeam : match.homeTeam;
-}
-
-export function isKnockoutPlaceholder(team: string) {
-  return /^([12][A-L]|3[A-L]+|W\d+|RU\d+)$/.test(team);
 }
 
 function resolveGroupRank(state: AppState, rank: number, groupLetter: string) {

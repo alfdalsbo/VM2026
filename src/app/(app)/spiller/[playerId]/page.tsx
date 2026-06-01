@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { MatchupLinks, TeamLink } from "@/components/team-link";
 import { Panel, Stat } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
-import { displayMatchup, displayTeamName } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { getPlayerProfile } from "@/lib/player-profiles";
 import { getAppState } from "@/lib/state";
@@ -34,7 +34,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
             <p className="eyebrow">Spillerkort</p>
             <h1 className="section-title mt-2">{profile.name}</h1>
             <p className="lead mt-3">
-              <Link href={`/lag/${profile.teamSlug}`}>{displayTeamName(profile.teamName)}</Link>
+              <TeamLink teamName={profile.teamName} />
               {profile.shirtNumber ? ` · #${profile.shirtNumber}` : ""} · {profile.positionDetail ?? positionLabel(profile.position)}
             </p>
           </div>
@@ -77,14 +77,16 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
             {events.map((event) => {
               const match = state.matches.find((item) => item.id === event.matchId);
               return (
-                <Link key={event.id} href={`/kamp/${event.matchId}`}>
-                  <strong>{eventName(event.type)}</strong>
+                <article key={event.id} className="player-event-card">
+                  <Link href={`/kamp/${event.matchId}`}>
+                    <strong>{eventName(event.type)}</strong>
+                  </Link>
                   <span>
                     {event.minute != null ? `${event.minute}' · ` : ""}
-                    {match ? displayMatchup(match) : "Kamp"}
+                    {match ? <MatchupLinks match={match} /> : "Kamp"}
                     {event.scoreAfter ? ` · ${formatScore(event.scoreAfter.homeGoals, event.scoreAfter.awayGoals)}` : ""}
                   </span>
-                </Link>
+                </article>
               );
             })}
           </div>
@@ -97,10 +99,11 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
         <h2 className="section-title">Kamper</h2>
         <div className="team-match-list mt-4">
           {matches.map((match) => (
-            <Link key={match.id} href={`/kamp/${match.id}`}>
-              <strong>{displayMatchup(match)}</strong>
+            <article key={match.id} className="team-match-card">
+              <strong><MatchupLinks match={match} /></strong>
               <span>{formatOsloDateTime(match.kickoffAt)} · {formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
-            </Link>
+              <Link href={`/kamp/${match.id}`} className="team-match-card-action">Kampkort</Link>
+            </article>
           ))}
         </div>
       </Panel>

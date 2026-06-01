@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { MatchupLinks } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { displayMatchup } from "@/lib/display";
 import { formatScore } from "@/lib/format";
 import { parseShareToken } from "@/lib/share-card";
 import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
+import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
   const data = await getShareData((await params).token);
@@ -21,13 +23,19 @@ export default async function ShareCardPage({ params }: { params: Promise<{ toke
   const data = await getShareData((await params).token);
   if (!data) notFound();
   const score = scorePrediction(data.match, data.prediction, data.state);
+  const nostalgia = getMatchNostalgia(data.match);
 
   return (
     <main className="share-page">
-      <Panel className="share-card">
+      <Panel className="share-card share-card-retro">
         <p className="eyebrow">Tippekjelleren · VM 2026</p>
         <h1>{data.player.shortName}s tippekort</h1>
-        <p>{displayMatchup(data.match)}</p>
+        <p><MatchupLinks match={data.match} /></p>
+        <div className="share-archive-strip">
+          <span>{nostalgia.year}</span>
+          <strong>{nostalgia.title}</strong>
+          <em>{nostalgia.cellarVerdict}</em>
+        </div>
         <div className="share-score">
           <span>Tips: {describePrediction(data.prediction)}</span>
           <strong>Fasit: {formatScore(data.match.result?.homeGoals, data.match.result?.awayGoals)}</strong>

@@ -13,7 +13,7 @@ function tip(overrides: Partial<LivePotTip> = {}): LivePotTip {
     playerId: "alf",
     matchId: "m001",
     yellowCardsTotal: 2,
-    redCard: "no",
+    redCardsTotal: 0,
     updatedAt: "2026-06-11T19:20:00Z",
     ...overrides,
   };
@@ -48,14 +48,26 @@ function withMatchStatus(status: AppState["matches"][number]["status"], events: 
 }
 
 describe("live pot", () => {
-  it("only accepts tips while the match is live or at halftime", () => {
+  it("accepts tips before kickoff and locks them after kickoff", () => {
     const scheduled = initialState();
-    expect(() => saveLivePotTipInState(scheduled, tip())).toThrow("Live-bonustips åpner først når kampen er i gang.");
-
-    const live = withMatchStatus("live");
-    const updated = saveLivePotTipInState(live, tip({ yellowCardsTotal: 3 }));
+    const updated = saveLivePotTipInState(scheduled, tip({ yellowCardsTotal: 3 }));
     expect(updated.livePotTips).toHaveLength(1);
     expect(updated.livePotTips[0]).toMatchObject({ yellowCardsTotal: 3 });
+
+    const locked = {
+      ...scheduled,
+      matches: scheduled.matches.map((match) =>
+        match.id === "m001" ? { ...match, kickoffAt: "2026-05-31T19:00:00Z" } : match,
+      ),
+    };
+    expect(() => saveLivePotTipInState(locked, tip())).toThrow("Bonustips låses ved kampstart.");
+  });
+
+  it("keeps card bonus tips closed for unresolved knockout matches", () => {
+    const state = initialState();
+    expect(() => saveLivePotTipInState(state, tip({ matchId: "m073" }))).toThrow(
+      "Sluttspillkupongen åpner når begge lag er klare.",
+    );
   });
 
   it("scores yellow and red card predictions as separate bonustips", () => {
@@ -65,8 +77,8 @@ describe("live pot", () => {
       event("r1", "red_card", 44),
     ]);
 
-    expect(scoreLivePotTip(state.matches.find((match) => match.id === "m001")!, tip({ yellowCardsTotal: 2, redCard: "yes" }), state).total).toBe(5);
-    expect(scoreLivePotTip(state.matches.find((match) => match.id === "m001")!, tip({ yellowCardsTotal: 5, redCard: "no" }), state).total).toBe(-2);
+    expect(scoreLivePotTip(state.matches.find((match) => match.id === "m001")!, tip({ yellowCardsTotal: 2, redCardsTotal: 1 }), state).total).toBe(2);
+    expect(scoreLivePotTip(state.matches.find((match) => match.id === "m001")!, tip({ yellowCardsTotal: 5, redCardsTotal: 0 }), state).total).toBe(0);
   });
 
   it("computes a live pot leaderboard independent of the official table", () => {
@@ -74,13 +86,13 @@ describe("live pot", () => {
     const state: AppState = {
       ...live,
       livePotTips: [
-        tip({ playerId: "alf", yellowCardsTotal: 1, redCard: "no" }),
-        tip({ playerId: "anders", yellowCardsTotal: 0, redCard: "yes" }),
+        tip({ playerId: "alf", yellowCardsTotal: 1, redCardsTotal: 0 }),
+        tip({ playerId: "anders", yellowCardsTotal: 0, redCardsTotal: 1 }),
       ],
     };
 
     const standings = computeLivePotStandings(state);
-    expect(standings[0]).toMatchObject({ player: expect.objectContaining({ id: "alf" }), points: 4 });
-    expect(standings.find((row) => row.player.id === "anders")?.points).toBe(-1);
+    expect(standings[0]).toMatchObject({ player: expect.objectContaining({ id: "alf" }), points: 2 });
+    expect(standings.find((row) => row.player.id === "anders")?.points).toBe(0);
   });
 });

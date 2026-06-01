@@ -2,6 +2,7 @@ export const footballCopy = {
   dashboardFallback: "Ingen kamper å tippe akkurat nå. Dommerbordet holder blyanten varm.",
   lockedLabel: "Kupongen er låst",
   lockError: "Dommeren har blåst i gang. Kupongen er låst.",
+  knockoutPending: "Sluttspillkupongen åpner når begge lag er klare.",
   predictionNote: "Kupongen kan justeres helt til avspark. Etter fløyta er den del av arkivet.",
   predictionSaved: "Tipset er levert til dommerbordet. Kupongen kan justeres helt til avspark.",
 };

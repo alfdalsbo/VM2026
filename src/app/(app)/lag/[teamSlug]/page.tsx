@@ -2,14 +2,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { TeamNostalgiaPass } from "@/components/nostalgia";
+import { MatchupLinks } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
-import { displayMatchup, displayTeamName } from "@/lib/display";
+import { displayTeamName } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { playerProfileIdFor } from "@/lib/player-profiles";
 import { getAppState } from "@/lib/state";
 import { getTeamProfile, groupSquadByPosition, matchesForTeam } from "@/lib/teams";
 import { formatMatchStatus } from "@/lib/tournament";
+import { getTeamNostalgiaProfile } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
   title: "Lag",
@@ -23,6 +26,8 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
   if (!profile) notFound();
   const matches = matchesForTeam(state, profile.teamName);
   const squadGroups = groupSquadByPosition(profile.squad);
+  const nostalgiaProfile = getTeamNostalgiaProfile(profile.teamName);
+  const hasOnlyHistoricalNames = profile.squad.length > 0 && profile.squad.every((player) => player.source === "placeholder");
 
   return (
     <div className="space-y-6">
@@ -63,8 +68,16 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
         </div>
       </Panel>
 
+      <TeamNostalgiaPass profile={nostalgiaProfile} />
+
       <Panel>
-        <h2 className="section-title">Tropp</h2>
+        <p className="eyebrow">{hasOnlyHistoricalNames ? "Historiske navn" : "Tropp"}</p>
+        <h2 className="section-title mt-2">{hasOnlyHistoricalNames ? "Arkivtropp til FIFA-data kommer" : "Tropp"}</h2>
+        <p className="lead mt-3">
+          {hasOnlyHistoricalNames
+            ? "Dette er historiske navn som holder garderoben varm til 2026-troppen publiseres i gratisdata."
+            : "Publisert troppdata fra de tilgjengelige kampkildene."}
+        </p>
         <div className="squad-grid mt-4">
           {squadGroups.map((group) => (
             <section key={group.position}>
@@ -85,6 +98,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
                             player.goals ? `${player.goals} mål` : null,
                             player.yellowCards ? `${player.yellowCards} gule` : null,
                             player.redCards ? `${player.redCards} røde` : null,
+                            player.source === "placeholder" ? "Historisk navn" : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
@@ -105,10 +119,11 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
         <h2 className="section-title">Kamper</h2>
         <div className="team-match-list mt-4">
           {matches.map((match) => (
-            <Link key={match.id} href={`/kamp/${match.id}`}>
-              <strong>{displayMatchup(match)}</strong>
+            <article key={match.id} className="team-match-card">
+              <strong><MatchupLinks match={match} /></strong>
               <span>{formatOsloDateTime(match.kickoffAt)} · {formatMatchStatus(match)} · {formatScore(match.result?.homeGoals, match.result?.awayGoals)}</span>
-            </Link>
+              <Link href={`/kamp/${match.id}`} className="team-match-card-action">Kampkort</Link>
+            </article>
           ))}
         </div>
       </Panel>

@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useState } from "react";
 
 import { savePredictionAction, type SavePredictionState } from "@/app/actions";
-import { displayTeamName, teamFlagEmoji } from "@/lib/display";
+import { TeamLink } from "@/components/team-link";
+import { teamFlagEmoji } from "@/lib/display";
 import { cx } from "@/lib/format";
 import type { Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
@@ -77,7 +78,7 @@ export function ScorerAssistPicker({
   if (homeGoals + awayGoals === 0) {
     return (
       <p className="lead">
-        Lever et resultattips på <a className="tip-card-link" href="/kamper">kampoversikten</a> først,
+        Resultattipset står på 0-0. Sett et tips med mål på <a className="tip-card-link" href="/kamper">kampoversikten</a>,
         så åpner scorer- og assist-valgene seg her.
       </p>
     );
@@ -172,14 +173,13 @@ function TeamSection({
   setAssists: (next: Counts) => void;
 }) {
   const flag = teamFlagEmoji(team);
-  const teamName = displayTeamName(team);
 
   if (goals === 0) {
     return (
       <section className="scorer-team">
         <header className="scorer-team-header">
           <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
-          <h3 className="scorer-team-name">{teamName}</h3>
+          <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
           <span className="scorer-team-goals">0 mål</span>
         </header>
         <p className="lead">Ingen tippede mål — ingen valg her.</p>
@@ -192,7 +192,7 @@ function TeamSection({
       <section className="scorer-team">
         <header className="scorer-team-header">
           <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
-          <h3 className="scorer-team-name">{teamName}</h3>
+          <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
           <span className="scorer-team-goals">{goals} mål</span>
         </header>
         <p className="lead">Tropp ikke tilgjengelig ennå.</p>
@@ -204,7 +204,7 @@ function TeamSection({
     <section className="scorer-team">
       <header className="scorer-team-header">
         <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
-        <h3 className="scorer-team-name">{teamName}</h3>
+        <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
         <span className="scorer-team-goals">{goals} mål</span>
       </header>
 

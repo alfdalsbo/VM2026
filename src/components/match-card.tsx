@@ -4,7 +4,7 @@ import { PredictionForm } from "@/components/prediction-form";
 import { TeamLink } from "@/components/team-link";
 import { displayMatchup, displayStageOrGroup, formatCompactMatchStatus } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
-import { getPrediction, isMatchLocked, scorePrediction } from "@/lib/scoring";
+import { getPrediction, isMatchLocked, isMatchPredictable, isPredictionForCurrentMatchup, scorePrediction } from "@/lib/scoring";
 import type { AppState, Player, WorldCupMatch } from "@/lib/types";
 
 export function MatchCard({
@@ -21,11 +21,12 @@ export function MatchCard({
   const prediction = getPrediction(state, player.id, match.id);
   const score = scorePrediction(match, prediction, state);
   const locked = isMatchLocked(match);
+  const predictionClosed = !isMatchPredictable(match);
   const isLive = match.status === "live" || match.status === "halftime";
   const compactStatus = formatCompactMatchStatus(match);
   const otherPredictions =
     showLockedPredictions && locked
-      ? state.predictions.filter((item) => item.matchId === match.id && item.playerId !== player.id)
+      ? state.predictions.filter((item) => item.matchId === match.id && item.playerId !== player.id && isPredictionForCurrentMatchup(match, item))
       : [];
 
   return (
@@ -47,10 +48,10 @@ export function MatchCard({
         </Link>
         <strong><TeamLink teamName={match.awayTeam} /></strong>
       </div>
-      <PredictionForm match={match} prediction={prediction} locked={locked} compact />
-      {match.result && prediction ? (
+      <PredictionForm match={match} prediction={prediction} locked={predictionClosed} compact />
+      {match.result ? (
         <p className="score-line">
-          {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
+          {isLive ? "Resultattips hvis dette står:" : "Resultattips:"} <strong>{score.total}</strong> · utfall {score.outcome}, eksakt {score.exactResult}
           {score.bonus ? <> · bonustips <strong>{score.bonus}</strong></> : null}
         </p>
       ) : null}

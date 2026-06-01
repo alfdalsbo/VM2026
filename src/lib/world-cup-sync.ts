@@ -1,4 +1,5 @@
 import { emptyTournamentStats, getAppState, saveAppState } from "@/lib/state";
+import { isKnockoutPlaceholder } from "@/lib/knockout-placeholders";
 import { createTeamProfile, teamSlug } from "@/lib/teams";
 import { applyKnockoutResolversToState } from "@/lib/tournament";
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
@@ -767,7 +768,7 @@ function buildTournamentStatsFromTeamProfiles(current: TournamentStats, teamProf
 function shouldUpdateTeamName(current: string, next: string | null, stage: WorldCupMatch["stage"]) {
   if (!next || next === current) return false;
   if (stage === "group") return false;
-  return /^(W|RU|\d[A-L]|\d[A-L]{2,}|3[A-L]+|2[A-L])/.test(current);
+  return isKnockoutPlaceholder(current);
 }
 
 export function applyFifaMatchesToState(

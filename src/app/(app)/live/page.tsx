@@ -1,3 +1,4 @@
+import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
 import { LivePotCard } from "@/components/live-pot-card";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
@@ -13,13 +14,14 @@ export const metadata = {
 
 export default async function LivePage() {
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
-  const liveMatches = state.matches.filter(isLivePotOpen);
+  const openMatches = state.matches.filter((match) => isLivePotOpen(match));
+  const liveMatches = state.matches.filter((match) => match.status === "live" || match.status === "halftime");
   const potMatches = state.matches
     .filter((match) => isLivePotVisible(match, state))
     .sort((a, b) => {
-      const aLive = isLivePotOpen(a) ? 0 : 1;
-      const bLive = isLivePotOpen(b) ? 0 : 1;
-      return aLive - bLive || b.kickoffAt.localeCompare(a.kickoffAt);
+      const aOpen = isLivePotOpen(a) ? 0 : 1;
+      const bOpen = isLivePotOpen(b) ? 0 : 1;
+      return aOpen - bOpen || a.kickoffAt.localeCompare(b.kickoffAt);
     })
     .slice(0, 8);
   const standings = computeBonusTipStandings(state);
@@ -30,18 +32,23 @@ export default async function LivePage() {
       {liveMatches.length ? <LiveAutoRefresh /> : null}
 
       <Panel>
-        <p className="eyebrow">Bonustips</p>
-        <h1 className="section-title mt-2">Bonustips</h1>
-        <p className="lead mt-3 max-w-3xl">
-          Egen score for alt som ikke er rent resultattips: målscorere, assister og live-bonustips på gule og røde kort. Ingen odds, ingen penger, bare privat VM-jury med litt for høy selvtillit.
-        </p>
+        <div className="bonus-page-heading">
+          <div>
+            <p className="eyebrow">Bonustips</p>
+            <h1 className="section-title mt-2">Bonustips</h1>
+            <p className="lead mt-3 max-w-3xl">
+              Egen score for alt som ikke er rent resultattips: målscorere, assister og bonustips på antall gule og røde kort. Ingen penger, bare privat VM-jury med litt for høy selvtillit.
+            </p>
+          </div>
+          <BonusAutofillButton matchId="__all_open__" next="/live" />
+        </div>
       </Panel>
 
       <ScoringRulesPanel />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Stat label="Kamper live" value={liveMatches.length} />
-        <Stat label="Live-bonustips" value={state.livePotTips.length} />
+        <Stat label="Åpne kamper" value={openMatches.length} />
+        <Stat label="Kort-bonustips" value={state.livePotTips.length} />
         <Stat
           label="Leder bonustips"
           value={leader ? leader.player.shortName : "-"}
@@ -56,8 +63,8 @@ export default async function LivePage() {
         {!potMatches.length ? (
           <Panel>
             <p className="eyebrow">Avspark mangler</p>
-            <h2 className="section-title mt-2">Ingen live-bonustips å dømme ennå</h2>
-            <p className="lead mt-3">Når en VM-kamp går live, åpner gule kort og rødt kort-spørsmålet her.</p>
+            <h2 className="section-title mt-2">Ingen kort-bonustips å dømme ennå</h2>
+            <p className="lead mt-3">Når kampoppsettet nærmer seg, ligger kort-bonustipsene klare her før avspark.</p>
           </Panel>
         ) : null}
       </div>
@@ -73,11 +80,11 @@ export default async function LivePage() {
                 <th>Spiller</th>
                 <th>Bonustips</th>
                 <th>Kampbonus</th>
-                <th>Live</th>
+                <th>Kort</th>
                 <th>Tips</th>
                 <th>Premie</th>
                 <th>Eksakte gule</th>
-                <th>Rødt-treff</th>
+                <th>Eksakte røde</th>
               </tr>
             </thead>
             <tbody>

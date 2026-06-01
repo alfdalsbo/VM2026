@@ -275,6 +275,7 @@ export type Prediction = {
   homeGoals: number;
   awayGoals: number;
   outcome?: PredictionOutcome;
+  matchupKey?: string | null;
   knockoutResolution?: KnockoutPredictionResolution | null;
   homeScorers?: string[];
   awayScorers?: string[];
@@ -283,13 +284,11 @@ export type Prediction = {
   updatedAt: string;
 };
 
-export type LiveRedCardPrediction = "yes" | "no";
-
 export type LivePotTip = {
   playerId: string;
   matchId: string;
   yellowCardsTotal: number;
-  redCard: LiveRedCardPrediction;
+  redCardsTotal: number;
   updatedAt: string;
 };
 

@@ -6,14 +6,16 @@ import {
   compareStandings,
   computeProjectedStandings,
   computeStandings,
+  getPrediction,
   inferPredictionOutcome,
   savePredictionInState,
   scorePrediction,
   upsertMatchResultInState,
 } from "@/lib/scoring";
-import type { Prediction } from "@/lib/types";
+import type { AppState, Prediction } from "@/lib/types";
 
 const nowBeforeVm = new Date("2026-06-01T10:00:00Z");
+const knockoutMatchupKey = "Germany|||Norway";
 
 function prediction(matchId: string, overrides: Partial<Prediction> = {}): Prediction {
   return {
@@ -21,9 +23,25 @@ function prediction(matchId: string, overrides: Partial<Prediction> = {}): Predi
     matchId,
     homeGoals: 2,
     awayGoals: 1,
+    matchupKey: null,
     knockoutResolution: null,
     updatedAt: "2026-06-01T10:00:00Z",
     ...overrides,
+  };
+}
+
+function resolvedKnockoutState(state: AppState = initialState()) {
+  return {
+    ...state,
+    matches: state.matches.map((match) =>
+      match.id === "m073"
+        ? {
+            ...match,
+            homeTeam: "Germany",
+            awayTeam: "Norway",
+          }
+        : match,
+    ),
   };
 }
 
@@ -34,7 +52,7 @@ describe("scorePrediction", () => {
     expect(inferPredictionOutcome(0, 2)).toBe("away");
   });
 
-  it("gives 10 points for an exact result without joker multipliers", () => {
+  it("gives 3 points for an exact result", () => {
     const state = initialState();
     const match = upsertMatchResultInState(state, "m001", {
       homeGoals: 2,
@@ -46,11 +64,27 @@ describe("scorePrediction", () => {
     }).matches[0];
 
     const legacyJokerPrediction = { ...prediction("m001"), joker: true } as Prediction;
-    expect(scorePrediction(match, legacyJokerPrediction).total).toBe(10);
+    expect(scorePrediction(match, legacyJokerPrediction).total).toBe(3);
+  });
+
+  it("does not score goal difference without exact result", () => {
+    const state = initialState();
+    const match = upsertMatchResultInState(state, "m001", {
+      homeGoals: 2,
+      awayGoals: 1,
+      decidedByPenalties: false,
+      advancingTeam: null,
+      updatedAt: "2026-06-11T21:00:00Z",
+      updatedBy: "alf",
+    }).matches[0];
+
+    const score = scorePrediction(match, prediction("m001", { homeGoals: 3, awayGoals: 2 }));
+    expect(score.goalDifference).toBe(0);
+    expect(score.total).toBe(1);
   });
 
   it("uses penalty winner for knockout outcome", () => {
-    const state = initialState();
+    const state = resolvedKnockoutState();
     const match = upsertMatchResultInState(state, "m073", {
       homeGoals: 1,
       awayGoals: 1,
@@ -58,14 +92,14 @@ describe("scorePrediction", () => {
       advancingTeam: "away",
       updatedAt: "2026-06-28T21:00:00Z",
       updatedBy: "alf",
-    }).matches.find((item) => item.id === "m073");
+    }, "Germany", "Norway").matches.find((item) => item.id === "m073");
 
-    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, knockoutResolution: { method: "penalties", winner: "away" } })).outcome).toBe(4);
-    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, knockoutResolution: { method: "penalties", winner: "home" } })).outcome).toBe(0);
+    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, matchupKey: knockoutMatchupKey, knockoutResolution: { method: "penalties", winner: "away" } })).outcome).toBe(1);
+    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, matchupKey: knockoutMatchupKey, knockoutResolution: { method: "penalties", winner: "home" } })).outcome).toBe(0);
   });
 
   it("scores extra-time predictions against the final score", () => {
-    const state = initialState();
+    const state = resolvedKnockoutState();
     const match = upsertMatchResultInState(state, "m073", {
       homeGoals: 2,
       awayGoals: 1,
@@ -73,7 +107,7 @@ describe("scorePrediction", () => {
       advancingTeam: null,
       updatedAt: "2026-06-28T21:00:00Z",
       updatedBy: "alf",
-    }).matches.find((item) => item.id === "m073");
+    }, "Germany", "Norway").matches.find((item) => item.id === "m073");
 
     expect(
       scorePrediction(
@@ -81,10 +115,25 @@ describe("scorePrediction", () => {
         prediction("m073", {
           homeGoals: 1,
           awayGoals: 1,
+          matchupKey: knockoutMatchupKey,
           knockoutResolution: { method: "extra_time", homeGoals: 2, awayGoals: 1, winner: "home" },
         }),
       ).total,
-    ).toBe(10);
+    ).toBe(3);
+  });
+
+  it("scores a missing group prediction as a default 0-0", () => {
+    const state = initialState();
+    const match = upsertMatchResultInState(state, "m001", {
+      homeGoals: 0,
+      awayGoals: 0,
+      decidedByPenalties: false,
+      advancingTeam: null,
+      updatedAt: "2026-06-11T21:00:00Z",
+      updatedBy: "alf",
+    }).matches[0];
+
+    expect(scorePrediction(match, null).total).toBe(3);
   });
 });
 
@@ -112,15 +161,33 @@ describe("savePredictionInState", () => {
     );
   });
 
-  it("rejects knockout draws without a resolution", () => {
+  it("keeps unresolved knockout matches closed before kickoff", () => {
     const state = initialState();
+    expect(() => savePredictionInState(state, prediction("m073"), nowBeforeVm)).toThrow(
+      footballCopy.knockoutPending,
+    );
+  });
+
+  it("allows knockout predictions when both teams are known and stamps the matchup", () => {
+    let state = resolvedKnockoutState();
+    state = savePredictionInState(state, prediction("m073", { homeGoals: 2, awayGoals: 1 }), nowBeforeVm);
+
+    expect(state.predictions).toHaveLength(1);
+    expect(state.predictions[0]).toMatchObject({
+      matchId: "m073",
+      matchupKey: knockoutMatchupKey,
+    });
+  });
+
+  it("rejects knockout draws without a resolution", () => {
+    const state = resolvedKnockoutState();
     expect(() => savePredictionInState(state, prediction("m073", { homeGoals: 1, awayGoals: 1 }), nowBeforeVm)).toThrow(
       "Velg vinner etter ekstraomganger eller straffer.",
     );
   });
 
   it("rejects extra-time scores without a winner", () => {
-    const state = initialState();
+    const state = resolvedKnockoutState();
     expect(() =>
       savePredictionInState(
         state,
@@ -139,6 +206,31 @@ describe("savePredictionInState", () => {
     expect(() => savePredictionInState(state, prediction("m001"), new Date("2026-06-11T19:00:01Z"))).toThrow(
       footballCopy.lockError,
     );
+  });
+
+  it("ignores legacy knockout predictions from before the matchup was known", () => {
+    const stateWithLegacyPrediction = upsertMatchResultInState(resolvedKnockoutState(), "m073", {
+      homeGoals: 2,
+      awayGoals: 1,
+      decidedByPenalties: false,
+      advancingTeam: null,
+      updatedAt: "2026-06-28T21:00:00Z",
+      updatedBy: "alf",
+    }, "Germany", "Norway");
+    const legacyPrediction = prediction("m073", {
+      matchupKey: null,
+      homeGoals: 2,
+      awayGoals: 1,
+    });
+    const state = {
+      ...stateWithLegacyPrediction,
+      predictions: [legacyPrediction],
+    };
+    const match = state.matches.find((item) => item.id === "m073")!;
+
+    expect(getPrediction(state, "alf", "m073")).toBeNull();
+    expect(scorePrediction(match, legacyPrediction, state).total).toBe(0);
+    expect(computeStandings(state).find((row) => row.player.id === "alf")?.resultTipPoints).toBe(0);
   });
 });
 
@@ -174,9 +266,9 @@ describe("projected standings", () => {
     const comparison = compareStandings(base, projected);
 
     expect(base.find((row) => row.player.id === "alf")?.totalPoints).toBe(0);
-    expect(projected.find((row) => row.player.id === "alf")?.totalPoints).toBe(10);
+    expect(projected.find((row) => row.player.id === "alf")?.totalPoints).toBe(3);
     expect(comparison.find((row) => row.player.id === "alf")).toMatchObject({
-      pointsDelta: 10,
+      pointsDelta: 3,
     });
   });
 });

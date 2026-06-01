@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getMatchdayWinner } from "@/lib/awards";
+import { getMatchdayVerdict, getMatchdayWinner } from "@/lib/awards";
 import { initialState } from "@/lib/state";
 import type { AppState, Prediction } from "@/lib/types";
 
@@ -51,8 +51,15 @@ describe("getMatchdayWinner", () => {
     expect(winner).toMatchObject({
       title: "Gårsdagens rundevinner",
       matchCount: 1,
-      winners: [{ playerName: "Alf Kåre", points: 10, exactResults: 1 }],
+      winners: [{ playerName: "Alf Kåre", points: 3, exactResults: 1 }],
     });
+  });
+
+  it("finds yesterday's loser for the front-page verdict", () => {
+    const verdict = getMatchdayVerdict(finishedState(), new Date("2026-06-12T10:00:00+02:00"));
+
+    expect(verdict?.title).toBe("Gårsdagens dom");
+    expect(verdict?.losers).toContainEqual({ playerName: "Anders", points: 0, exactResults: 0 });
   });
 
   it("falls back to the latest completed matchday when yesterday had no matches", () => {
@@ -61,7 +68,7 @@ describe("getMatchdayWinner", () => {
     expect(winner).toMatchObject({
       title: "Siste kampdags rundevinner",
       isFallback: true,
-      winners: [{ playerName: "Alf Kåre", points: 10 }],
+      winners: [{ playerName: "Alf Kåre", points: 3 }],
     });
   });
 });

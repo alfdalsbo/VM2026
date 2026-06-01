@@ -21,6 +21,14 @@ export type MatchdayWinner = {
   isFallback: boolean;
 };
 
+export type MatchdayVerdict = MatchdayWinner & {
+  losers: Array<{
+    playerName: string;
+    points: number;
+    exactResults: number;
+  }>;
+};
+
 export const emptyAwardText = "Dommerbordet avventer første fasit før det begynner å late som dette var vitenskap.";
 
 const osloKeyFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -36,7 +44,7 @@ function osloDateKey(value: string | Date) {
   return `${lookup.year}-${lookup.month}-${lookup.day}`;
 }
 
-export function getMatchdayWinner(state: AppState, now = new Date()): MatchdayWinner | null {
+export function getMatchdayVerdict(state: AppState, now = new Date()): MatchdayVerdict | null {
   const completedMatches = state.matches.filter(hasFinalResult);
   if (!completedMatches.length) return null;
 
@@ -82,14 +90,30 @@ export function getMatchdayWinner(state: AppState, now = new Date()): MatchdayWi
 
   const best = playerScores[0];
   const winners = best ? playerScores.filter((score) => score.points === best.points && score.exactResults === best.exactResults) : [];
+  const worst = playerScores.at(-1);
+  const losers = worst ? playerScores.filter((score) => score.points === worst.points && score.exactResults === worst.exactResults) : [];
 
   return {
-    title: isFallback ? "Siste kampdags rundevinner" : "Gårsdagens rundevinner",
+    title: isFallback ? "Siste kampdags dom" : "Gårsdagens dom",
     dateLabel: formatOsloDate(targetMatches[0].kickoffAt),
     matchCount: targetMatches.length,
     matches: targetMatches.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt)).map(displayMatchup),
     winners,
+    losers,
     isFallback,
+  };
+}
+
+export function getMatchdayWinner(state: AppState, now = new Date()): MatchdayWinner | null {
+  const verdict = getMatchdayVerdict(state, now);
+  if (!verdict) return null;
+  return {
+    dateLabel: verdict.dateLabel,
+    matchCount: verdict.matchCount,
+    matches: verdict.matches,
+    winners: verdict.winners,
+    isFallback: verdict.isFallback,
+    title: verdict.isFallback ? "Siste kampdags rundevinner" : "Gårsdagens rundevinner",
   };
 }
 

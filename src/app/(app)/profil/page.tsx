@@ -1,11 +1,12 @@
 import { Medal, Star, Target } from "lucide-react";
 
+import { MatchupLinks } from "@/components/team-link";
 import { Panel, Stat } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
-import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
 import { computeStandings, describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
+import { buildNostalgiaBadges, type BadgeTheme } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
   title: "Profil",
@@ -27,11 +28,21 @@ export default async function ProfilePage() {
     .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))
     .slice(0, 12);
 
-  const badges = [
-    standing?.exactResults ? { icon: Star, title: "VAR-profet", text: `${standing.exactResults} eksakte resultater.` } : null,
-    hitRate >= 50 ? { icon: Target, title: "Kupongkaptein", text: `${hitRate}% riktig utfall.` } : null,
-    standing?.roundsWon ? { icon: Medal, title: "Kampdagens konge", text: `${standing.roundsWon} rundeseire.` } : null,
-  ].filter(Boolean) as Array<{ icon: typeof Star; title: string; text: string }>;
+  const iconByBadge = {
+    "rekdal-pen": Star,
+    "rossi-row": Target,
+    "maracanazo-alert": Medal,
+    "baggio-miss": Target,
+    "zidane-glance": Star,
+  } satisfies Record<BadgeTheme["id"], typeof Star>;
+  const badges = buildNostalgiaBadges({
+    standing,
+    hitRate,
+    completedTips: completedPredictions.length,
+  }).map((badge) => ({
+    ...badge,
+    icon: iconByBadge[badge.id],
+  }));
 
   return (
     <div className="space-y-6">
@@ -53,7 +64,8 @@ export default async function ProfilePage() {
       </div>
 
       <Panel>
-        <h2 className="section-title">Badges</h2>
+        <p className="eyebrow">Kjellerarkivet</p>
+        <h2 className="section-title mt-2">Historiske badges</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {badges.map((badge) => {
             const Icon = badge.icon;
@@ -89,7 +101,7 @@ export default async function ProfilePage() {
                 const score = scorePrediction(match, prediction, state);
                 return (
                   <tr key={match.id}>
-                    <td>{displayMatchup(match)}</td>
+                    <td><MatchupLinks match={match} /></td>
                     <td>{formatOsloDateTime(match.kickoffAt)}</td>
                     <td>{describePrediction(prediction)}</td>
                     <td>{formatScore(match.result?.homeGoals, match.result?.awayGoals)}</td>

@@ -23,7 +23,7 @@ function liveTip(overrides: Partial<LivePotTip> = {}): LivePotTip {
     playerId: "alf",
     matchId: "m001",
     yellowCardsTotal: 0,
-    redCard: "no",
+    redCardsTotal: 0,
     updatedAt: "2026-06-11T19:20:00Z",
     ...overrides,
   };
@@ -71,15 +71,15 @@ describe("bonus scoring", () => {
     const match = state.matches.find((item) => item.id === "m001")!;
 
     const score = scorePrediction(match, tip, state);
-    expect(score.total).toBe(10);
-    expect(score.bonus).toBe(3);
-    expect(score.grandTotal).toBe(13);
+    expect(score.total).toBe(3);
+    expect(score.bonus).toBe(4);
+    expect(score.grandTotal).toBe(7);
 
     const standing = computeStandings(state).find((row) => row.player.id === "alf")!;
-    expect(standing.totalPoints).toBe(10);
-    expect(standing.resultTipPoints).toBe(10);
-    expect(standing.bonusPoints).toBe(3);
-    expect(standing.matchBonusPoints).toBe(3);
+    expect(standing.totalPoints).toBe(3);
+    expect(standing.resultTipPoints).toBe(3);
+    expect(standing.bonusPoints).toBe(4);
+    expect(standing.matchBonusPoints).toBe(4);
     expect(standing.liveBonusPoints).toBe(0);
   });
 
@@ -124,9 +124,9 @@ describe("bonus scoring", () => {
 
     const standings = computeBonusTipStandings(state);
     const alf = standings.find((row) => row.player.id === "alf")!;
-    expect(alf.points).toBe(6);
+    expect(alf.points).toBe(4);
     expect(alf.matchBonusPoints).toBe(2);
-    expect(alf.liveBonusPoints).toBe(4);
+    expect(alf.liveBonusPoints).toBe(2);
     expect(alf.tips).toBe(2);
   });
 
@@ -138,7 +138,7 @@ describe("bonus scoring", () => {
         ...match,
         status: "finished" as const,
         result: {
-          homeGoals: 0,
+          homeGoals: 1,
           awayGoals: 0,
           decidedByPenalties: false,
           advancingTeam: null,
@@ -152,7 +152,7 @@ describe("bonus scoring", () => {
 
     const standing = computeStandings(finishedState).find((row) => row.player.id === "alf")!;
     expect(standing.resultTipPoints).toBe(0);
-    expect(standing.bonusPoints).toBe(4);
+    expect(standing.bonusPoints).toBe(2);
     expect(standing.bonusWinnerAward).toBe(BONUS_TIPS_WINNER_AWARD);
     expect(standing.totalPoints).toBe(BONUS_TIPS_WINNER_AWARD);
   });

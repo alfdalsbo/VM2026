@@ -1,26 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Minus, Plus, TicketCheck } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { AlertCircle, CheckCircle2, Minus, Plus } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
-import { savePredictionAction, type SavePredictionState } from "@/app/actions";
+import { saveResultPredictionAction, type SaveResultPredictionInput } from "@/app/actions";
+import { MatchNostalgiaNote } from "@/components/nostalgia";
+import { TeamLink } from "@/components/team-link";
 import {
   displayStageOrGroup,
   displayTeamName,
   formatCompactMatchStatus,
   teamFlagEmoji,
 } from "@/lib/display";
-import { cx, formatScore } from "@/lib/format";
+import { footballCopy } from "@/lib/football-jargon";
+import { cx } from "@/lib/format";
+import { hasUnresolvedKnockoutTeams } from "@/lib/knockout-placeholders";
 import {
   getPrediction,
+  getPredictionOrDefault,
   isKnockoutMatch,
   isMatchLocked,
   scorePrediction,
 } from "@/lib/scoring";
 import { getBroadcastForMatch } from "@/lib/tournament";
 import type { AppState, Player, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
+import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
 
 const timeFormatter = new Intl.DateTimeFormat("nb-NO", {
   hour: "2-digit",
@@ -85,16 +90,19 @@ export function MatchTipCard({
   state: AppState;
 }) {
   const prediction = getPrediction(state, player.id, match.id);
+  const displayedPrediction = getPredictionOrDefault(state, player.id, match.id);
   const locked = isMatchLocked(match);
+  const knockoutPending = hasUnresolvedKnockoutTeams(match);
   const status = formatCompactMatchStatus(match);
   const stageLabel = displayStageOrGroup(match);
   const broadcast = getBroadcastForMatch(match);
+  const nostalgia = getMatchNostalgia(match);
   const time = timeFormatter.format(new Date(match.kickoffAt));
   const homeSquad = state.teamProfiles.find((profile) => profile.teamName === match.homeTeam)?.squad ?? [];
   const awaySquad = state.teamProfiles.find((profile) => profile.teamName === match.awayTeam)?.squad ?? [];
 
   return (
-    <article id={match.id} className={cx("tip-card", `tip-card-${status.tone}`, locked && "tip-card-locked")}>
+    <article id={match.id} className={cx("tip-card", `tip-card-${status.tone}`, (locked || knockoutPending) && "tip-card-locked")}>
       <div className="tip-card-header">
         <div className="tip-card-header-start">
           <span className="tip-card-time">{time}</span>
@@ -109,19 +117,46 @@ export function MatchTipCard({
       </div>
       <div className="tip-card-body">
         <span className="tip-card-stage">{stageLabel}</span>
+        <MatchNostalgiaNote moment={nostalgia} />
         {locked ? (
           <LockedView
             match={match}
-            prediction={prediction}
+            prediction={displayedPrediction}
             state={state}
             homeSquad={homeSquad}
             awaySquad={awaySquad}
           />
+        ) : knockoutPending ? (
+          <PendingKnockoutView match={match} />
         ) : (
           <EditableForm match={match} prediction={prediction} />
         )}
       </div>
     </article>
+  );
+}
+
+function PendingKnockoutView({ match }: { match: WorldCupMatch }) {
+  return (
+    <div className="tip-teams tip-teams-locked">
+      <PendingTeamRow flag={teamFlagEmoji(match.homeTeam)} teamName={match.homeTeam} />
+      <PendingTeamRow flag={teamFlagEmoji(match.awayTeam)} teamName={match.awayTeam} />
+      <p className="tip-result-line tip-result-line-muted">{footballCopy.knockoutPending}</p>
+    </div>
+  );
+}
+
+function PendingTeamRow({ flag, teamName }: { flag: string; teamName: string }) {
+  return (
+    <div className="tip-team-row tip-team-row-locked">
+      <span className="tip-team-name">
+        {flag ? <span className="tip-team-flag" aria-hidden="true">{flag}</span> : null}
+        <TeamLink teamName={teamName} />
+      </span>
+      <span className="tip-locked-scores">
+        <span className="tip-locked-tip">Venter</span>
+      </span>
+    </div>
   );
 }
 
@@ -142,7 +177,7 @@ function TeamRow({
         {flag ? (
           <span className="tip-team-flag" aria-hidden="true">{flag}</span>
         ) : null}
-        {display}
+        <TeamLink teamName={team} />
       </span>
       <div className="tip-stepper" role="group" aria-label={`${display} mål`}>
         <button
@@ -167,7 +202,16 @@ function TeamRow({
   );
 }
 
-const INITIAL_SAVE_STATE: SavePredictionState = {};
+type SaveSignal = "saved" | "saving" | "needs-input" | "error";
+type SaveDisplay = {
+  key: string;
+  signal: SaveSignal;
+  message: string;
+};
+
+function saveKey(input: SaveResultPredictionInput) {
+  return JSON.stringify(input);
+}
 
 function EditableForm({
   match,
@@ -176,47 +220,80 @@ function EditableForm({
   match: WorldCupMatch;
   prediction: Prediction | null;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [homeGoals, setHomeGoals] = useState(prediction?.homeGoals ?? 0);
   const [awayGoals, setAwayGoals] = useState(prediction?.awayGoals ?? 0);
   const [method, setMethod] = useState(prediction?.knockoutResolution?.method ?? "");
-  const [saveState, formAction, pending] = useActionState(savePredictionAction, INITIAL_SAVE_STATE);
+  const [winner, setWinner] = useState<"home" | "away" | "">(prediction?.knockoutResolution?.winner ?? "");
+  const [extraTimeHomeGoals, setExtraTimeHomeGoals] = useState<number | "">(
+    prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution.homeGoals : "",
+  );
+  const [extraTimeAwayGoals, setExtraTimeAwayGoals] = useState<number | "">(
+    prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution.awayGoals : "",
+  );
+  const [saveDisplay, setSaveDisplay] = useState<SaveDisplay | null>(null);
+  const [, startTransition] = useTransition();
+  const initialInput = buildSaveInput({
+    match,
+    homeGoals: prediction?.homeGoals ?? 0,
+    awayGoals: prediction?.awayGoals ?? 0,
+    method: prediction?.knockoutResolution?.method ?? "",
+    winner: prediction?.knockoutResolution?.winner ?? "",
+    extraTimeHomeGoals: prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution.homeGoals : "",
+    extraTimeAwayGoals: prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution.awayGoals : "",
+  });
+  const initialKey = "error" in initialInput ? "" : saveKey(initialInput.input);
+  const [lastSavedKey, setLastSavedKey] = useState(initialKey);
+  const latestRequest = useRef(0);
   const isDraw = homeGoals === awayGoals;
   const needsKnockoutResolution = isKnockoutMatch(match) && isDraw;
-  const extraTimeResolution =
-    prediction?.knockoutResolution?.method === "extra_time" ? prediction.knockoutResolution : null;
   const homeTeam = displayTeamName(match.homeTeam);
   const awayTeam = displayTeamName(match.awayTeam);
-  const preservedHomeScorers = (prediction?.homeScorers ?? []).slice(0, homeGoals);
-  const preservedAwayScorers = (prediction?.awayScorers ?? []).slice(0, awayGoals);
-  const preservedHomeAssists = (prediction?.homeAssists ?? []).slice(0, homeGoals);
-  const preservedAwayAssists = (prediction?.awayAssists ?? []).slice(0, awayGoals);
+  const prepared = buildSaveInput({
+    match,
+    homeGoals,
+    awayGoals,
+    method,
+    winner,
+    extraTimeHomeGoals,
+    extraTimeAwayGoals,
+  });
+  const currentKey = "error" in prepared ? "" : saveKey(prepared.input);
+  const displayedSignal = getSaveDisplay({
+    prepared,
+    currentKey,
+    lastSavedKey,
+    saveDisplay,
+    hasStoredPrediction: Boolean(prediction),
+  });
 
   useEffect(() => {
-    if (!saveState.status && !saveState.error) return;
-    const key = saveState.error ? "error" : "status";
-    const value = saveState.error ?? saveState.status ?? "";
-    router.replace(`${pathname}?${key}=${encodeURIComponent(value)}`, { scroll: false });
-  }, [saveState, router, pathname]);
+    if ("error" in prepared) return;
+
+    const input = prepared.input;
+    const key = saveKey(input);
+    if (key === lastSavedKey) return;
+
+    const timeout = window.setTimeout(() => {
+      const requestId = latestRequest.current + 1;
+      latestRequest.current = requestId;
+      startTransition(() => {
+        void saveResultPredictionAction(input).then((result) => {
+          if (latestRequest.current !== requestId) return;
+          if (result.error) {
+            setSaveDisplay({ key, signal: "error", message: result.error });
+            return;
+          }
+          setLastSavedKey(key);
+          setSaveDisplay({ key, signal: "saved", message: "Registrert" });
+        });
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timeout);
+  }, [lastSavedKey, prepared, startTransition]);
 
   return (
-    <form action={formAction} className="tip-form">
-      <input type="hidden" name="matchId" value={match.id} />
-      <input type="hidden" name="homeGoals" value={homeGoals} />
-      <input type="hidden" name="awayGoals" value={awayGoals} />
-      {preservedHomeScorers.map((id, idx) => (
-        <input key={`hs-${idx}`} type="hidden" name="homeScorers" value={id} />
-      ))}
-      {preservedAwayScorers.map((id, idx) => (
-        <input key={`as-${idx}`} type="hidden" name="awayScorers" value={id} />
-      ))}
-      {preservedHomeAssists.map((id, idx) => (
-        <input key={`ha-${idx}`} type="hidden" name="homeAssists" value={id} />
-      ))}
-      {preservedAwayAssists.map((id, idx) => (
-        <input key={`aa-${idx}`} type="hidden" name="awayAssists" value={id} />
-      ))}
+    <div className="tip-form">
       <div className="tip-teams">
         <TeamRow team={match.homeTeam} value={homeGoals} onChange={setHomeGoals} />
         <TeamRow team={match.awayTeam} value={awayGoals} onChange={setAwayGoals} />
@@ -227,7 +304,6 @@ function EditableForm({
           <label>
             <span>Avgjørelse</span>
             <select
-              name="knockoutMethod"
               value={method}
               onChange={(event) => setMethod(event.target.value)}
               required
@@ -246,10 +322,10 @@ function EditableForm({
                   inputMode="numeric"
                   min={0}
                   max={30}
-                  name="extraTimeHomeGoals"
                   required
                   type="number"
-                  defaultValue={extraTimeResolution?.homeGoals ?? ""}
+                  value={extraTimeHomeGoals}
+                  onChange={(event) => setExtraTimeHomeGoals(event.target.value === "" ? "" : Number(event.target.value))}
                 />
               </label>
               <label>
@@ -259,10 +335,10 @@ function EditableForm({
                   inputMode="numeric"
                   min={0}
                   max={30}
-                  name="extraTimeAwayGoals"
                   required
                   type="number"
-                  defaultValue={extraTimeResolution?.awayGoals ?? ""}
+                  value={extraTimeAwayGoals}
+                  onChange={(event) => setExtraTimeAwayGoals(event.target.value === "" ? "" : Number(event.target.value))}
                 />
               </label>
             </>
@@ -271,8 +347,8 @@ function EditableForm({
             <label>
               <span>Videre</span>
               <select
-                name="knockoutWinner"
-                defaultValue={prediction?.knockoutResolution?.winner ?? ""}
+                value={winner}
+                onChange={(event) => setWinner(sideValue(event.target.value))}
                 required
               >
                 <option value="">Velg lag</option>
@@ -284,20 +360,86 @@ function EditableForm({
         </div>
       ) : null}
 
-      <div className="tip-form-actions">
-        <TipSubmitButton hasPrediction={Boolean(prediction)} pending={pending} />
-      </div>
-    </form>
+      <SaveSignal signal={displayedSignal.signal} message={displayedSignal.message} />
+    </div>
   );
 }
 
-function TipSubmitButton({ hasPrediction, pending }: { hasPrediction: boolean; pending: boolean }) {
-  const label = hasPrediction ? "Oppdater" : "Tipp";
+function sideValue(value: string): "home" | "away" | "" {
+  return value === "home" || value === "away" ? value : "";
+}
+
+function buildSaveInput({
+  match,
+  homeGoals,
+  awayGoals,
+  method,
+  winner,
+  extraTimeHomeGoals,
+  extraTimeAwayGoals,
+}: {
+  match: WorldCupMatch;
+  homeGoals: number;
+  awayGoals: number;
+  method: string;
+  winner: "home" | "away" | "";
+  extraTimeHomeGoals: number | "";
+  extraTimeAwayGoals: number | "";
+}): { input: SaveResultPredictionInput; error?: never } | { input?: never; error: string } {
+  const input: SaveResultPredictionInput = {
+    matchId: match.id,
+    homeGoals,
+    awayGoals,
+  };
+  const needsKnockoutResolution = isKnockoutMatch(match) && homeGoals === awayGoals;
+
+  if (!needsKnockoutResolution) return { input };
+  if (!method) return { error: "Velg avgjørelse" };
+  if (!winner) return { error: "Velg hvem som går videre" };
+  input.knockoutMethod = method;
+  input.knockoutWinner = winner;
+
+  if (method === "extra_time") {
+    if (extraTimeHomeGoals === "" || extraTimeAwayGoals === "") return { error: "Skriv stillingen etter ekstra" };
+    input.extraTimeHomeGoals = extraTimeHomeGoals;
+    input.extraTimeAwayGoals = extraTimeAwayGoals;
+  }
+
+  return { input };
+}
+
+function getSaveDisplay({
+  prepared,
+  currentKey,
+  lastSavedKey,
+  saveDisplay,
+  hasStoredPrediction,
+}: {
+  prepared: ReturnType<typeof buildSaveInput>;
+  currentKey: string;
+  lastSavedKey: string;
+  saveDisplay: SaveDisplay | null;
+  hasStoredPrediction: boolean;
+}): { signal: SaveSignal; message: string } {
+  if (prepared.error) return { signal: "needs-input", message: prepared.error };
+  if (saveDisplay?.key === currentKey && saveDisplay.signal === "error") {
+    return { signal: "error", message: saveDisplay.message };
+  }
+  if (currentKey !== lastSavedKey) return { signal: "saving", message: "Lagrer..." };
+  if (saveDisplay?.key === currentKey && saveDisplay.signal === "saved") {
+    return { signal: "saved", message: saveDisplay.message };
+  }
+  return { signal: "saved", message: hasStoredPrediction ? "Registrert" : "0-0 står klart" };
+}
+
+function SaveSignal({ signal, message }: { signal: SaveSignal; message: string }) {
+  const ok = signal === "saved";
+  const error = signal === "error";
   return (
-    <button className="btn-primary tip-submit" type="submit" disabled={pending} aria-live="polite">
-      <TicketCheck className="h-4 w-4" aria-hidden="true" />
-      {pending ? "Tipper..." : label}
-    </button>
+    <div className={cx("tip-save-signal", ok && "tip-save-signal-ok", error && "tip-save-signal-error")} aria-live="polite">
+      {ok ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : <AlertCircle className="h-4 w-4" aria-hidden="true" />}
+      <span>{message}</span>
+    </div>
   );
 }
 
@@ -335,8 +477,8 @@ function LockedView({
 
   return (
     <div className="tip-teams tip-teams-locked">
-      <LockedTeamRow flag={homeFlag} name={displayTeamName(match.homeTeam)} predicted={prediction?.homeGoals} actual={match.result?.homeGoals} />
-      <LockedTeamRow flag={awayFlag} name={displayTeamName(match.awayTeam)} predicted={prediction?.awayGoals} actual={match.result?.awayGoals} />
+      <LockedTeamRow flag={homeFlag} teamName={match.homeTeam} predicted={prediction?.homeGoals} actual={match.result?.homeGoals} />
+      <LockedTeamRow flag={awayFlag} teamName={match.awayTeam} predicted={prediction?.awayGoals} actual={match.result?.awayGoals} />
       {scorerLine || assistLine ? (
         <p className="tip-result-line">
           {scorerLine ? <>Scorere: <strong>{scorerLine}</strong></> : null}
@@ -344,15 +486,11 @@ function LockedView({
           {assistLine ? <>Assister: <strong>{assistLine}</strong></> : null}
         </p>
       ) : null}
-      {prediction && hasResult ? (
+      {hasResult ? (
         <p className="tip-result-line">
           {isLive ? "Resultattips hvis det blir slik:" : "Resultattips:"} <strong>{score.total}</strong>
-          {" "}· utfall {score.outcome}, målforskjell {score.goalDifference}, eksakt {score.exactResult}
+          {" "}· utfall {score.outcome}, eksakt {score.exactResult}
           {score.bonus ? ` · bonustips ${score.bonus}` : ""}
-        </p>
-      ) : !prediction ? (
-        <p className="tip-result-line tip-result-line-muted">
-          Ingen kupong levert.{hasResult ? ` Resultat ${formatScore(match.result?.homeGoals, match.result?.awayGoals)}.` : ""}
         </p>
       ) : null}
     </div>
@@ -361,12 +499,12 @@ function LockedView({
 
 function LockedTeamRow({
   flag,
-  name,
+  teamName,
   predicted,
   actual,
 }: {
   flag: string;
-  name: string;
+  teamName: string;
   predicted: number | null | undefined;
   actual: number | null | undefined;
 }) {
@@ -375,7 +513,7 @@ function LockedTeamRow({
     <div className="tip-team-row tip-team-row-locked">
       <span className="tip-team-name">
         {flag ? <span className="tip-team-flag" aria-hidden="true">{flag}</span> : null}
-        {name}
+        <TeamLink teamName={teamName} />
       </span>
       <span className="tip-locked-scores">
         {actual !== null && actual !== undefined ? (

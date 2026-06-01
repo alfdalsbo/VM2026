@@ -1,4 +1,5 @@
-import { displayMatchup, displayTeamName } from "@/lib/display";
+import { TeamLink } from "@/components/team-link";
+import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime } from "@/lib/format";
 import { resultSummary, type KnockoutFlowRound } from "@/lib/tournament";
 
@@ -13,12 +14,12 @@ export function KnockoutFlow({ rounds }: { rounds: KnockoutFlowRound[] }) {
               <article key={match.id} className="knockout-card">
                 <p>Kamp {match.matchNumber} · {formatOsloDateTime(match.kickoffAt)}</p>
                 <div className="knockout-teams" aria-label={displayMatchup(match)}>
-                  <span>{displayTeamName(match.homeTeam)}</span>
+                  <TeamLink teamName={match.homeTeam} />
                   <strong>{resultSummary(match)}</strong>
-                  <span>{displayTeamName(match.awayTeam)}</span>
+                  <TeamLink teamName={match.awayTeam} />
                 </div>
                 {winner ? (
-                  <em>Videre: {displayTeamName(winner)}</em>
+                  <em>Videre: <TeamLink teamName={winner} /></em>
                 ) : nextLabels.length ? (
                   <em>{nextLabels.join(" · ")}</em>
                 ) : (

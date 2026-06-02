@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveResultPredictionAction, type SaveResultPredictionInput } from "@/app/actions";
 import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { LivePotForm } from "@/components/live-pot-form";
-import { MatchNostalgiaNote } from "@/components/nostalgia";
+import { MatchHeadToHeadNote } from "@/components/match-head-to-head";
 import { ScorerAssistPicker } from "@/components/scorer-assist-picker";
 import { TeamLink } from "@/components/team-link";
 import {
@@ -36,7 +36,7 @@ import {
 } from "@/lib/scoring";
 import { getBroadcastForMatch } from "@/lib/tournament";
 import type { AppState, KnockoutPredictionResolution, Player, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
-import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
+import { getMatchHeadToHeadMoment } from "@/lib/world-cup-head-to-head";
 
 const timeFormatter = new Intl.DateTimeFormat("nb-NO", {
   hour: "2-digit",
@@ -125,7 +125,7 @@ export function MatchTipCard({
   const status = formatCompactMatchStatus(match);
   const stageLabel = displayStageOrGroup(match);
   const broadcast = getBroadcastForMatch(match);
-  const nostalgia = getMatchNostalgia(match);
+  const headToHeadMoment = getMatchHeadToHeadMoment(match);
   const time = timeFormatter.format(new Date(match.kickoffAt));
   const homeSquad = state.teamProfiles.find((profile) => profile.teamName === match.homeTeam)?.squad ?? [];
   const awaySquad = state.teamProfiles.find((profile) => profile.teamName === match.awayTeam)?.squad ?? [];
@@ -146,7 +146,7 @@ export function MatchTipCard({
       </div>
       <div className="tip-card-body">
         <span className="tip-card-stage">{stageLabel}</span>
-        {showNostalgiaNote ? <MatchNostalgiaNote moment={nostalgia} /> : null}
+        {showNostalgiaNote && headToHeadMoment ? <MatchHeadToHeadNote moment={headToHeadMoment} /> : null}
         {locked ? (
           <>
             <LockedView
@@ -519,10 +519,11 @@ function MatchBonusPanel({
   if (!hasVisibleBonus) return null;
 
   return (
-    <section className={cx("tip-bonus", open && "tip-bonus-open")}>
+    <section className={cx("tip-bonus", open && "tip-bonus-open")} aria-label="Bonustips">
       <div className="tip-bonus-summary">
         <div className="tip-bonus-copy">
           <span className="tip-bonus-label">Bonustips</span>
+          {open ? <span className="tip-bonus-open-badge">Åpen</span> : null}
           <span>{playerStatus}</span>
           <span>{cardStatus}</span>
         </div>

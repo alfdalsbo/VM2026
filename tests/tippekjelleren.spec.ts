@@ -21,13 +21,25 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
 
   await expect(page.getByRole("heading", { name: /Dagens kamper|Neste kampdag/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Dagens VM-øyeblikk")).toBeVisible();
+  const dailyImageContextButton = page.locator(".daily-image-context summary").first();
+  await expect(dailyImageContextButton).toBeVisible();
+  await dailyImageContextButton.click();
+  await expect(page.locator(".daily-image .image-context-card")).toContainText("Hva ser vi?");
+  await expect(page.locator(".daily-image .image-context-card")).toContainText("Hvorfor betyr det noe?");
+  await expect(page.locator(".daily-image .image-context-card")).toContainText("Nerdekrok");
+  await dailyImageContextButton.click();
+  await expect(page.getByRole("button", { name: "Vis nytt arkivfunn" })).toBeVisible();
   await expect(page.getByText("Lagring")).toHaveCount(0);
   await expect(page.getByText("Joker")).toHaveCount(0);
 
   const firstMatch = page.locator("#m001");
   await expect(firstMatch).toContainText("Mexico");
   await expect(firstMatch).toContainText("Sør-Afrika");
-  await expect(firstMatch.getByLabel("Historisk ekko")).toBeVisible();
+  const firstMatchHistory = firstMatch.getByLabel("Tidligere VM-møte");
+  await expect(firstMatchHistory).toBeVisible();
+  await expect(firstMatchHistory).toContainText("Tshabalala");
+  await firstMatchHistory.locator("summary", { hasText: "Mer" }).click();
+  await expect(firstMatchHistory).toContainText("Soccer City");
   await expect(firstMatch.getByRole("button", { name: /S Seier/ })).toHaveCount(0);
   await expect(firstMatch.getByRole("button", { name: "Følg kamp" })).toHaveCount(0);
   await expect(firstMatch).not.toContainText("Før avspark");
@@ -36,14 +48,22 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await firstMatch.getByRole("link", { name: "Mexico", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Mexico" })).toBeVisible();
   await expect(page.getByText("VM-pass")).toBeVisible();
+  await expect(page.getByText("VM-bildehylle")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Arkivtropp til FIFA-data kommer" })).toBeVisible();
 
   await page.goto("/kamp/m001");
   await expect(page.getByText("Kamp 1")).toBeVisible();
-  await expect(page.getByText("Historisk ekko")).toBeVisible();
+  await expect(page.getByText("Tidligere VM-møte")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sør-Afrika 1-1 Mexico" })).toBeVisible();
+  await expect(page.getByText("Soccer City, Johannesburg")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Kilde: FIFA/ })).toBeVisible();
   await expect(page.getByTitle(/TV 2 Direkte/).first()).toBeVisible();
   await expect(page.getByText("Ikke publisert ennå")).toBeVisible();
   await expect(page.getByText("Taktisk rapport")).toHaveCount(0);
+
+  await page.goto("/kamp/m018");
+  await expect(page.getByText("Tidligere VM-møte")).toHaveCount(0);
+  await expect(page.getByText("Norge åpner arkivet igjen")).toHaveCount(0);
 
   await page.goto("/");
   await page.locator("#m001").getByRole("button", { name: "Legg til Mexico" }).click();
@@ -57,13 +77,21 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   const firstListedMatch = page.locator("#m001");
   await expect(firstListedMatch).toContainText("Bonustips");
   await expect(firstListedMatch.getByRole("button", { name: "Åpne bonus" })).toBeVisible();
+  await expect(firstListedMatch.locator(".tip-bonus-open")).toHaveCount(0);
+  await expect(firstListedMatch.locator(".tip-bonus-open-badge")).toHaveCount(0);
   await firstListedMatch.getByRole("button", { name: "Åpne bonus" }).click();
+  await expect(firstListedMatch.locator(".tip-bonus-open")).toBeVisible();
+  await expect(firstListedMatch.locator(".tip-bonus-open-badge", { hasText: "Åpen" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Scorere og assister" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Gule og røde kort" })).toBeVisible();
   await expect(firstListedMatch.getByText("Tropp ikke klar.").first()).toBeVisible();
   await expect(firstListedMatch.getByRole("button", { name: "Lagre bonustips" })).toHaveCount(0);
   await expect(firstListedMatch.getByRole("group", { name: "Mexico gule kort" })).toBeVisible();
   await expect(firstListedMatch.getByRole("group", { name: "Sør-Afrika røde kort" })).toBeVisible();
+  await firstListedMatch.getByRole("button", { name: "Lukk bonus" }).click();
+  await expect(firstListedMatch.locator(".tip-bonus-open")).toHaveCount(0);
+  await expect(firstListedMatch.locator(".tip-bonus-open-badge")).toHaveCount(0);
+  await firstListedMatch.getByRole("button", { name: "Åpne bonus" }).click();
   await firstListedMatch.getByRole("button", { name: "Legg til Mexico gule kort" }).click();
   await expect(firstListedMatch.getByText(/Kortbonus lagret|Lagrer/)).toBeVisible({ timeout: 10_000 });
   await firstListedMatch.getByRole("button", { name: "Autofyll bonus" }).click();
@@ -89,6 +117,9 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await page.goto("/vm");
   await expect(page.getByRole("heading", { name: "VM-historien på dommerbordet" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mesterveggen" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Arkivbildeveggen" })).toBeVisible();
+  await expect(page.getByLabel("Tiår")).toBeVisible();
+  await expect(page.getByText("Nerde fakta")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Veien til finalen" })).toBeVisible();
   await expect(page.getByText("Vinner gruppe A").first()).toBeVisible();
   await expect(page.getByText("Vinner til kamp").first()).toBeVisible();

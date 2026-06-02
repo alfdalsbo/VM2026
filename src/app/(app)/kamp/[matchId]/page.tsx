@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { LineupBoard } from "@/components/lineup-board";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
 import { MatchEvents } from "@/components/match-events";
+import { MatchHeadToHeadPanel } from "@/components/match-head-to-head";
 import { MatchTipCard } from "@/components/match-tip-card";
-import { MatchNostalgiaPanel } from "@/components/nostalgia";
 import { PostMatchAnalysis } from "@/components/post-match-analysis";
 import { ProjectedStandings } from "@/components/projected-standings";
 import { ShareButton } from "@/components/share-button";
@@ -21,7 +21,7 @@ import { describePrediction, getPrediction, scorePrediction } from "@/lib/scorin
 import { getAppState } from "@/lib/state";
 import type { MatchStats } from "@/lib/types";
 import { formatBroadcast, formatMatchStatus } from "@/lib/tournament";
-import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
+import { getMatchHeadToHeadMoment } from "@/lib/world-cup-head-to-head";
 
 export const metadata = {
   title: "Kampkort",
@@ -33,7 +33,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
   const match = state.matches.find((item) => item.id === matchId);
   if (!match) notFound();
 
-  const nostalgia = getMatchNostalgia(match);
+  const headToHeadMoment = getMatchHeadToHeadMoment(match);
   const prediction = getPrediction(state, player.id, match.id);
   const score = scorePrediction(match, prediction, state);
   const lineup = state.lineups.find((item) => item.matchId === match.id) ?? null;
@@ -69,7 +69,7 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
         </p>
       </Panel>
 
-      <MatchNostalgiaPanel moment={nostalgia} />
+      {headToHeadMoment ? <MatchHeadToHeadPanel moment={headToHeadMoment} /> : null}
 
       {postMatchAnalysis ? (
         <Panel>

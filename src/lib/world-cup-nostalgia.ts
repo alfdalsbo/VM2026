@@ -1,16 +1,17 @@
 import type { Standing, WorldCupMatch } from "@/lib/types";
+import {
+  getApprovedWorldCupImages,
+  getRelevantWorldCupImages,
+  getWorldCupImageById,
+  type WorldCupImageAsset,
+} from "@/lib/world-cup-image-assets";
 
 export type NostalgiaSource = {
   name: string;
   url: string;
 };
 
-export type NostalgiaImage = {
-  src: string;
-  alt: string;
-  approved: boolean;
-  credit?: string;
-};
+export type NostalgiaImage = WorldCupImageAsset;
 
 export type NostalgiaMoment = {
   id: string;
@@ -20,9 +21,9 @@ export type NostalgiaMoment = {
   cellarVerdict: string;
   teams: string[];
   matchIds?: string[];
+  imageIds?: string[];
   tags: string[];
   source: NostalgiaSource;
-  image?: NostalgiaImage;
 };
 
 export type TeamNostalgiaProfile = {
@@ -53,6 +54,7 @@ export type NostalgiaArchive = {
     detail: string;
   }>;
   norwayNotes: string[];
+  imageWall: WorldCupImageAsset[];
 };
 
 const fifaEarlySource: NostalgiaSource = {
@@ -85,6 +87,7 @@ export const worldCupNostalgiaMoments: NostalgiaMoment[] = [
     teams: ["Uruguay", "Argentina"],
     tags: ["timeline", "champion", "rimet"],
     source: fifaEarlySource,
+    imageIds: ["uruguay-argentina-final-0a3cccbc"],
   },
   {
     id: "italy-1938",
@@ -137,12 +140,6 @@ export const worldCupNostalgiaMoments: NostalgiaMoment[] = [
     teams: ["Brazil", "Italy"],
     tags: ["timeline", "penalties", "badge"],
     source: fifaModernSource,
-    image: {
-      src: "/daily-images/ross-kinnaird-getty-images.jpg.webp",
-      alt: "Arkivfoto fra VM 1994",
-      approved: false,
-      credit: "Lokalt arkivbilde er ikke rettighetsklarert for produksjonsvisning.",
-    },
   },
   {
     id: "norway-return-2026",
@@ -152,6 +149,7 @@ export const worldCupNostalgiaMoments: NostalgiaMoment[] = [
     cellarVerdict: "Rekdal-pennen er ikke borte. Den ligger bare i en skuff og venter på avspark.",
     teams: ["Norway"],
     matchIds: ["m018", "m041", "m061"],
+    imageIds: ["flopass3-e5ebe8bf"],
     tags: ["norway", "2026", "return"],
     source: fifaNorwaySource,
   },
@@ -164,6 +162,27 @@ export const worldCupNostalgiaMoments: NostalgiaMoment[] = [
     teams: ["France"],
     matchIds: ["m042", "m061"],
     tags: ["timeline", "champion", "france"],
+    source: fifaModernSource,
+  },
+  {
+    id: "bergkamp-1998",
+    year: "1998",
+    title: "Bergkamp gjør langballen fin",
+    body: "Nederland slo Argentina i Marseille etter en lang pasning, en førsteberøring og en avslutning som fortsatt får taktiske tavler til å rødme.",
+    cellarVerdict: "Når ett oppspill blir pensum, er det lov å late som man alltid trodde på direkte spill.",
+    teams: ["Netherlands", "Argentina"],
+    imageIds: ["bergkampscore3-e97db9ac"],
+    tags: ["timeline", "netherlands", "argentina", "diagram"],
+    source: fifaModernSource,
+  },
+  {
+    id: "netherlands-brazil-1998",
+    year: "1998",
+    title: "Semifinalen uten høflighetsfraser",
+    body: "Nederland og Brasil dro 1998-semifinalen helt til straffer, med dueller som forklarte hvorfor finalebilletter sjelden deles ut pent.",
+    cellarVerdict: "Dette er VM når glansbildene har tatt av seg slipset.",
+    teams: ["Netherlands", "Brazil"],
+    tags: ["brazil", "netherlands", "semifinal"],
     source: fifaModernSource,
   },
   {
@@ -384,7 +403,18 @@ const genericTeamProfile = (teamName: string): TeamNostalgiaProfile => ({
 });
 
 export function getApprovedMomentImage(moment: NostalgiaMoment): NostalgiaImage | null {
-  return moment.image?.approved ? moment.image : null;
+  for (const imageId of moment.imageIds ?? []) {
+    const image = getWorldCupImageById(imageId);
+    if (image) return image;
+  }
+  return (
+    getRelevantWorldCupImages({
+      momentId: moment.id,
+      year: moment.year,
+      teams: moment.teams,
+      tags: moment.tags,
+    }, 1)[0] ?? null
+  );
 }
 
 export function getTeamNostalgiaProfile(teamName: string): TeamNostalgiaProfile {
@@ -434,6 +464,7 @@ export function getNostalgiaArchive(): NostalgiaArchive {
       "Kjetil Rekdal er eneste nordmann med mer enn ett VM-mål.",
       "Brasil 1998 er fortsatt referansepunktet alle norske VM-drømmer må hilse pent på.",
     ],
+    imageWall: getApprovedWorldCupImages({ includeFallback: false }),
   };
 }
 

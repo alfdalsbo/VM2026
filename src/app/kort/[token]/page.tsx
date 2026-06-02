@@ -8,7 +8,7 @@ import { formatScore } from "@/lib/format";
 import { parseShareToken } from "@/lib/share-card";
 import { describePrediction, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
-import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
+import { getApprovedMomentImage, getMatchNostalgia } from "@/lib/world-cup-nostalgia";
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
   const data = await getShareData((await params).token);
@@ -24,6 +24,7 @@ export default async function ShareCardPage({ params }: { params: Promise<{ toke
   if (!data) notFound();
   const score = scorePrediction(data.match, data.prediction, data.state);
   const nostalgia = getMatchNostalgia(data.match);
+  const nostalgiaImage = getApprovedMomentImage(nostalgia);
 
   return (
     <main className="share-page">
@@ -35,6 +36,11 @@ export default async function ShareCardPage({ params }: { params: Promise<{ toke
           <span>{nostalgia.year}</span>
           <strong>{nostalgia.title}</strong>
           <em>{nostalgia.cellarVerdict}</em>
+          {nostalgiaImage ? (
+            <small>
+              Arkivfunn: {nostalgiaImage.title} · {nostalgiaImage.facts[0] ?? nostalgiaImage.license}
+            </small>
+          ) : null}
         </div>
         <div className="share-score">
           <span>Tips: {describePrediction(data.prediction)}</span>

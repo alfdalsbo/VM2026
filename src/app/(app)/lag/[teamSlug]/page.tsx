@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-import { TeamNostalgiaPass } from "@/components/nostalgia";
+import { TeamImageShelf, TeamNostalgiaPass } from "@/components/nostalgia";
 import { MatchupLinks } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
@@ -69,6 +69,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamSlug:
       </Panel>
 
       <TeamNostalgiaPass profile={nostalgiaProfile} />
+      <TeamImageShelf teamName={profile.teamName} />
 
       <Panel>
         <p className="eyebrow">{hasOnlyHistoricalNames ? "Historiske navn" : "Tropp"}</p>

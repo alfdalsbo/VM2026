@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { initialState } from "@/lib/state";
+import { isAllowedWorldCupImageLicense } from "@/lib/world-cup-image-assets";
 import {
   getApprovedMomentImage,
   getMatchNostalgia,
@@ -41,10 +42,28 @@ describe("world-cup nostalgia", () => {
     expect(pickDailyNostalgiaMoment("2026-06-11", state.matches.slice(0, 1))).toBeTruthy();
   });
 
-  it("falls back from unapproved local archive images", () => {
-    const unapproved = worldCupNostalgiaMoments.find((moment) => moment.id === "baggio-1994");
+  it("does not carry unapproved local archive images on moments", () => {
+    const baggio = worldCupNostalgiaMoments.find((moment) => moment.id === "baggio-1994");
+    if (!baggio) throw new Error("Missing Baggio moment");
 
-    expect(unapproved?.image?.approved).toBe(false);
-    expect(unapproved ? getApprovedMomentImage(unapproved) : null).toBeNull();
+    expect("image" in baggio).toBe(false);
+    expect(getApprovedMomentImage(baggio)?.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+  });
+
+  it("keeps approved moment images explainable and source-backed", () => {
+    const approvedImages = worldCupNostalgiaMoments
+      .map((moment) => getApprovedMomentImage(moment))
+      .filter((image) => image !== null);
+
+    expect(approvedImages.length).toBeGreaterThanOrEqual(4);
+    for (const image of approvedImages) {
+      expect(image.alt.trim().length).toBeGreaterThan(20);
+      expect(image.caption.trim().length).toBeGreaterThan(20);
+      expect(image.context.trim().length).toBeGreaterThan(40);
+      expect(image.facts.length).toBeGreaterThanOrEqual(1);
+      expect(image.credit.trim().length).toBeGreaterThan(3);
+      expect(isAllowedWorldCupImageLicense(image.license)).toBe(true);
+      expect(image.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+    }
   });
 });

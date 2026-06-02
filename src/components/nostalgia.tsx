@@ -1,6 +1,10 @@
+import { Info } from "lucide-react";
+
 import { Panel } from "@/components/ui";
+import { WorldCupImageWall } from "@/components/world-cup-image-wall";
 import type { NostalgiaArchive, NostalgiaMoment, TeamNostalgiaProfile } from "@/lib/world-cup-nostalgia";
 import { getApprovedMomentImage } from "@/lib/world-cup-nostalgia";
+import { getRelevantWorldCupImages, type WorldCupImageAsset } from "@/lib/world-cup-image-assets";
 
 export function NostalgiaHero({ moment }: { moment: NostalgiaMoment }) {
   return (
@@ -72,6 +76,25 @@ export function TeamNostalgiaPass({ profile }: { profile: TeamNostalgiaProfile }
   );
 }
 
+export function TeamImageShelf({ teamName }: { teamName: string }) {
+  const images = getRelevantWorldCupImages({ surface: "team", teams: [teamName], tags: ["archive"] }, 3);
+  if (!images.length) return null;
+
+  return (
+    <Panel className="team-image-shelf">
+      <div>
+        <p className="eyebrow">VM-bildehylle</p>
+        <h2 className="section-title mt-2">Tre arkivfunn til passet</h2>
+      </div>
+      <div className="team-image-shelf-grid">
+        {images.map((image) => (
+          <ArchiveImageTile key={image.id} image={image} />
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
 export function NostalgiaArchiveSection({ archive }: { archive: NostalgiaArchive }) {
   return (
     <section id="arkiv" className="space-y-4">
@@ -131,6 +154,12 @@ export function NostalgiaArchiveSection({ archive }: { archive: NostalgiaArchive
           </Panel>
         </div>
       </div>
+
+      <Panel className="archive-image-wall-panel">
+        <h3 className="text-xl font-black">Arkivbildeveggen</h3>
+        <p className="lead mt-2">Filtrer etter tiår, lag og fakta. Dette er rommet der en kamp plutselig blir pensum.</p>
+        <WorldCupImageWall images={archive.imageWall} />
+      </Panel>
     </section>
   );
 }
@@ -142,8 +171,17 @@ function ArchivePoster({ moment, size = "default" }: { moment: NostalgiaMoment; 
     return (
       <figure className={`archive-poster archive-poster-${size}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.src} alt={image.alt} />
+        <img src={image.src} alt={image.alt} style={{ objectPosition: image.focus === "top" ? "center top" : image.focus === "bottom" ? "center bottom" : "center" }} />
         {image.credit ? <figcaption>{image.credit}</figcaption> : null}
+        <ImageContextToggle
+          title={image.title}
+          caption={image.caption}
+          context={image.context}
+          facts={image.facts}
+          credit={image.credit}
+          license={image.license}
+          sourceUrl={image.sourceUrl}
+        />
       </figure>
     );
   }
@@ -153,6 +191,77 @@ function ArchivePoster({ moment, size = "default" }: { moment: NostalgiaMoment; 
       <span>VM</span>
       <strong>{moment.year}</strong>
       <em>Arkivkort</em>
+      <ImageContextToggle
+        title={moment.title}
+        caption={moment.body}
+        context={moment.cellarVerdict}
+        facts={[`Kilde: ${moment.source.name}`]}
+        credit={moment.source.name}
+        sourceUrl={moment.source.url}
+      />
     </div>
+  );
+}
+
+function ImageContextToggle({
+  title,
+  caption,
+  context,
+  facts,
+  credit,
+  license,
+  sourceUrl,
+}: {
+  title: string;
+  caption: string;
+  context: string;
+  facts?: string[];
+  credit?: string;
+  license?: string;
+  sourceUrl?: string;
+}) {
+  return (
+    <details className="image-context-toggle archive-image-context">
+      <summary aria-label={`Vis bildekontekst for ${title}`}>
+        <Info className="h-4 w-4" aria-hidden="true" />
+      </summary>
+      <div className="image-context-card">
+        <strong>{title}</strong>
+        <span className="image-context-label">Hva ser vi?</span>
+        <p>{caption}</p>
+        <span className="image-context-label">Hvorfor betyr det noe?</span>
+        <p>{context}</p>
+        {facts?.length ? (
+          <>
+            <span className="image-context-label">Nerdekrok</span>
+            <ul>
+              {facts.map((fact) => (
+                <li key={fact}>{fact}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {credit || license ? <span>{[credit, license].filter(Boolean).join(" · ")}</span> : null}
+        {sourceUrl ? (
+          <a href={sourceUrl} target="_blank" rel="noreferrer">
+            Kilde
+          </a>
+        ) : null}
+      </div>
+    </details>
+  );
+}
+
+function ArchiveImageTile({ image }: { image: WorldCupImageAsset }) {
+  return (
+    <article className="archive-image-tile">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={image.src} alt={image.alt} style={{ objectPosition: image.focus === "top" ? "center top" : "center" }} />
+      <div>
+        <span>{image.year}</span>
+        <strong>{image.title}</strong>
+        <p>{image.facts[0] ?? image.caption}</p>
+      </div>
+    </article>
   );
 }

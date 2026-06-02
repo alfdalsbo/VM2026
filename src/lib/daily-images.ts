@@ -1,42 +1,64 @@
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import {
+  getApprovedWorldCupImages,
+  pickWorldCupImage,
+  worldCupImageAssets,
+  worldCupImageFallback,
+  type WorldCupImageAsset,
+  type WorldCupImageContext,
+} from "@/lib/world-cup-image-assets";
 
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".svg"]);
-const FALLBACK_FILE = "fallback.svg";
-const IMAGE_DIR = join(process.cwd(), "public", "daily-images");
+export type DailyImageAsset = WorldCupImageAsset;
 
-function isImageFile(name: string): boolean {
-  const dot = name.lastIndexOf(".");
-  if (dot < 0) return false;
-  return IMAGE_EXTENSIONS.has(name.slice(dot).toLowerCase());
+const localUnapprovedImage: DailyImageAsset = {
+  id: "local-baggio-1994-unapproved",
+  src: "/daily-images/ross-kinnaird-getty-images.jpg.webp",
+  title: "Baggio-bommen, lokalt arkiv",
+  alt: "Lokalt arkivbilde fra VM 1994",
+  caption: "Lokalt bilde knyttet til Baggio-minnet i 1994.",
+  context: "Motivet er nostalgisk, men rettighetene er ikke dokumentert godt nok til produksjonsvisning.",
+  facts: ["Uklart rettighetsgrunnlag.", "Holdes ute av produksjonsrotasjonen.", "Bruker typografisk fallback ved behov."],
+  credit: "Lokalt arkiv / uklar ekstern rettighet",
+  license: "Ikke klarert",
+  sourceUrl: "",
+  approved: false,
+  mediaType: "photo",
+  year: "1994",
+  teams: ["Brazil", "Italy"],
+  matchIds: [],
+  momentIds: ["baggio-1994"],
+  tags: ["1994", "baggio", "unapproved"],
+  orientation: "landscape",
+  focus: "center",
+};
+
+export const dailyImageFallback = worldCupImageFallback;
+export const dailyImageAssets: DailyImageAsset[] = [...worldCupImageAssets, localUnapprovedImage];
+
+export function getDailyImages({
+  includeUnapproved = false,
+  assets = dailyImageAssets,
+  context,
+}: {
+  includeUnapproved?: boolean;
+  assets?: DailyImageAsset[];
+  context?: WorldCupImageContext;
+} = {}): DailyImageAsset[] {
+  if (includeUnapproved) return assets;
+  const approved = getApprovedWorldCupImages({ assets, includeFallback: true });
+  if (!context) return approved;
+  const contextPool = getApprovedWorldCupImages({ assets, includeFallback: false }).filter((asset) => {
+    const teams = new Set(context.teams ?? []);
+    return (
+      (context.matchId && asset.matchIds.includes(context.matchId)) ||
+      (context.momentId && asset.momentIds.includes(context.momentId)) ||
+      (context.year && asset.year === context.year) ||
+      asset.teams.some((team) => teams.has(team)) ||
+      asset.tags.some((tag) => context.tags?.includes(tag))
+    );
+  });
+  return contextPool.length ? contextPool : approved;
 }
 
-function listImageFiles(): string[] {
-  try {
-    return readdirSync(IMAGE_DIR)
-      .filter(isImageFile)
-      .sort((a, b) => a.localeCompare(b, "nb"));
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Every image found in public/daily-images/ (fallback.svg only when the folder
- * is otherwise empty). Returns public paths ready for an <img src>.
- */
-export function getDailyImages(): string[] {
-  const files = listImageFiles();
-  const gallery = files.filter((file) => file !== FALLBACK_FILE);
-  const pool = gallery.length > 0 ? gallery : files;
-  return pool.map((file) => `/daily-images/${encodeURIComponent(file)}`);
-}
-
-/**
- * Picks a random image from the bank — fresh on every page load.
- */
-export function pickRandomDailyImage(): string | null {
-  const images = getDailyImages();
-  if (images.length === 0) return null;
-  return images[Math.floor(Math.random() * images.length)];
+export function pickRandomDailyImage(context: WorldCupImageContext = {}): DailyImageAsset | null {
+  return pickWorldCupImage(context);
 }

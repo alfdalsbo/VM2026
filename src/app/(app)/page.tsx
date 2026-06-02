@@ -62,7 +62,7 @@ export default async function HomePage() {
 
   return (
     <div className="dashboard space-y-5">
-      <DailyMatchImage />
+      <DailyMatchImage dateKey={focusKey} matches={focusMatches} />
 
       <section className="dashboard-top">
         <div>

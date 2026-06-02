@@ -70,20 +70,30 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByText("Dagens VM-øyeblikk")).toHaveCount(1);
   await expect(page.getByText("VM-bildebanken")).toHaveCount(0);
   await expect(page.getByText("Arkivfunn fra kjelleren")).toHaveCount(0);
+  const dailyVmMomentImage = dailyVmMoment.locator(".daily-image-photo");
+  const initialDailyVmMomentSrc = await dailyVmMomentImage.getAttribute("src");
+  const dailyVmMomentShuffle = dailyVmMoment.getByRole("button", { name: "Vis nytt bilde til VM-øyeblikket" });
+  await expect(dailyVmMomentShuffle).toBeVisible();
+  await expect(dailyVmMomentShuffle).toContainText("Nytt bilde");
+  await dailyVmMoment.locator(".daily-image-stage").click();
+  await expect.poll(async () => dailyVmMomentImage.getAttribute("src")).toBe(initialDailyVmMomentSrc);
   const momentImageContextButton = dailyVmMoment.getByRole("button", { name: /Vis bildekontekst/ }).first();
   await expect(momentImageContextButton).toBeVisible();
   await expect(momentImageContextButton).toContainText("Les bildetekst");
   await momentImageContextButton.click();
+  await expect.poll(async () => dailyVmMomentImage.getAttribute("src")).toBe(initialDailyVmMomentSrc);
   const momentImageContextCard = dailyVmMoment.locator(".daily-image .image-context-card");
   await expect(momentImageContextCard).toBeVisible();
   await expect(momentImageContextCard).toContainText("Hva ser vi?");
   await expect(momentImageContextCard).toContainText("Hvorfor betyr det noe?");
   await expect(momentImageContextCard).toContainText("Nerdekrok");
+  await expect(dailyVmMomentShuffle).toBeVisible();
   await expect(dailyVmMoment.locator(".image-context-backdrop")).toHaveCount(0);
   await expect.poll(async () => momentImageContextCard.evaluate((element) => getComputedStyle(element).position)).not.toBe("fixed");
   await dailyVmMoment.locator(".image-context-close").click();
   await expect(momentImageContextCard).toHaveCount(0);
-  await expect(dailyVmMoment.getByRole("button", { name: "Vis nytt bilde til VM-øyeblikket" })).toBeVisible();
+  await dailyVmMomentShuffle.click();
+  await expect.poll(async () => dailyVmMomentImage.getAttribute("src")).not.toBe(initialDailyVmMomentSrc);
 
   await page.goto("/kamper");
   await expect(page.getByRole("navigation").getByRole("link", { name: "Bonustabell", exact: true })).toBeVisible();
@@ -106,7 +116,12 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(firstListedMatch.locator(".tip-bonus-open")).toHaveCount(0);
   await expect(firstListedMatch.locator(".tip-bonus-open-badge")).toHaveCount(0);
   await firstListedMatch.getByRole("button", { name: "Åpne bonus" }).click();
-  await firstListedMatch.getByRole("button", { name: "Legg til Mexico gule kort" }).click();
+  const addMexicoYellowCards = firstListedMatch.getByRole("button", { name: "Legg til Mexico gule kort" });
+  if (!(await addMexicoYellowCards.isEnabled())) {
+    await firstListedMatch.getByRole("button", { name: "Trekk fra Mexico gule kort" }).click();
+    await expect(firstListedMatch.getByText(/Kortbonus lagret|Lagrer/)).toBeVisible({ timeout: 10_000 });
+  }
+  await addMexicoYellowCards.click();
   await expect(firstListedMatch.getByText(/Kortbonus lagret|Lagrer/)).toBeVisible({ timeout: 10_000 });
   await firstListedMatch.getByRole("button", { name: "Autofyll bonus" }).click();
   await expect(page.getByText(/Autofylte|Ingen tomme bonustips/)).toBeVisible({ timeout: 10_000 });

@@ -2014,12 +2014,11 @@ select {
 }
 
 .home-daily-vm-moment-media .daily-image {
-  height: 100%;
   margin-bottom: 0;
 }
 
 .home-daily-vm-moment-media .daily-image-stage {
-  height: 100%;
+  height: clamp(260px, 35vw, 480px);
   min-height: clamp(260px, 35vw, 480px);
 }
 
@@ -2132,13 +2131,6 @@ select {
   height: clamp(300px, 68vw, 640px);
 }
 
-.daily-image[data-interactive="true"] {
-  cursor: pointer;
-  touch-action: pan-y;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
 .daily-image-shuffle {
   align-items: center;
   background: rgba(255, 250, 242, 0.92);
@@ -2211,6 +2203,58 @@ select {
 
 .daily-image[data-display-mode="cover"] .daily-image-photo {
   object-fit: cover;
+}
+
+.daily-image-controls {
+  align-items: start;
+  background: rgba(12, 13, 11, 0.96);
+  border-top: 1px solid rgba(255, 250, 242, 0.16);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px 12px;
+}
+
+.daily-image-action {
+  align-items: center;
+  background: rgba(255, 250, 242, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(17, 19, 15, 0.26);
+  color: var(--red-dark);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 950;
+  gap: 7px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  min-height: 34px;
+  padding: 8px 12px;
+  text-transform: uppercase;
+  transition: background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.daily-image-action:hover,
+.daily-image-action:focus-visible {
+  background: #fffaf2;
+  box-shadow: 0 10px 26px rgba(17, 19, 15, 0.32);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.daily-image-action svg {
+  flex: 0 0 auto;
+}
+
+.daily-image-controls .image-context-toggle {
+  display: contents;
+}
+
+.daily-image-controls .image-context-card {
+  flex: 1 0 100%;
 }
 
 .image-context-toggle {
@@ -2376,6 +2420,7 @@ select {
 }
 
 @media (max-width: 780px) {
+  .daily-image-action,
   .image-context-trigger {
     min-height: 38px;
     padding: 10px 13px;

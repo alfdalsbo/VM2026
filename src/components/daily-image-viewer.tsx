@@ -1,7 +1,7 @@
 "use client";
 
 import { Shuffle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import type { DailyImageAsset } from "@/lib/daily-images";
 import { ImageContextToggle } from "@/components/image-context-toggle";
@@ -11,8 +11,6 @@ import {
   rememberSeenWorldCupImage,
   SEEN_IMAGES_STORAGE_KEY,
 } from "@/lib/world-cup-image-freshness";
-
-const SWIPE_THRESHOLD = 40;
 
 export function DailyImageViewer({
   images,
@@ -30,16 +28,6 @@ export function DailyImageViewer({
   shuffleLabel?: string;
 }) {
   const [asset, setAsset] = useState(initialAsset);
-  const startX = useRef<number | null>(null);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setAsset((current) => chooseAndRemember(current.id, `${seed}-mount`));
-    }, 0);
-    return () => window.clearTimeout(timeout);
-    // Only run when the server-provided image pool changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images, seed, surfaceKey]);
 
   function readSeen() {
     return parseSeenImages(window.localStorage.getItem(SEEN_IMAGES_STORAGE_KEY));
@@ -63,29 +51,12 @@ export function DailyImageViewer({
     setAsset(next);
   }
 
-  function handleTouchStart(event: React.TouchEvent) {
-    startX.current = event.touches[0]?.clientX ?? null;
-  }
-
-  function handleTouchEnd(event: React.TouchEvent) {
-    if (startX.current === null) return;
-    const endX = event.changedTouches[0]?.clientX ?? startX.current;
-    if (Math.abs(endX - startX.current) > SWIPE_THRESHOLD) {
-      showRandom();
-    }
-    startX.current = null;
-  }
-
   const interactive = images.length > 1;
   const objectPosition = asset.focus === "top" ? "center top" : asset.focus === "bottom" ? "center bottom" : "center";
 
   return (
     <figure
       className="daily-image"
-      onTouchStart={interactive ? handleTouchStart : undefined}
-      onTouchEnd={interactive ? handleTouchEnd : undefined}
-      onClick={interactive ? showRandom : undefined}
-      data-interactive={interactive ? "true" : undefined}
       data-display-mode={asset.displayMode}
       data-orientation={asset.orientation}
     >
@@ -99,30 +70,24 @@ export function DailyImageViewer({
           style={{ objectPosition }}
         />
       </div>
-      {interactive ? (
-        <button
-          type="button"
-          className="daily-image-shuffle"
-          onClick={(event) => {
-            event.stopPropagation();
-            showRandom();
-          }}
-          aria-label={shuffleAriaLabel}
-        >
-          <Shuffle className="h-4 w-4" aria-hidden="true" />
-          <span>{shuffleLabel}</span>
-        </button>
-      ) : null}
-      <ImageContextToggle
-        className="daily-image-context"
-        title={asset.title}
-        caption={asset.caption}
-        context={asset.context}
-        facts={asset.facts}
-        credit={asset.credit}
-        license={asset.license}
-        sourceUrl={asset.sourceUrl}
-      />
+      <div className="daily-image-controls">
+        {interactive ? (
+          <button type="button" className="daily-image-action" onClick={showRandom} aria-label={shuffleAriaLabel}>
+            <Shuffle className="h-4 w-4" aria-hidden="true" />
+            <span>{shuffleLabel}</span>
+          </button>
+        ) : null}
+        <ImageContextToggle
+          className="daily-image-context"
+          title={asset.title}
+          caption={asset.caption}
+          context={asset.context}
+          facts={asset.facts}
+          credit={asset.credit}
+          license={asset.license}
+          sourceUrl={asset.sourceUrl}
+        />
+      </div>
     </figure>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { ImageContextToggle } from "@/components/image-context-toggle";
 import type { WorldCupImageAsset } from "@/lib/world-cup-image-assets";
 
 export function WorldCupImageWall({ images }: { images: WorldCupImageAsset[] }) {
@@ -53,6 +54,16 @@ export function WorldCupImageWall({ images }: { images: WorldCupImageAsset[] }) 
           <article key={image.id} className="image-wall-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={image.src} alt={image.alt} style={{ objectPosition: image.focus === "top" ? "center top" : "center" }} />
+            <ImageContextToggle
+              className="image-wall-context"
+              title={image.title}
+              caption={image.caption}
+              context={image.context}
+              facts={image.facts}
+              credit={image.credit}
+              license={image.license}
+              sourceUrl={image.sourceUrl}
+            />
             <div>
               <span>{image.year}</span>
               <strong>{image.title}</strong>

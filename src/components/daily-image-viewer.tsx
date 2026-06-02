@@ -1,9 +1,10 @@
 "use client";
 
-import { Info, Shuffle } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { DailyImageAsset } from "@/lib/daily-images";
+import { ImageContextToggle } from "@/components/image-context-toggle";
 import {
   chooseFreshWorldCupImage,
   parseSeenImages,
@@ -112,34 +113,16 @@ export function DailyImageViewer({
           <span>{shuffleLabel}</span>
         </button>
       ) : null}
-      <details className="image-context-toggle daily-image-context" onClick={(event) => event.stopPropagation()}>
-        <summary aria-label={`Vis bildekontekst for ${asset.title}`}>
-          <Info className="h-4 w-4" aria-hidden="true" />
-        </summary>
-        <div className="image-context-card">
-          <strong>{asset.title}</strong>
-          <span className="image-context-label">Hva ser vi?</span>
-          <p>{asset.caption}</p>
-          <span className="image-context-label">Hvorfor betyr det noe?</span>
-          <p>{asset.context}</p>
-          {asset.facts.length ? (
-            <>
-              <span className="image-context-label">Nerdekrok</span>
-              <ul>
-                {asset.facts.map((fact) => (
-                  <li key={fact}>{fact}</li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          <span>{asset.credit} · {asset.license}</span>
-          {asset.sourceUrl ? (
-            <a href={asset.sourceUrl} target="_blank" rel="noreferrer">
-              Kilde
-            </a>
-          ) : null}
-        </div>
-      </details>
+      <ImageContextToggle
+        className="daily-image-context"
+        title={asset.title}
+        caption={asset.caption}
+        context={asset.context}
+        facts={asset.facts}
+        credit={asset.credit}
+        license={asset.license}
+        sourceUrl={asset.sourceUrl}
+      />
     </figure>
   );
 }

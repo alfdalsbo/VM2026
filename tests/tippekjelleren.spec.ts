@@ -70,13 +70,22 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByText("Dagens VM-øyeblikk")).toHaveCount(1);
   await expect(page.getByText("VM-bildebanken")).toHaveCount(0);
   await expect(page.getByText("Arkivfunn fra kjelleren")).toHaveCount(0);
-  const momentImageContextButton = dailyVmMoment.locator(".daily-image-context summary").first();
+  const momentImageContextButton = dailyVmMoment.getByRole("button", { name: /Vis bildekontekst/ }).first();
   await expect(momentImageContextButton).toBeVisible();
   await momentImageContextButton.click();
-  await expect(dailyVmMoment.locator(".daily-image .image-context-card")).toContainText("Hva ser vi?");
-  await expect(dailyVmMoment.locator(".daily-image .image-context-card")).toContainText("Hvorfor betyr det noe?");
-  await expect(dailyVmMoment.locator(".daily-image .image-context-card")).toContainText("Nerdekrok");
-  await momentImageContextButton.click();
+  const momentImageContextCard = dailyVmMoment.locator(".daily-image .image-context-card");
+  await expect(momentImageContextCard).toBeVisible();
+  await expect(momentImageContextCard).toContainText("Hva ser vi?");
+  await expect(momentImageContextCard).toContainText("Hvorfor betyr det noe?");
+  await expect(momentImageContextCard).toContainText("Nerdekrok");
+  if (testInfo.project.name === "mobile") {
+    await expect(dailyVmMoment.locator(".image-context-backdrop")).toBeVisible();
+    await expect
+      .poll(async () => momentImageContextCard.evaluate((element) => getComputedStyle(element).position))
+      .toBe("fixed");
+  }
+  await dailyVmMoment.locator(".image-context-close").click();
+  await expect(momentImageContextCard).toHaveCount(0);
   await expect(dailyVmMoment.getByRole("button", { name: "Vis nytt bilde til VM-øyeblikket" })).toBeVisible();
 
   await page.goto("/kamper");
@@ -126,6 +135,12 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByRole("heading", { name: "VM-historien på dommerbordet" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mesterveggen" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Arkivbildeveggen" })).toBeVisible();
+  const vmArchiveContextButton = page.getByRole("button", { name: /Vis bildekontekst/ }).first();
+  await expect(vmArchiveContextButton).toBeVisible();
+  await vmArchiveContextButton.click();
+  await expect(page.locator(".image-wall-context .image-context-card").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".image-wall-context .image-context-card")).toHaveCount(0);
   await expect(page.getByLabel("Tiår")).toBeVisible();
   await expect(page.getByText("Nerde fakta")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Veien til finalen" })).toBeVisible();

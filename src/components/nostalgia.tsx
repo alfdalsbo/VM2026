@@ -1,5 +1,4 @@
-import { Info } from "lucide-react";
-
+import { ImageContextToggle } from "@/components/image-context-toggle";
 import { Panel } from "@/components/ui";
 import { WorldCupImageWall } from "@/components/world-cup-image-wall";
 import type { NostalgiaArchive, NostalgiaMoment, TeamNostalgiaProfile } from "@/lib/world-cup-nostalgia";
@@ -174,6 +173,7 @@ function ArchivePoster({ moment, size = "default" }: { moment: NostalgiaMoment; 
         <img src={image.src} alt={image.alt} style={{ objectPosition: image.focus === "top" ? "center top" : image.focus === "bottom" ? "center bottom" : "center" }} />
         {image.credit ? <figcaption>{image.credit}</figcaption> : null}
         <ImageContextToggle
+          className="archive-image-context"
           title={image.title}
           caption={image.caption}
           context={image.context}
@@ -192,6 +192,7 @@ function ArchivePoster({ moment, size = "default" }: { moment: NostalgiaMoment; 
       <strong>{moment.year}</strong>
       <em>Arkivkort</em>
       <ImageContextToggle
+        className="archive-image-context"
         title={moment.title}
         caption={moment.body}
         context={moment.cellarVerdict}
@@ -200,55 +201,6 @@ function ArchivePoster({ moment, size = "default" }: { moment: NostalgiaMoment; 
         sourceUrl={moment.source.url}
       />
     </div>
-  );
-}
-
-function ImageContextToggle({
-  title,
-  caption,
-  context,
-  facts,
-  credit,
-  license,
-  sourceUrl,
-}: {
-  title: string;
-  caption: string;
-  context: string;
-  facts?: string[];
-  credit?: string;
-  license?: string;
-  sourceUrl?: string;
-}) {
-  return (
-    <details className="image-context-toggle archive-image-context">
-      <summary aria-label={`Vis bildekontekst for ${title}`}>
-        <Info className="h-4 w-4" aria-hidden="true" />
-      </summary>
-      <div className="image-context-card">
-        <strong>{title}</strong>
-        <span className="image-context-label">Hva ser vi?</span>
-        <p>{caption}</p>
-        <span className="image-context-label">Hvorfor betyr det noe?</span>
-        <p>{context}</p>
-        {facts?.length ? (
-          <>
-            <span className="image-context-label">Nerdekrok</span>
-            <ul>
-              {facts.map((fact) => (
-                <li key={fact}>{fact}</li>
-              ))}
-            </ul>
-          </>
-        ) : null}
-        {credit || license ? <span>{[credit, license].filter(Boolean).join(" · ")}</span> : null}
-        {sourceUrl ? (
-          <a href={sourceUrl} target="_blank" rel="noreferrer">
-            Kilde
-          </a>
-        ) : null}
-      </div>
-    </details>
   );
 }
 

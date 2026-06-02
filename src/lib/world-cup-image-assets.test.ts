@@ -19,7 +19,7 @@ describe("world-cup image assets", () => {
     const approved = getApprovedWorldCupImages({ includeFallback: false });
     const ids = new Set(approved.map((asset) => asset.id));
 
-    expect(approved.length).toBeGreaterThanOrEqual(60);
+    expect(approved.length).toBeGreaterThanOrEqual(100);
     expect(ids.size).toBe(approved.length);
 
     for (const asset of approved) {

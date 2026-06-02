@@ -7,7 +7,7 @@ describe("daily image manifest", () => {
   it("requires context and license metadata for every approved photo", () => {
     const approvedPhotos = dailyImageAssets.filter((asset) => asset.approved);
 
-    expect(approvedPhotos.length).toBeGreaterThanOrEqual(60);
+    expect(approvedPhotos.length).toBeGreaterThanOrEqual(100);
     for (const asset of approvedPhotos) {
       expect(asset.src).toMatch(/^\/daily-images\//);
       expect(asset.alt.trim().length).toBeGreaterThan(20);

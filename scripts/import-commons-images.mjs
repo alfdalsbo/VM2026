@@ -7,7 +7,7 @@ const OUTPUT_FILE = "src/lib/world-cup-image-assets.generated.ts";
 const OUTPUT_DIR = "public/daily-images/commons";
 const PUBLIC_PREFIX = "/daily-images/commons";
 const TARGET_APPROVED_ASSETS = 180;
-const MIN_APPROVED_ASSETS = 60;
+const MIN_APPROVED_ASSETS = 100;
 const MAX_ASSETS_PER_CATEGORY = 40;
 const MAX_DOWNLOAD_ATTEMPTS = 2;
 const THUMB_WIDTH = 1400;
@@ -15,6 +15,9 @@ const USER_AGENT = "TippekjellerenLocal/1.0 (private VM nostalgia asset import)"
 
 const requiredFiles = [
   "File:Uruguay_argentina_final.jpg",
+  "File:Uruguay national football team 1930.jpg",
+  "File:Uruguay goal v argentina 1930.jpg",
+  "File:Uruguay en el Mundial 1930, Los Sports, 1930-08-08 (387).jpg",
   "File:Flopass3.jpg",
   "File:Bergkampscore3.jpg",
   "File:Edgar_Davids_and_Emerson_during_WC_1998_semifinal_Netherlands_vs_Brazil.jpg",
@@ -29,6 +32,33 @@ const requiredFileSpecs = {
     context:
       "Dette er startstreken for VM-bildene: Uruguay mot Argentina, finaledag i Montevideo og et mesterskap som fortsatt var mer eventyr enn rutine.",
     facts: ["Uruguay vant finalen 4-2.", "Finalen ble spilt på Estadio Centenario.", "Dette var den første VM-finalen."],
+  },
+  "File:Uruguay national football team 1930.jpg": {
+    year: "1930",
+    teams: ["Uruguay", "Argentina"],
+    momentIds: ["uruguay-1930"],
+    tags: ["1930", "uruguay", "argentina", "final", "team-photo", "early-world-cup"],
+    context:
+      "Uruguays verdensmestere fra 1930 ser mer ut som et alvorlig familiealbum enn moderne idrettsindustri, og det er nettopp derfor bildet virker.",
+    facts: ["Uruguay ble første verdensmester i fotball.", "Finalen mot Argentina endte 4-2.", "José Nasazzi var kaptein for Uruguay."],
+  },
+  "File:Uruguay goal v argentina 1930.jpg": {
+    year: "1930",
+    teams: ["Uruguay", "Argentina"],
+    momentIds: ["uruguay-1930"],
+    tags: ["1930", "uruguay", "argentina", "final", "goal", "castro"],
+    context:
+      "Et finalemål fra 1930 er VM-historie i råformat: kornete, uperfekt og nesten for konkret til å være legende.",
+    facts: ["Bildet viser Uruguays fjerde mål i finalen.", "Héctor Castro scoret målet.", "Uruguay slo Argentina 4-2."],
+  },
+  "File:Uruguay en el Mundial 1930, Los Sports, 1930-08-08 (387).jpg": {
+    year: "1930",
+    teams: ["Uruguay", "Argentina"],
+    momentIds: ["uruguay-1930"],
+    tags: ["1930", "uruguay", "argentina", "final", "los-sports", "team-photo"],
+    context:
+      "Los Sports-bildet gjør 1930-VM til avisstoff igjen: elleve menn, få fakter og en hel turneringshistorie pakket i sort-hvitt.",
+    facts: ["Bildet ble publisert i Los Sports i 1930.", "Uruguay vant finalen mot Argentina.", "Finalen ble spilt 30. juli 1930."],
   },
   "File:Flopass3.jpg": {
     year: "1998",
@@ -121,6 +151,26 @@ const categorySpecs = [
     facts: ["Argentina slo Nederland 3-1 etter ekstraomganger.", "Mario Kempes scoret to mål i finalen.", "Nederland tapte sin andre strake VM-finale."],
   },
   {
+    category: "Category:Final of the 1966 FIFA World Cup",
+    year: "1966",
+    teams: ["England", "Germany"],
+    momentIds: ["england-croatia-2018"],
+    tags: ["1966", "england", "germany", "final", "wembley", "extra-time"],
+    context:
+      "1966-finalen er engelsk VM-selvfølelse i ren konsentrat: Wembley, ekstraomganger og en mållinje som fortsatt får folk til å lene seg frem.",
+    facts: ["England slo Vest-Tyskland 4-2 etter ekstraomganger.", "Geoff Hurst scoret hat trick i finalen.", "Finalen ble spilt på Wembley."],
+  },
+  {
+    category: "Category:Final of the 1982 FIFA World Cup",
+    year: "1982",
+    teams: ["Italy", "Germany"],
+    momentIds: ["rossi-1982"],
+    tags: ["1982", "italy", "germany", "final", "rossi", "tardelli"],
+    context:
+      "Spania 1982 er finalen der Italia gikk fra mistenksom gruppespillprat til ren VM-myndighet, med Tardelli-løpet som følelsesarkiv.",
+    facts: ["Italia slo Vest-Tyskland 3-1.", "Paolo Rossi ble turneringens toppscorer.", "Marco Tardellis jubel er et av VMs store følelsesbilder."],
+  },
+  {
     category: "Category:Final of the 1986 FIFA World Cup",
     year: "1986",
     teams: ["Argentina", "Germany"],
@@ -129,6 +179,76 @@ const categorySpecs = [
     context:
       "1986-finalen er Maradona-turneringen med sluttstrek: Argentina hadde nerven, Vest-Tyskland hadde opphentingen, og Burruchaga hadde siste løp.",
     facts: ["Argentina slo Vest-Tyskland 3-2.", "Burruchaga avgjorde finalen sent.", "Maradona var turneringens gravitasjonssenter."],
+  },
+  {
+    category: "Category:Argentina at the 1986 FIFA World Cup",
+    year: "1986",
+    teams: ["Argentina"],
+    momentIds: ["maradona-1986"],
+    tags: ["1986", "argentina", "maradona", "mexico", "archive"],
+    context:
+      "Argentina 1986 er VM som enkeltmannskraft og lagstruktur samtidig: Maradona bar overskriftene, men hele laget bar ham gjennom Mexico.",
+    facts: ["Argentina vant VM 1986.", "Maradona ble kåret til turneringens spiller.", "Argentina scoret 14 mål i turneringen."],
+  },
+  {
+    category: "Category:Argentina v England, 22 June 1986",
+    year: "1986",
+    teams: ["Argentina", "England"],
+    momentIds: ["maradona-1986"],
+    tags: ["1986", "argentina", "england", "maradona", "quarterfinal"],
+    context:
+      "Argentina-England i 1986 er kampen som gjør at nøytrale tippekuponger plutselig får historisk bagasje: hånd, geni og geopolitisk etterklang.",
+    facts: ["Argentina slo England 2-1 i kvartfinalen.", "Maradona scoret begge Argentinas mål.", "Kampen ble spilt på Estadio Azteca."],
+  },
+  {
+    category: "Category:Brazil vs Italy 1994 FIFA World Cup Final",
+    year: "1994",
+    teams: ["Brazil", "Italy"],
+    momentIds: ["baggio-1994"],
+    tags: ["1994", "brazil", "italy", "final", "penalties", "baggio"],
+    context:
+      "USA 1994-finalen er stillheten etter 0-0: Brasil ventet, Italia skalv, og Baggio-bommen ble et eget kapittel i tippernes frykt for straffer.",
+    facts: ["Brasil slo Italia på straffer.", "Finalen endte 0-0 etter ekstraomganger.", "Brasil ble første nasjon med fire VM-gull."],
+  },
+  {
+    category: "Category:Bulgaria v Germany, 10 July 1994",
+    year: "1994",
+    teams: ["Bulgaria", "Germany"],
+    momentIds: ["baggio-1994"],
+    tags: ["1994", "bulgaria", "germany", "quarterfinal", "stoichkov"],
+    context:
+      "Bulgaria-Tyskland i 1994 er den typen VM-smell som gjør gamle kuponger nervøse: regjerende mester ut, outsideren inn i historien.",
+    facts: ["Bulgaria slo Tyskland 2-1.", "Hristo Stoichkov scoret i kampen.", "Bulgaria nådde semifinale i VM 1994."],
+  },
+  {
+    category: "Category:Final of the 1998 FIFA World Cup",
+    year: "1998",
+    teams: ["France", "Brazil"],
+    momentIds: ["france-1998"],
+    tags: ["1998", "france", "brazil", "final", "zidane"],
+    context:
+      "Paris 1998 er fransk VM-fødsel med smell i panna: Zidane steg to ganger, Brasil ble menneskelig og Stade de France ble nasjonalhukommelse.",
+    facts: ["Frankrike slo Brasil 3-0.", "Zidane scoret to hodemål i finalen.", "Dette var Frankrikes første VM-gull."],
+  },
+  {
+    category: "Category:2002 FIFA World Cup Match 57, England v Brazil",
+    year: "2002",
+    teams: ["England", "Brazil"],
+    momentIds: ["brazil-1970"],
+    tags: ["2002", "england", "brazil", "quarterfinal", "ronaldinho"],
+    context:
+      "England-Brasil 2002 er kampen der et frispark ble en hel pubdiskusjon: var det ment, var det flaks, og hvorfor sto keeperen der?",
+    facts: ["Brasil slo England 2-1.", "Ronaldinho scoret vinnermålet på frispark.", "Brasil vant senere hele VM 2002."],
+  },
+  {
+    category: "Category:Senegal at the 2002 FIFA World Cup",
+    year: "2002",
+    teams: ["Senegal", "France"],
+    momentIds: ["senegal-2002"],
+    tags: ["2002", "senegal", "france", "opening-match", "upset"],
+    context:
+      "Senegal 2002 er påminnelsen om at VM ikke spør pent før det velter verdensmesteren: ett åpningsmål, og hele turneringen byttet temperatur.",
+    facts: ["Senegal slo Frankrike 1-0 i åpningskampen.", "Papa Bouba Diop scoret kampens mål.", "Senegal nådde kvartfinale i debuten."],
   },
   {
     category: "Category:Final of the 2006 FIFA World Cup",
@@ -149,6 +269,96 @@ const categorySpecs = [
     context:
       "2010-finalen er den lave scorens høymesse: Spania trillet, Nederland taklet, og Iniesta skrev punktum da rommet nesten hadde gitt opp.",
     facts: ["Spania slo Nederland 1-0 etter ekstraomganger.", "Iniesta scoret finalens eneste mål.", "Dette var Spanias første VM-gull."],
+  },
+  {
+    category: "Category:Spain at the 2010 FIFA World Cup",
+    year: "2010",
+    teams: ["Spain"],
+    momentIds: ["spain-2010"],
+    tags: ["2010", "spain", "iniesta", "xavi", "tiki-taka"],
+    context:
+      "Spania 2010 er kontrollens VM: korte pasninger, lange diskusjoner og en finalescoring som gjorde all den forsiktige trilingen evig.",
+    facts: ["Spania vant sitt første VM-gull i 2010.", "Spania vant alle utslagskampene 1-0.", "Iniesta avgjorde finalen mot Nederland."],
+  },
+  {
+    category: "Category:Final of the 2014 FIFA World Cup",
+    year: "2014",
+    teams: ["Germany", "Argentina"],
+    momentIds: ["germany-2014"],
+    tags: ["2014", "germany", "argentina", "final", "goetze"],
+    context:
+      "Maracanã 2014 er tysk tålmodighet med argentinsk nerve: en finale som ventet på ett løp, én touch og Götzes øyeblikk.",
+    facts: ["Tyskland slo Argentina 1-0 etter ekstraomganger.", "Mario Götze scoret finalens eneste mål.", "Tyskland ble første europeiske mester i Sør-Amerika."],
+  },
+  {
+    category: "Category:2014 FIFA World Cup Match 61, Brazil v Germany",
+    year: "2014",
+    teams: ["Brazil", "Germany"],
+    momentIds: ["germany-2014"],
+    tags: ["2014", "brazil", "germany", "semifinal", "mineirazo"],
+    context:
+      "Brasil-Tyskland 2014 er resultatet som ser ut som en tastefeil selv i ettertid: et nasjonalt sjokk, syv mål og stillhet i Belo Horizonte.",
+    facts: ["Tyskland slo Brasil 7-1 i semifinalen.", "Kampen kalles ofte Mineirazo.", "Tyskland scoret fem mål før pause."],
+  },
+  {
+    category: "Category:Germany at the 2014 FIFA World Cup",
+    year: "2014",
+    teams: ["Germany"],
+    momentIds: ["germany-2014"],
+    tags: ["2014", "germany", "champion", "goetze", "neuer"],
+    context:
+      "Tyskland 2014 er maskinen med myke føtter: Neuer som ekstra stopper, Kroos som metronom og Götze som siste setning.",
+    facts: ["Tyskland vant VM 2014.", "Manuel Neuer ble kåret til turneringens beste keeper.", "Miroslav Klose ble VMs mestscorende spiller gjennom tidene."],
+  },
+  {
+    category: "Category:Final of the 2018 FIFA World Cup",
+    year: "2018",
+    teams: ["France", "Croatia"],
+    momentIds: ["france-2018"],
+    tags: ["2018", "france", "croatia", "final", "mbappe", "modric"],
+    context:
+      "Moskva 2018 er finalen med stormkast: fransk fart, kroatisk utholdenhet og et resultat som så mer åpent ut enn kampen føltes.",
+    facts: ["Frankrike slo Kroatia 4-2.", "Mbappé scoret i finalen.", "Luka Modrić ble kåret til turneringens beste spiller."],
+  },
+  {
+    category: "Category:Croatia at the 2018 FIFA World Cup",
+    year: "2018",
+    teams: ["Croatia"],
+    momentIds: ["england-croatia-2018"],
+    tags: ["2018", "croatia", "modric", "mandzukic", "finalist"],
+    context:
+      "Kroatia 2018 er sliteseierens VM: ekstraomganger, straffer og et lag som nektet å gå tomt før finalen sto der.",
+    facts: ["Kroatia nådde sin første VM-finale.", "Kroatia slo England 2-1 etter ekstraomganger i semifinalen.", "Luka Modrić vant Gullballen."],
+  },
+  {
+    category: "Category:England at the 2018 FIFA World Cup",
+    year: "2018",
+    teams: ["England"],
+    momentIds: ["england-croatia-2018"],
+    tags: ["2018", "england", "kane", "semifinal", "croatia"],
+    context:
+      "England 2018 er 'it's coming home' med hjertet utenpå drakta: nesten-finale, dødballtro og den velkjente engelske ettersmaken.",
+    facts: ["England nådde semifinale i 2018.", "Harry Kane ble turneringens toppscorer.", "Kroatia slo England etter ekstraomganger."],
+  },
+  {
+    category: "Category:Final of the 2022 FIFA World Cup",
+    year: "2022",
+    teams: ["Argentina", "France"],
+    momentIds: ["argentina-2022"],
+    tags: ["2022", "argentina", "france", "final", "messi", "mbappe"],
+    context:
+      "Lusail 2022 er finalen som nektet å slutte: Messi, Mbappé, 3-3 og straffer før Argentina endelig fikk sin moderne gullramme.",
+    facts: ["Argentina slo Frankrike på straffer.", "Finalen endte 3-3 etter ekstraomganger.", "Mbappé scoret hat trick i finalen."],
+  },
+  {
+    category: "Category:Argentina at the 2022 FIFA World Cup",
+    year: "2022",
+    teams: ["Argentina"],
+    momentIds: ["argentina-2022"],
+    tags: ["2022", "argentina", "messi", "champion", "lusail"],
+    context:
+      "Argentina 2022 er Messis VM med folkefest rundt: fra sjokkstart mot Saudi-Arabia til den mest ladede finalekvelden i moderne tid.",
+    facts: ["Argentina vant sitt tredje VM-gull.", "Messi ble kåret til turneringens beste spiller.", "Argentina tapte åpningskampen før de vant resten av veien."],
   },
   {
     category: "Category:2026 FIFA World Cup in the United States",

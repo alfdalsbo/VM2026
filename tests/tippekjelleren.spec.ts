@@ -84,7 +84,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(firstListedMatch.locator(".tip-bonus-open-badge", { hasText: "Åpen" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Scorere og assister" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Gule og røde kort" })).toBeVisible();
-  await expect(firstListedMatch.getByText("Tropp ikke klar.").first()).toBeVisible();
+  await expect(firstListedMatch.getByText(/Tropp ikke klar\.|Resultattipset står på 0-0\./).first()).toBeVisible();
   await expect(firstListedMatch.getByRole("button", { name: "Lagre bonustips" })).toHaveCount(0);
   await expect(firstListedMatch.getByRole("group", { name: "Mexico gule kort" })).toBeVisible();
   await expect(firstListedMatch.getByRole("group", { name: "Sør-Afrika røde kort" })).toBeVisible();

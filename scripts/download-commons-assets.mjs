@@ -4,10 +4,12 @@ import { basename, dirname, join } from "node:path";
 
 const MANIFEST_FILE = "src/lib/world-cup-image-assets.generated.ts";
 const PUBLIC_ROOT = "public";
+const API_URL = "https://commons.wikimedia.org/w/api.php";
 const WIDTH = 720;
-const MIN_ASSETS = 60;
-const CONCURRENCY = 2;
+const MIN_ASSETS = 100;
+const CONCURRENCY = 5;
 const USER_AGENT = "TippekjellerenLocal/1.0 (private VM nostalgia asset downloader)";
+const downloadUrlCache = new Map();
 
 async function exists(path) {
   try {
@@ -40,6 +42,39 @@ function redirectUrl(sourceUrl) {
   return `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(fileName)}?width=${WIDTH}`;
 }
 
+function sourceTitle(sourceUrl) {
+  const url = new URL(sourceUrl);
+  return decodeURIComponent(url.pathname.replace(/^\/wiki\//, "")).replace(/_/g, " ");
+}
+
+async function fetchDownloadUrl(sourceUrl) {
+  if (downloadUrlCache.has(sourceUrl)) return downloadUrlCache.get(sourceUrl);
+
+  const params = new URLSearchParams({
+    action: "query",
+    format: "json",
+    prop: "imageinfo",
+    iiprop: "url",
+    iiurlwidth: String(WIDTH),
+    titles: sourceTitle(sourceUrl),
+  });
+
+  const response = await fetch(`${API_URL}?${params}`, {
+    headers: { "User-Agent": USER_AGENT },
+  });
+
+  if (!response.ok) {
+    throw new Error(`metadata ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const pages = Object.values(data.query?.pages ?? {});
+  const imageInfo = pages[0]?.imageinfo?.[0];
+  const downloadUrl = imageInfo?.thumburl ?? imageInfo?.url ?? redirectUrl(sourceUrl);
+  downloadUrlCache.set(sourceUrl, downloadUrl);
+  return downloadUrl;
+}
+
 async function curlDownload(url, target) {
   await new Promise((resolve, reject) => {
     const child = spawn("curl.exe", [
@@ -48,13 +83,13 @@ async function curlDownload(url, target) {
       "--silent",
       "--show-error",
       "--connect-timeout",
-      "15",
+      "10",
       "--max-time",
-      "115",
+      "45",
       "--retry",
-      "1",
+      "0",
       "--retry-delay",
-      "2",
+      "0",
       "-A",
       USER_AGENT,
       "-o",
@@ -65,7 +100,7 @@ async function curlDownload(url, target) {
     const timeout = setTimeout(() => {
       child.kill("SIGKILL");
       reject(new Error("curl timeout"));
-    }, 125_000);
+    }, 55_000);
     child.stderr.on("data", (chunk) => {
       stderr += chunk.toString();
     });
@@ -90,7 +125,7 @@ async function download(asset, index, total) {
   try {
     await mkdir(dirname(target), { recursive: true });
     console.log(`Downloading ${index + 1}/${total}: ${basename(target)}`);
-    await curlDownload(redirectUrl(asset.sourceUrl), target);
+    await curlDownload(await fetchDownloadUrl(asset.sourceUrl), target);
     const file = await stat(target);
     if (file.size < 1000) throw new Error(`Suspiciously small file (${file.size} bytes)`);
     return true;

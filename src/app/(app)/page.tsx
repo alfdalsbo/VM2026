@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Avatar } from "@/components/avatar";
 import { DailyMatchImage } from "@/components/daily-match-image";
+import { HomeArchiveImageBank } from "@/components/home-archive-image-bank";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { NextMatchCard } from "@/components/next-match-card";
 import { NostalgiaHero } from "@/components/nostalgia";
@@ -62,7 +63,7 @@ export default async function HomePage() {
 
   return (
     <div className="dashboard space-y-5">
-      <DailyMatchImage dateKey={focusKey} matches={focusMatches} />
+      <DailyMatchImage />
 
       <section className="dashboard-top">
         <div>
@@ -82,6 +83,8 @@ export default async function HomePage() {
         ))}
         {!dashboardMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>
+
+      <HomeArchiveImageBank dateKey={focusKey} matches={focusMatches} />
 
       <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <Panel className="matchday-winner-panel">

@@ -1962,6 +1962,70 @@ select {
   padding-top: 8px;
 }
 
+.manual-daily-image {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(47, 30, 18, 0.12);
+  margin: 0 0 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .manual-daily-image {
+    margin-bottom: 22px;
+  }
+}
+
+.manual-daily-image[data-interactive="true"] {
+  cursor: pointer;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.manual-daily-image-photo {
+  aspect-ratio: 2 / 1;
+  display: block;
+  height: auto;
+  object-fit: cover;
+  object-position: center;
+  -webkit-user-drag: none;
+  width: 100%;
+}
+
+.home-archive-bank {
+  margin: 4px 0 10px;
+}
+
+.home-archive-bank-header {
+  align-items: end;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.home-archive-bank-header span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.home-archive-bank .daily-image {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .home-archive-bank-header {
+    align-items: start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
 .daily-image {
   background: #211711;
   border: 1px solid var(--line);

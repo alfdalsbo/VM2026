@@ -20,15 +20,10 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await page.getByRole("button", { name: "Logg inn" }).click();
 
   await expect(page.getByRole("heading", { name: /Dagens kamper|Neste kampdag/ })).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("Dagens VM-øyeblikk")).toBeVisible();
-  const dailyImageContextButton = page.locator(".daily-image-context summary").first();
-  await expect(dailyImageContextButton).toBeVisible();
-  await dailyImageContextButton.click();
-  await expect(page.locator(".daily-image .image-context-card")).toContainText("Hva ser vi?");
-  await expect(page.locator(".daily-image .image-context-card")).toContainText("Hvorfor betyr det noe?");
-  await expect(page.locator(".daily-image .image-context-card")).toContainText("Nerdekrok");
-  await dailyImageContextButton.click();
-  await expect(page.getByRole("button", { name: "Vis nytt arkivfunn" })).toBeVisible();
+  const manualTopImage = page.locator(".manual-daily-image").first();
+  await expect(manualTopImage).toBeVisible();
+  await expect(manualTopImage.getByRole("button", { name: "Bytt til et tilfeldig bilde" })).toBeVisible();
+  await expect(manualTopImage.locator(".image-context-toggle")).toHaveCount(0);
   await expect(page.getByText("Lagring")).toHaveCount(0);
   await expect(page.getByText("Joker")).toHaveCount(0);
 
@@ -70,6 +65,17 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await page.locator("#m001").getByRole("button", { name: "Legg til Mexico" }).click();
   await page.locator("#m001").getByRole("button", { name: "Legg til Sør-Afrika" }).click();
   await expect(page.locator("#m001").getByText("Registrert")).toBeVisible({ timeout: 10_000 });
+  const homeArchiveBank = page.locator(".tip-day-matches + .home-archive-bank");
+  await expect(homeArchiveBank).toBeVisible();
+  await expect(homeArchiveBank.getByRole("heading", { name: "Arkivfunn fra kjelleren" })).toBeVisible();
+  const archiveImageContextButton = homeArchiveBank.locator(".daily-image-context summary").first();
+  await expect(archiveImageContextButton).toBeVisible();
+  await archiveImageContextButton.click();
+  await expect(homeArchiveBank.locator(".daily-image .image-context-card")).toContainText("Hva ser vi?");
+  await expect(homeArchiveBank.locator(".daily-image .image-context-card")).toContainText("Hvorfor betyr det noe?");
+  await expect(homeArchiveBank.locator(".daily-image .image-context-card")).toContainText("Nerdekrok");
+  await archiveImageContextButton.click();
+  await expect(homeArchiveBank.getByRole("button", { name: "Vis nytt arkivfunn" })).toBeVisible();
 
   await page.goto("/kamper");
   await expect(page.getByRole("navigation").getByRole("link", { name: "Bonustabell", exact: true })).toBeVisible();

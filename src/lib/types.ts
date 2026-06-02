@@ -289,6 +289,10 @@ export type LivePotTip = {
   matchId: string;
   yellowCardsTotal: number;
   redCardsTotal: number;
+  homeYellowCardsTotal?: number;
+  awayYellowCardsTotal?: number;
+  homeRedCardsTotal?: number;
+  awayRedCardsTotal?: number;
   updatedAt: string;
 };
 

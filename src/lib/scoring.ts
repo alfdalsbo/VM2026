@@ -178,7 +178,7 @@ export function scorePrediction(
 function findSquadPlayerName(state: AppState, playerId: string | null | undefined): string | null {
   if (!playerId) return null;
   for (const profile of state.teamProfiles) {
-    const found = profile.squad.find((player) => player.id === playerId);
+    const found = profile.squad.find((player) => player.id === playerId && player.source !== "placeholder");
     if (found) return found.name;
   }
   return null;

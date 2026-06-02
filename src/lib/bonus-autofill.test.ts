@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { autofillBonusTipsInState, getPredictedOpenMatchIdsForBonusAutofill } from "@/lib/bonus-autofill";
 import { savePredictionInState } from "@/lib/scoring";
 import { initialState } from "@/lib/state";
-import type { Prediction } from "@/lib/types";
+import type { AppState, Prediction } from "@/lib/types";
 
 function prediction(overrides: Partial<Prediction> = {}): Prediction {
   return {
@@ -21,9 +21,28 @@ function prediction(overrides: Partial<Prediction> = {}): Prediction {
   };
 }
 
+function withRealSquads(state: AppState, ...teamNames: string[]): AppState {
+  const teams = new Set(teamNames);
+  return {
+    ...state,
+    teamProfiles: state.teamProfiles.map((profile) =>
+      teams.has(profile.teamName)
+        ? {
+            ...profile,
+            squad: profile.squad.map((player) => ({ ...player, source: "FIFA public squad API" })),
+          }
+        : profile,
+    ),
+  };
+}
+
 describe("bonus autofill", () => {
   it("fills empty bonus slots and card tips without changing result tips", async () => {
-    const base = savePredictionInState(initialState(), prediction(), new Date("2026-06-01T10:00:00Z"));
+    const base = savePredictionInState(
+      withRealSquads(initialState(), "Mexico", "Sør-Afrika"),
+      prediction(),
+      new Date("2026-06-01T10:00:00Z"),
+    );
     const result = await autofillBonusTipsInState({
       state: base,
       playerId: "alf",
@@ -35,8 +54,30 @@ describe("bonus autofill", () => {
     expect(tip).toMatchObject({ homeGoals: 1, awayGoals: 0 });
     expect(tip.homeScorers).toHaveLength(1);
     expect(tip.homeAssists).toHaveLength(1);
-    expect(result.state.livePotTips[0]).toMatchObject({ playerId: "alf", matchId: "m001" });
+    expect(result.state.livePotTips[0]).toMatchObject({
+      playerId: "alf",
+      matchId: "m001",
+      homeYellowCardsTotal: expect.any(Number),
+      awayYellowCardsTotal: expect.any(Number),
+      homeRedCardsTotal: expect.any(Number),
+      awayRedCardsTotal: expect.any(Number),
+    });
     expect(result.summary).toMatchObject({ source: "fallback", matchesTouched: 1, playerSlotsFilled: 2, cardTipsFilled: 1 });
+  });
+
+  it("does not use placeholder squads for scorer or assist autofill", async () => {
+    const base = savePredictionInState(initialState(), prediction(), new Date("2026-06-01T10:00:00Z"));
+    const result = await autofillBonusTipsInState({
+      state: base,
+      playerId: "alf",
+      matchIds: ["m001"],
+      now: new Date("2026-06-01T10:00:00Z"),
+    });
+    const tip = result.state.predictions.find((item) => item.playerId === "alf" && item.matchId === "m001")!;
+
+    expect(tip.homeScorers).toHaveLength(0);
+    expect(tip.homeAssists).toHaveLength(0);
+    expect(result.summary).toMatchObject({ matchesTouched: 1, playerSlotsFilled: 0, cardTipsFilled: 1 });
   });
 
   it("does not create scorer or assist slots for default 0-0 result tips", async () => {

@@ -22,6 +22,7 @@ import { hasUnresolvedKnockoutTeams } from "@/lib/knockout-placeholders";
 import {
   countYellowCards,
   formatLiveRedCardsPrediction,
+  getLivePotCardTotals,
   getLivePotTip,
   isLivePotOpen,
 } from "@/lib/live-pot";
@@ -504,15 +505,15 @@ function MatchBonusPanel({
   const cardOpen = canEdit && isLivePotOpen(match);
   const goals = (prediction?.homeGoals ?? 0) + (prediction?.awayGoals ?? 0);
   const playerSlotsMax = goals * 2;
+  const homePlayerIds = new Set(homeSquad.filter((playerItem) => playerItem.source !== "placeholder").map((playerItem) => playerItem.id));
+  const awayPlayerIds = new Set(awaySquad.filter((playerItem) => playerItem.source !== "placeholder").map((playerItem) => playerItem.id));
   const playerSlotsUsed =
-    (prediction?.homeScorers?.length ?? 0) +
-    (prediction?.awayScorers?.length ?? 0) +
-    (prediction?.homeAssists?.length ?? 0) +
-    (prediction?.awayAssists?.length ?? 0);
+    countValidBonusIds(prediction?.homeScorers, homePlayerIds) +
+    countValidBonusIds(prediction?.awayScorers, awayPlayerIds) +
+    countValidBonusIds(prediction?.homeAssists, homePlayerIds) +
+    countValidBonusIds(prediction?.awayAssists, awayPlayerIds);
   const playerStatus = playerSlotsMax > 0 ? `${playerSlotsUsed}/${playerSlotsMax} spillervalg` : "0-0: ingen spillervalg";
-  const cardStatus = liveTip
-    ? `${liveTip.yellowCardsTotal} gule · ${formatLiveRedCardsPrediction(liveTip.redCardsTotal)}`
-    : "kort ikke satt";
+  const cardStatus = liveTip ? formatLiveCardTip(liveTip) : "kort ikke satt";
   const hasVisibleBonus = canEdit || playerSlotsUsed > 0 || Boolean(liveTip);
 
   if (!hasVisibleBonus) return null;
@@ -569,7 +570,7 @@ function MatchBonusPanel({
               <LivePotForm match={match} tip={liveTip} currentYellowCards={currentYellowCards} />
             ) : liveTip ? (
               <p className="lead">
-                {liveTip.yellowCardsTotal} gule · {formatLiveRedCardsPrediction(liveTip.redCardsTotal)}.
+                {formatLiveCardTip(liveTip)}.
               </p>
             ) : (
               <p className="lead">{canEdit ? "Kortbonusen er ikke notert ennå." : "Ingen kortbonus registrert."}</p>
@@ -579,6 +580,23 @@ function MatchBonusPanel({
       ) : null}
     </section>
   );
+}
+
+function countValidBonusIds(ids: string[] | undefined, validIds: Set<string>) {
+  return (ids ?? []).filter((id) => validIds.has(id)).length;
+}
+
+function formatLiveCardTip(tip: NonNullable<ReturnType<typeof getLivePotTip>>) {
+  const totals = getLivePotCardTotals(tip);
+  if (
+    totals.homeYellowCardsTotal !== null &&
+    totals.awayYellowCardsTotal !== null &&
+    totals.homeRedCardsTotal !== null &&
+    totals.awayRedCardsTotal !== null
+  ) {
+    return `Gule ${totals.homeYellowCardsTotal}-${totals.awayYellowCardsTotal} · røde ${totals.homeRedCardsTotal}-${totals.awayRedCardsTotal}`;
+  }
+  return `${totals.yellowCardsTotal} gule · ${formatLiveRedCardsPrediction(totals.redCardsTotal)}`;
 }
 
 function sideValue(value: string): "home" | "away" | "" {
@@ -677,7 +695,7 @@ function LockedView({
   const awayFlag = teamFlagEmoji(match.awayTeam);
   const hasResult = Boolean(match.result);
   const isLive = match.status === "live" || match.status === "halftime";
-  const resolveName = (squad: TeamSquadPlayer[], id: string) => squad.find((p) => p.id === id)?.name ?? null;
+  const resolveName = (squad: TeamSquadPlayer[], id: string) => squad.find((p) => p.id === id && p.source !== "placeholder")?.name ?? null;
   const scorerLine = [
     ...(prediction?.homeScorers ?? []).map((id) => resolveName(homeSquad, id)),
     ...(prediction?.awayScorers ?? []).map((id) => resolveName(awaySquad, id)),

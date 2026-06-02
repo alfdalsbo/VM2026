@@ -1,46 +1,30 @@
 "use client";
 
-import { Minus, Plus, TicketCheck } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
-import { savePredictionAction, type SavePredictionState } from "@/app/actions";
+import { saveMatchBonusPredictionAction, type SaveMatchBonusPredictionInput } from "@/app/actions";
 import { TeamLink } from "@/components/team-link";
+import { realSquadPlayers } from "@/lib/bonus-player-options";
 import { teamFlagEmoji } from "@/lib/display";
 import { cx } from "@/lib/format";
 import type { Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
-const INITIAL: SavePredictionState = {};
-
-type Counts = Record<string, number>;
-
-const POSITION_LABELS: Record<TeamSquadPlayer["position"], string> = {
-  goalkeeper: "K",
-  defender: "F",
-  midfielder: "M",
-  forward: "A",
-  unknown: "—",
+type BonusDraft = {
+  homeScorers: string[];
+  awayScorers: string[];
+  homeAssists: string[];
+  awayAssists: string[];
 };
 
-function listToCounts(ids: string[] | undefined): Counts {
-  const counts: Counts = {};
-  for (const id of ids ?? []) {
-    counts[id] = (counts[id] ?? 0) + 1;
-  }
-  return counts;
-}
-
-function countsToList(counts: Counts): string[] {
-  const list: string[] = [];
-  for (const [id, count] of Object.entries(counts)) {
-    for (let i = 0; i < count; i += 1) list.push(id);
-  }
-  return list;
-}
-
-function totalCount(counts: Counts): number {
-  return Object.values(counts).reduce((sum, count) => sum + count, 0);
-}
+type SaveSignalName = "saved" | "saving" | "needs-input" | "error";
+type SaveDisplay = {
+  key: string;
+  signal: SaveSignalName;
+  message: string;
+};
+type PreparedBonusSave = { input: SaveMatchBonusPredictionInput } | { error: string };
 
 export function ScorerAssistPicker({
   match,
@@ -54,26 +38,85 @@ export function ScorerAssistPicker({
   awaySquad: TeamSquadPlayer[];
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const homeGoals = prediction?.homeGoals ?? 0;
   const awayGoals = prediction?.awayGoals ?? 0;
-  const [homeScorers, setHomeScorers] = useState<Counts>(() => listToCounts(prediction?.homeScorers));
-  const [awayScorers, setAwayScorers] = useState<Counts>(() => listToCounts(prediction?.awayScorers));
-  const [homeAssists, setHomeAssists] = useState<Counts>(() => listToCounts(prediction?.homeAssists));
-  const [awayAssists, setAwayAssists] = useState<Counts>(() => listToCounts(prediction?.awayAssists));
-  const [saveState, formAction, pending] = useActionState(savePredictionAction, INITIAL);
+  const realHomeSquad = useMemo(() => realSquadPlayers(homeSquad), [homeSquad]);
+  const realAwaySquad = useMemo(() => realSquadPlayers(awaySquad), [awaySquad]);
+  const homeIds = useMemo(() => new Set(realHomeSquad.map((player) => player.id)), [realHomeSquad]);
+  const awayIds = useMemo(() => new Set(realAwaySquad.map((player) => player.id)), [realAwaySquad]);
+  const [draft, setDraft] = useState<BonusDraft>(() => ({
+    homeScorers: slotValues(prediction?.homeScorers, homeIds, homeGoals),
+    awayScorers: slotValues(prediction?.awayScorers, awayIds, awayGoals),
+    homeAssists: slotValues(prediction?.homeAssists, homeIds, homeGoals),
+    awayAssists: slotValues(prediction?.awayAssists, awayIds, awayGoals),
+  }));
+  const currentDraft = useMemo(
+    () => ({
+      homeScorers: slotValues(draft.homeScorers, homeIds, homeGoals),
+      awayScorers: slotValues(draft.awayScorers, awayIds, awayGoals),
+      homeAssists: slotValues(draft.homeAssists, homeIds, homeGoals),
+      awayAssists: slotValues(draft.awayAssists, awayIds, awayGoals),
+    }),
+    [awayGoals, awayIds, draft, homeGoals, homeIds],
+  );
+  const prepared = useMemo<PreparedBonusSave>(() => {
+    if (!prediction) return { error: "Sett resultattips først" };
+    return {
+      input: {
+        matchId: match.id,
+        homeScorers: compactSlots(currentDraft.homeScorers),
+        awayScorers: compactSlots(currentDraft.awayScorers),
+        homeAssists: compactSlots(currentDraft.homeAssists),
+        awayAssists: compactSlots(currentDraft.awayAssists),
+      },
+    };
+  }, [currentDraft, match.id, prediction]);
+  const initialKey = "input" in prepared ? saveKey(prepared.input) : "";
+  const [lastSavedKey, setLastSavedKey] = useState(initialKey);
+  const [saveDisplay, setSaveDisplay] = useState<SaveDisplay | null>(null);
+  const latestRequest = useRef(0);
+  const [, startTransition] = useTransition();
+  const currentKey = "input" in prepared ? saveKey(prepared.input) : "";
+  const displayedSignal = getDisplay({
+    prepared,
+    currentKey,
+    lastSavedKey,
+    saveDisplay,
+    hasStoredBonus: hasStoredBonus(prediction),
+  });
 
   useEffect(() => {
-    if (!saveState.status && !saveState.error) return;
-    const key = saveState.error ? "error" : "status";
-    const value = saveState.error ?? saveState.status ?? "";
-    router.replace(`${pathname}?${key}=${encodeURIComponent(value)}`, { scroll: false });
-  }, [saveState, router, pathname]);
+    if (!("input" in prepared)) return;
+    if (currentKey === lastSavedKey) return;
 
-  const homeScorerList = useMemo(() => countsToList(homeScorers), [homeScorers]);
-  const awayScorerList = useMemo(() => countsToList(awayScorers), [awayScorers]);
-  const homeAssistList = useMemo(() => countsToList(homeAssists), [homeAssists]);
-  const awayAssistList = useMemo(() => countsToList(awayAssists), [awayAssists]);
+    const input = prepared.input;
+    const key = currentKey;
+    const timeout = window.setTimeout(() => {
+      const requestId = latestRequest.current + 1;
+      latestRequest.current = requestId;
+      startTransition(() => {
+        void saveMatchBonusPredictionAction(input).then((result) => {
+          if (latestRequest.current !== requestId) return;
+          if (result.error) {
+            setSaveDisplay({ key, signal: "error", message: result.error });
+            return;
+          }
+          setLastSavedKey(key);
+          setSaveDisplay({ key, signal: "saved", message: "Bonustips lagret" });
+          router.refresh();
+        });
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [currentKey, lastSavedKey, prepared, router, startTransition]);
+
+  function setSlot(field: keyof BonusDraft, index: number, value: string) {
+    setDraft((current) => ({
+      ...current,
+      [field]: replaceSlot(current[field], index, value),
+    }));
+  }
 
   if (homeGoals + awayGoals === 0) {
     return (
@@ -84,73 +127,30 @@ export function ScorerAssistPicker({
   }
 
   return (
-    <form action={formAction} className="scorer-form">
-      <input type="hidden" name="matchId" value={match.id} />
-      <input type="hidden" name="homeGoals" value={homeGoals} />
-      <input type="hidden" name="awayGoals" value={awayGoals} />
-      {prediction?.knockoutResolution ? (
-        <PreservedKnockout resolution={prediction.knockoutResolution} />
-      ) : null}
-      {homeScorerList.map((id, idx) => (
-        <input key={`hs-${idx}`} type="hidden" name="homeScorers" value={id} />
-      ))}
-      {awayScorerList.map((id, idx) => (
-        <input key={`as-${idx}`} type="hidden" name="awayScorers" value={id} />
-      ))}
-      {homeAssistList.map((id, idx) => (
-        <input key={`ha-${idx}`} type="hidden" name="homeAssists" value={id} />
-      ))}
-      {awayAssistList.map((id, idx) => (
-        <input key={`aa-${idx}`} type="hidden" name="awayAssists" value={id} />
-      ))}
-
+    <div className="scorer-form">
       <div className="scorer-grid">
         <TeamSection
           team={match.homeTeam}
-          squad={homeSquad}
+          squad={realHomeSquad}
           goals={homeGoals}
-          scorers={homeScorers}
-          setScorers={setHomeScorers}
-          assists={homeAssists}
-          setAssists={setHomeAssists}
+          scorers={currentDraft.homeScorers}
+          assists={currentDraft.homeAssists}
+          onScorerChange={(index, value) => setSlot("homeScorers", index, value)}
+          onAssistChange={(index, value) => setSlot("homeAssists", index, value)}
         />
         <TeamSection
           team={match.awayTeam}
-          squad={awaySquad}
+          squad={realAwaySquad}
           goals={awayGoals}
-          scorers={awayScorers}
-          setScorers={setAwayScorers}
-          assists={awayAssists}
-          setAssists={setAwayAssists}
+          scorers={currentDraft.awayScorers}
+          assists={currentDraft.awayAssists}
+          onScorerChange={(index, value) => setSlot("awayScorers", index, value)}
+          onAssistChange={(index, value) => setSlot("awayAssists", index, value)}
         />
       </div>
 
-      <div className="scorer-form-actions">
-        <button className="btn-primary tip-submit" type="submit" disabled={pending} aria-live="polite">
-          <TicketCheck className="h-4 w-4" aria-hidden="true" />
-          {pending ? "Tipper..." : "Lagre bonustips"}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function PreservedKnockout({
-  resolution,
-}: {
-  resolution: NonNullable<Prediction["knockoutResolution"]>;
-}) {
-  return (
-    <>
-      <input type="hidden" name="knockoutMethod" value={resolution.method} />
-      <input type="hidden" name="knockoutWinner" value={resolution.winner} />
-      {resolution.method === "extra_time" ? (
-        <>
-          <input type="hidden" name="extraTimeHomeGoals" value={resolution.homeGoals} />
-          <input type="hidden" name="extraTimeAwayGoals" value={resolution.awayGoals} />
-        </>
-      ) : null}
-    </>
+      <SaveSignal signal={displayedSignal.signal} message={displayedSignal.message} />
+    </div>
   );
 }
 
@@ -159,29 +159,25 @@ function TeamSection({
   squad,
   goals,
   scorers,
-  setScorers,
   assists,
-  setAssists,
+  onScorerChange,
+  onAssistChange,
 }: {
   team: string;
   squad: TeamSquadPlayer[];
   goals: number;
-  scorers: Counts;
-  setScorers: (next: Counts) => void;
-  assists: Counts;
-  setAssists: (next: Counts) => void;
+  scorers: string[];
+  assists: string[];
+  onScorerChange: (index: number, value: string) => void;
+  onAssistChange: (index: number, value: string) => void;
 }) {
   const flag = teamFlagEmoji(team);
 
   if (goals === 0) {
     return (
       <section className="scorer-team">
-        <header className="scorer-team-header">
-          <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
-          <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
-          <span className="scorer-team-goals">0 mål</span>
-        </header>
-        <p className="lead">Ingen tippede mål — ingen valg her.</p>
+        <TeamHeader flag={flag} team={team} goals={goals} />
+        <p className="lead">Ingen tippede mål.</p>
       </section>
     );
   }
@@ -189,113 +185,120 @@ function TeamSection({
   if (!squad.length) {
     return (
       <section className="scorer-team">
-        <header className="scorer-team-header">
-          <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
-          <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
-          <span className="scorer-team-goals">{goals} mål</span>
-        </header>
-        <p className="lead">Tropp ikke tilgjengelig ennå.</p>
+        <TeamHeader flag={flag} team={team} goals={goals} />
+        <p className="lead">Tropp ikke klar.</p>
       </section>
     );
   }
 
   return (
     <section className="scorer-team">
-      <header className="scorer-team-header">
-        <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
-        <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
-        <span className="scorer-team-goals">{goals} mål</span>
-      </header>
-
-      <PickerBlock
-        label="Scorere"
-        squad={squad}
-        counts={scorers}
-        setCounts={setScorers}
-        max={goals}
-      />
-      <PickerBlock
-        label="Assister"
-        squad={squad}
-        counts={assists}
-        setCounts={setAssists}
-        max={goals}
-      />
+      <TeamHeader flag={flag} team={team} goals={goals} />
+      <div className="scorer-slots">
+        {Array.from({ length: goals }, (_, index) => (
+          <div key={`${team}-${index}`} className="scorer-slot-row">
+            <span className="scorer-slot-number">{index + 1}</span>
+            <label className="scorer-slot-field">
+              <span>Scorer</span>
+              <select value={scorers[index] ?? ""} onChange={(event) => onScorerChange(index, event.target.value)}>
+                <option value="">Velg scorer</option>
+                {squad.map((player) => (
+                  <option key={player.id} value={player.id}>{playerOptionLabel(player)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="scorer-slot-field">
+              <span>Assist</span>
+              <select value={assists[index] ?? ""} onChange={(event) => onAssistChange(index, event.target.value)}>
+                <option value="">Ingen/usikker</option>
+                {squad.map((player) => (
+                  <option key={player.id} value={player.id}>{playerOptionLabel(player)}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
 
-function PickerBlock({
-  label,
-  squad,
-  counts,
-  setCounts,
-  max,
-}: {
-  label: string;
-  squad: TeamSquadPlayer[];
-  counts: Counts;
-  setCounts: (next: Counts) => void;
-  max: number;
-}) {
-  const total = totalCount(counts);
-  const isComplete = total === max;
-  const isOver = total > max;
-
-  function setPlayerCount(id: string, next: number) {
-    const value = Math.max(0, next);
-    const updated: Counts = { ...counts };
-    if (value === 0) delete updated[id];
-    else updated[id] = value;
-    setCounts(updated);
-  }
-
+function TeamHeader({ flag, team, goals }: { flag: string; team: string; goals: number }) {
   return (
-    <div className="scorer-block">
-      <div className="scorer-block-header">
-        <span className="scorer-block-label">{label}</span>
-        <span
-          className={cx(
-            "scorer-block-counter",
-            isComplete && "scorer-block-counter-ok",
-            isOver && "scorer-block-counter-warn",
-          )}
-        >
-          {total}/{max}
-        </span>
-      </div>
-      <ul className="scorer-list">
-        {squad.map((player) => {
-          const count = counts[player.id] ?? 0;
-          const positionLabel = POSITION_LABELS[player.position] ?? "—";
-          return (
-            <li key={player.id} className={cx("scorer-row", count > 0 && "scorer-row-active")}>
-              <span className="scorer-position">{positionLabel}</span>
-              <span className="scorer-name">{player.name}</span>
-              <div className="tip-stepper" role="group" aria-label={`${player.name} ${label.toLowerCase()}`}>
-                <button
-                  type="button"
-                  className="tip-stepper-btn"
-                  onClick={() => setPlayerCount(player.id, count - 1)}
-                  aria-label={`Trekk fra ${player.name}`}
-                  disabled={count === 0}
-                >
-                  <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-                <span className="tip-stepper-value" aria-live="polite">{count}</span>
-                <button
-                  type="button"
-                  className="tip-stepper-btn"
-                  onClick={() => setPlayerCount(player.id, count + 1)}
-                  aria-label={`Legg til ${player.name}`}
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+    <header className="scorer-team-header">
+      <span className="scorer-team-flag" aria-hidden="true">{flag}</span>
+      <h3 className="scorer-team-name"><TeamLink teamName={team} /></h3>
+      <span className="scorer-team-goals">{goals} mål</span>
+    </header>
+  );
+}
+
+function slotValues(ids: string[] | undefined, validIds: Set<string>, slots: number) {
+  const values = (ids ?? []).filter((id) => validIds.has(id)).slice(0, slots);
+  while (values.length < slots) values.push("");
+  return values;
+}
+
+function compactSlots(values: string[]) {
+  return values.map((value) => value.trim()).filter(Boolean);
+}
+
+function replaceSlot(values: string[], index: number, value: string) {
+  const next = [...values];
+  while (next.length <= index) next.push("");
+  next[index] = value;
+  return next;
+}
+
+function saveKey(input: SaveMatchBonusPredictionInput) {
+  return JSON.stringify(input);
+}
+
+function hasStoredBonus(prediction: Prediction | null) {
+  return Boolean(
+    prediction?.homeScorers?.length ||
+      prediction?.awayScorers?.length ||
+      prediction?.homeAssists?.length ||
+      prediction?.awayAssists?.length,
+  );
+}
+
+function playerOptionLabel(player: TeamSquadPlayer) {
+  const shirt = player.shirtNumber ? `${player.shirtNumber} ` : "";
+  return `${shirt}${player.name}`;
+}
+
+function getDisplay({
+  prepared,
+  currentKey,
+  lastSavedKey,
+  saveDisplay,
+  hasStoredBonus,
+}: {
+  prepared: PreparedBonusSave;
+  currentKey: string;
+  lastSavedKey: string;
+  saveDisplay: SaveDisplay | null;
+  hasStoredBonus: boolean;
+}): { signal: SaveSignalName; message: string } {
+  if ("error" in prepared) return { signal: "needs-input", message: prepared.error };
+  if (saveDisplay?.key === currentKey && saveDisplay.signal === "error") {
+    return { signal: "error", message: saveDisplay.message };
+  }
+  if (currentKey !== lastSavedKey) return { signal: "saving", message: "Lagrer..." };
+  if (saveDisplay?.key === currentKey && saveDisplay.signal === "saved") {
+    return { signal: "saved", message: saveDisplay.message };
+  }
+  return { signal: "saved", message: hasStoredBonus ? "Bonustips lagret" : "Klart for spillervalg" };
+}
+
+function SaveSignal({ signal, message }: { signal: SaveSignalName; message: string }) {
+  const ok = signal === "saved";
+  const error = signal === "error";
+  return (
+    <div className={cx("tip-save-signal", ok && "tip-save-signal-ok", error && "tip-save-signal-error")} aria-live="polite">
+      {ok ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : <AlertCircle className="h-4 w-4" aria-hidden="true" />}
+      <span>{message}</span>
     </div>
   );
 }

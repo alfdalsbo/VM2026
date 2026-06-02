@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { BonusAutofillButton } from "@/components/bonus-autofill-button";
-import { LivePotForm } from "@/components/live-pot-form";
 import { TeamLink } from "@/components/team-link";
 import { displayStageOrGroup, formatCompactMatchStatus } from "@/lib/display";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
@@ -9,6 +7,7 @@ import {
   countRedCards,
   countYellowCards,
   formatLiveRedCardsPrediction,
+  getLivePotCardTotals,
   getLivePotTip,
   isLivePotOpen,
   scoreLivePotTip,
@@ -77,16 +76,13 @@ export function LivePotCard({
           <div><span>Din score</span><strong>{formatSigned(ownScore.total)}</strong></div>
         </div>
 
-        {open ? (
-          <>
-            <LivePotForm match={match} tip={tip} currentYellowCards={currentYellowCards} />
-            <div className="bonus-card-autofill">
-              <BonusAutofillButton matchId={match.id} next="/live" compact />
-            </div>
-          </>
-        ) : tip ? (
+        {tip ? (
           <p className="tip-result-line">
-            Ditt bonustips: <strong>{tip.yellowCardsTotal} gule · {formatLiveRedCardsPrediction(tip.redCardsTotal)}</strong> · {formatSigned(ownScore.total)} poeng
+            Ditt bonustips: <strong>{formatLiveCardTip(tip)}</strong> · {formatSigned(ownScore.total)} poeng
+          </p>
+        ) : open ? (
+          <p className="tip-result-line">
+            Rediger kortbonusen inne på <Link href={`/kamp/${match.id}`}>kampkortet</Link>.
           </p>
         ) : (
           <p className="tip-result-line tip-result-line-muted">Dette bonustipset er låst uten din håndskrift.</p>
@@ -109,8 +105,8 @@ export function LivePotCard({
                   {rows.map((row) => (
                     <tr key={row.player.id} className={row.player.id === player.id ? "live-pot-me" : undefined}>
                       <td className="font-black">{row.player.shortName}</td>
-                      <td>{row.tip.yellowCardsTotal}</td>
-                      <td>{row.tip.redCardsTotal}</td>
+                      <td>{getLivePotCardTotals(row.tip).yellowCardsTotal}</td>
+                      <td>{getLivePotCardTotals(row.tip).redCardsTotal}</td>
                       <td className="font-black">{formatSigned(row.score.total)}</td>
                     </tr>
                   ))}
@@ -130,4 +126,17 @@ export function LivePotCard({
 
 function formatSigned(value: number) {
   return value > 0 ? `+${value}` : `${value}`;
+}
+
+function formatLiveCardTip(tip: LivePotTip) {
+  const totals = getLivePotCardTotals(tip);
+  if (
+    totals.homeYellowCardsTotal !== null &&
+    totals.awayYellowCardsTotal !== null &&
+    totals.homeRedCardsTotal !== null &&
+    totals.awayRedCardsTotal !== null
+  ) {
+    return `Gule ${totals.homeYellowCardsTotal}-${totals.awayYellowCardsTotal} · røde ${totals.homeRedCardsTotal}-${totals.awayRedCardsTotal}`;
+  }
+  return `${totals.yellowCardsTotal} gule · ${formatLiveRedCardsPrediction(totals.redCardsTotal)}`;
 }

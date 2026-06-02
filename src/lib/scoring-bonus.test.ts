@@ -29,9 +29,23 @@ function liveTip(overrides: Partial<LivePotTip> = {}): LivePotTip {
   };
 }
 
+function withRealSquad(state: AppState, teamName: string): AppState {
+  return {
+    ...state,
+    teamProfiles: state.teamProfiles.map((profile) =>
+      profile.teamName === teamName
+        ? {
+            ...profile,
+            squad: profile.squad.map((player) => ({ ...player, source: "FIFA public squad API" })),
+          }
+        : profile,
+    ),
+  };
+}
+
 describe("bonus scoring", () => {
   it("keeps scorer and assist points outside the official table score", () => {
-    const base = initialState();
+    const base = withRealSquad(initialState(), "Mexico");
     const seedMatch = base.matches.find((match) => match.id === "m001")!;
     const homeSquad = base.teamProfiles.find((profile) => profile.teamName === seedMatch.homeTeam)!.squad;
     const scorer = homeSquad[0];
@@ -83,8 +97,50 @@ describe("bonus scoring", () => {
     expect(standing.liveBonusPoints).toBe(0);
   });
 
-  it("combines match bonus and live bonus in one bonustips table", () => {
+  it("ignores placeholder squad names in scorer and assist scoring", () => {
     const base = initialState();
+    const seedMatch = base.matches.find((match) => match.id === "m001")!;
+    const homeSquad = base.teamProfiles.find((profile) => profile.teamName === seedMatch.homeTeam)!.squad;
+    const scorer = homeSquad[0];
+    const tip = prediction({ homeScorers: [scorer.id] });
+    const result = {
+      homeGoals: 1,
+      awayGoals: 0,
+      decidedByPenalties: false,
+      advancingTeam: null,
+      updatedAt: "2026-06-11T21:00:00Z",
+      updatedBy: "test",
+      source: "manual" as const,
+    };
+    const event: MatchEvent = {
+      id: "goal-1",
+      matchId: "m001",
+      minute: 12,
+      period: "first_half",
+      type: "goal",
+      teamSide: "home",
+      playerId: scorer.id,
+      playerProfileId: null,
+      playerName: scorer.name,
+      assistPlayerName: null,
+      relatedPlayerName: null,
+      scoreAfter: { homeGoals: 1, awayGoals: 0 },
+      source: "manual",
+      updatedAt: "2026-06-11T19:12:00Z",
+    };
+    const state: AppState = {
+      ...base,
+      matches: base.matches.map((match) => (match.id === "m001" ? { ...match, status: "finished", result } : match)),
+      predictions: [tip],
+      matchEvents: [event],
+    };
+    const match = state.matches.find((item) => item.id === "m001")!;
+
+    expect(scorePrediction(match, tip, state).bonus).toBe(0);
+  });
+
+  it("combines match bonus and live bonus in one bonustips table", () => {
+    const base = withRealSquad(initialState(), "Mexico");
     const seedMatch = base.matches.find((match) => match.id === "m001")!;
     const homeSquad = base.teamProfiles.find((profile) => profile.teamName === seedMatch.homeTeam)!.squad;
     const scorer = homeSquad[0];

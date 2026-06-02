@@ -60,6 +60,12 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await firstListedMatch.getByRole("button", { name: "Åpne bonus" }).click();
   await expect(firstListedMatch.getByRole("heading", { name: "Scorere og assister" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Gule og røde kort" })).toBeVisible();
+  await expect(firstListedMatch.getByText("Tropp ikke klar.").first()).toBeVisible();
+  await expect(firstListedMatch.getByRole("button", { name: "Lagre bonustips" })).toHaveCount(0);
+  await expect(firstListedMatch.getByRole("group", { name: "Mexico gule kort" })).toBeVisible();
+  await expect(firstListedMatch.getByRole("group", { name: "Sør-Afrika røde kort" })).toBeVisible();
+  await firstListedMatch.getByRole("button", { name: "Legg til Mexico gule kort" }).click();
+  await expect(firstListedMatch.getByText(/Kortbonus lagret|Lagrer/)).toBeVisible({ timeout: 10_000 });
   await firstListedMatch.getByRole("button", { name: "Autofyll bonus" }).click();
   await expect(page.getByText(/Autofylte|Ingen tomme bonustips/)).toBeVisible({ timeout: 10_000 });
 

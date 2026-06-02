@@ -19,14 +19,14 @@ function tip(overrides: Partial<LivePotTip> = {}): LivePotTip {
   };
 }
 
-function event(id: string, type: MatchEvent["type"], minute: number): MatchEvent {
+function event(id: string, type: MatchEvent["type"], minute: number, teamSide: MatchEvent["teamSide"] = "home"): MatchEvent {
   return {
     id,
     matchId: "m001",
     minute,
     period: "first_half",
     type,
-    teamSide: "home",
+    teamSide,
     playerId: null,
     playerProfileId: null,
     playerName: null,
@@ -63,6 +63,30 @@ describe("live pot", () => {
     expect(() => saveLivePotTipInState(locked, tip())).toThrow("Bonustips låses ved kampstart.");
   });
 
+  it("stores team card distribution and keeps legacy totals in sync", () => {
+    const scheduled = initialState();
+    const updated = saveLivePotTipInState(
+      scheduled,
+      tip({
+        yellowCardsTotal: 0,
+        redCardsTotal: 0,
+        homeYellowCardsTotal: 2,
+        awayYellowCardsTotal: 1,
+        homeRedCardsTotal: 0,
+        awayRedCardsTotal: 1,
+      }),
+    );
+
+    expect(updated.livePotTips[0]).toMatchObject({
+      yellowCardsTotal: 3,
+      redCardsTotal: 1,
+      homeYellowCardsTotal: 2,
+      awayYellowCardsTotal: 1,
+      homeRedCardsTotal: 0,
+      awayRedCardsTotal: 1,
+    });
+  });
+
   it("keeps card bonus tips closed for unresolved knockout matches", () => {
     const state = initialState();
     expect(() => saveLivePotTipInState(state, tip({ matchId: "m073" }))).toThrow(
@@ -74,11 +98,49 @@ describe("live pot", () => {
     const state = withMatchStatus("finished", [
       event("y1", "yellow_card", 10),
       event("y2", "yellow_card", 22),
-      event("r1", "red_card", 44),
+      event("r1", "red_card", 44, "away"),
     ]);
 
     expect(scoreLivePotTip(state.matches.find((match) => match.id === "m001")!, tip({ yellowCardsTotal: 2, redCardsTotal: 1 }), state).total).toBe(2);
     expect(scoreLivePotTip(state.matches.find((match) => match.id === "m001")!, tip({ yellowCardsTotal: 5, redCardsTotal: 0 }), state).total).toBe(0);
+  });
+
+  it("scores distributed card predictions by team", () => {
+    const state = withMatchStatus("finished", [
+      event("y1", "yellow_card", 10, "home"),
+      event("y2", "yellow_card", 22, "home"),
+      event("r1", "red_card", 44, "away"),
+    ]);
+    const match = state.matches.find((item) => item.id === "m001")!;
+
+    expect(
+      scoreLivePotTip(
+        match,
+        tip({
+          yellowCardsTotal: 2,
+          redCardsTotal: 1,
+          homeYellowCardsTotal: 2,
+          awayYellowCardsTotal: 0,
+          homeRedCardsTotal: 0,
+          awayRedCardsTotal: 1,
+        }),
+        state,
+      ).total,
+    ).toBe(2);
+    expect(
+      scoreLivePotTip(
+        match,
+        tip({
+          yellowCardsTotal: 2,
+          redCardsTotal: 1,
+          homeYellowCardsTotal: 1,
+          awayYellowCardsTotal: 1,
+          homeRedCardsTotal: 1,
+          awayRedCardsTotal: 0,
+        }),
+        state,
+      ).total,
+    ).toBe(0);
   });
 
   it("computes a live pot leaderboard independent of the official table", () => {

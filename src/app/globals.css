@@ -3010,14 +3010,6 @@ th {
   line-height: 1.2;
 }
 
-.tip-bonus .live-pot-form {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-}
-
-.tip-bonus .live-pot-submit {
-  justify-content: center;
-}
-
 .tip-teams {
   display: grid;
   gap: 8px;
@@ -3219,6 +3211,62 @@ th {
 .scorer-block-counter-warn {
   background: rgba(180, 35, 47, 0.14);
   color: var(--red-dark);
+}
+
+.scorer-slots {
+  display: grid;
+  gap: 8px;
+}
+
+.scorer-slot-row {
+  align-items: end;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr);
+  padding: 9px 10px;
+}
+
+.scorer-slot-number {
+  align-items: center;
+  background: rgba(17, 19, 15, 0.08);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 950;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.scorer-slot-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.scorer-slot-field span {
+  color: var(--ink-muted);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scorer-slot-field select {
+  background: #fffdf8;
+  border: 1px solid rgba(17, 19, 15, 0.14);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 10px;
+  width: 100%;
 }
 
 .scorer-list {
@@ -3440,6 +3488,24 @@ th {
   display: flex;
 }
 
+.card-team-row {
+  align-items: center;
+}
+
+.card-bonus-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.card-stepper {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
 .bonus-card-board {
   border-top: 1px dashed var(--line);
   display: grid;
@@ -3510,6 +3576,27 @@ th {
   .tip-stepper-btn {
     height: 38px;
     width: 38px;
+  }
+
+  .scorer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scorer-slot-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .scorer-slot-field {
+    grid-column: 2;
+  }
+
+  .card-team-row {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-bonus-controls {
+    justify-content: space-between;
   }
 }
 

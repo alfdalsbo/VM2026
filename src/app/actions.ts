@@ -11,10 +11,11 @@ import {
   BONUS_AUTOFILL_PREDICTED_OPEN,
   getPredictedOpenMatchIdsForBonusAutofill,
 } from "@/lib/bonus-autofill";
+import { getRealSquadPlayerIds } from "@/lib/bonus-player-options";
 import { footballCopy } from "@/lib/football-jargon";
 import { toggleFollowedMatchInState } from "@/lib/followed-matches";
 import { clampScore } from "@/lib/format";
-import { saveLivePotTipInState } from "@/lib/live-pot";
+import { LIVE_POT_MAX_RED_CARDS, LIVE_POT_MAX_YELLOW_CARDS, saveLivePotTipInState } from "@/lib/live-pot";
 import { getPlayer } from "@/lib/players";
 import {
   getPrediction,
@@ -92,6 +93,7 @@ export type SavePredictionState = {
 export type SaveLivePotTipState = {
   status?: string;
   error?: string;
+  updatedAt?: string;
 };
 
 export type SaveResultPredictionInput = {
@@ -108,6 +110,28 @@ export type SaveResultPredictionState = {
   status?: string;
   error?: string;
   updatedAt?: string;
+};
+
+export type SaveMatchBonusPredictionInput = {
+  matchId: string;
+  homeScorers?: string[];
+  awayScorers?: string[];
+  homeAssists?: string[];
+  awayAssists?: string[];
+};
+
+export type SaveMatchBonusPredictionState = {
+  status?: string;
+  error?: string;
+  updatedAt?: string;
+};
+
+export type SaveLivePotTipInput = {
+  matchId: string;
+  homeYellowCardsTotal: number;
+  awayYellowCardsTotal: number;
+  homeRedCardsTotal: number;
+  awayRedCardsTotal: number;
 };
 
 function clampNumberScore(value: number | ""): number | null {
@@ -132,6 +156,45 @@ function parseKnockoutResolutionInput(input: SaveResultPredictionInput): Knockou
   throw new Error("Velg ekstraomganger eller straffer.");
 }
 
+function validBonusIds(ids: string[] | undefined, validIds: Set<string>, max: number) {
+  return (ids ?? [])
+    .map((id) => String(id ?? "").trim())
+    .filter((id) => id && validIds.has(id))
+    .slice(0, max);
+}
+
+function sanitizeMatchBonusIds({
+  state,
+  match,
+  homeGoals,
+  awayGoals,
+  homeScorers,
+  awayScorers,
+  homeAssists,
+  awayAssists,
+}: {
+  state: Awaited<ReturnType<typeof getAppState>>;
+  match: PredictionMatch;
+  homeGoals: number;
+  awayGoals: number;
+  homeScorers?: string[];
+  awayScorers?: string[];
+  homeAssists?: string[];
+  awayAssists?: string[];
+}) {
+  const homeIds = getRealSquadPlayerIds(state, match.homeTeam);
+  const awayIds = getRealSquadPlayerIds(state, match.awayTeam);
+
+  return {
+    homeScorers: validBonusIds(homeScorers, homeIds, homeGoals),
+    awayScorers: validBonusIds(awayScorers, awayIds, awayGoals),
+    homeAssists: validBonusIds(homeAssists, homeIds, homeGoals),
+    awayAssists: validBonusIds(awayAssists, awayIds, awayGoals),
+  };
+}
+
+type PredictionMatch = Awaited<ReturnType<typeof getAppState>>["matches"][number];
+
 export async function savePredictionAction(
   _prevState: SavePredictionState,
   formData: FormData,
@@ -154,6 +217,16 @@ export async function savePredictionAction(
   if (!match) return { error: "Kampen finnes ikke." };
   const unavailableMessage = getPredictionUnavailableMessage(match);
   if (unavailableMessage) return { error: unavailableMessage };
+  const bonusIds = sanitizeMatchBonusIds({
+    state,
+    match,
+    homeGoals,
+    awayGoals,
+    homeScorers,
+    awayScorers,
+    homeAssists,
+    awayAssists,
+  });
 
   let knockoutResolution: KnockoutPredictionResolution | null = null;
   try {
@@ -169,10 +242,10 @@ export async function savePredictionAction(
     awayGoals,
     outcome: inferPredictionOutcome(homeGoals, awayGoals),
     knockoutResolution,
-    homeScorers: homeScorers.slice(0, homeGoals),
-    awayScorers: awayScorers.slice(0, awayGoals),
-    homeAssists: homeAssists.slice(0, homeGoals),
-    awayAssists: awayAssists.slice(0, awayGoals),
+    homeScorers: bonusIds.homeScorers,
+    awayScorers: bonusIds.awayScorers,
+    homeAssists: bonusIds.homeAssists,
+    awayAssists: bonusIds.awayAssists,
     updatedAt: new Date().toISOString(),
   };
 
@@ -235,6 +308,47 @@ export async function saveResultPredictionAction(input: SaveResultPredictionInpu
   return { status: "Registrert", updatedAt };
 }
 
+export async function saveMatchBonusPredictionAction(
+  input: SaveMatchBonusPredictionInput,
+): Promise<SaveMatchBonusPredictionState> {
+  const player = await requireSession();
+  const matchId = String(input.matchId ?? "").trim();
+  const state = await getAppState();
+  const match = state.matches.find((item) => item.id === matchId);
+  if (!match) return { error: "Kampen finnes ikke." };
+  const unavailableMessage = getPredictionUnavailableMessage(match);
+  if (unavailableMessage) return { error: unavailableMessage };
+
+  const existing = getPrediction(state, player.id, matchId);
+  if (!existing) return { error: "Sett resultattips først." };
+
+  const bonusIds = sanitizeMatchBonusIds({
+    state,
+    match,
+    homeGoals: existing.homeGoals,
+    awayGoals: existing.awayGoals,
+    homeScorers: input.homeScorers,
+    awayScorers: input.awayScorers,
+    homeAssists: input.homeAssists,
+    awayAssists: input.awayAssists,
+  });
+  const updatedAt = new Date().toISOString();
+  const prediction: Prediction = {
+    ...existing,
+    ...bonusIds,
+    updatedAt,
+  };
+
+  try {
+    await saveAppState(savePredictionInState(state, prediction));
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Bonustipset gikk ikke gjennom." };
+  }
+
+  revalidateApp(matchId);
+  return { status: "Bonustips lagret", updatedAt };
+}
+
 export type SaveAvatarState = {
   status?: string;
   error?: string;
@@ -282,28 +396,36 @@ export async function saveAvatarAction(input: SaveAvatarInput): Promise<SaveAvat
   return { status: "Avatar oppdatert." };
 }
 
-export async function saveLivePotTipAction(
-  _prevState: SaveLivePotTipState,
-  formData: FormData,
-): Promise<SaveLivePotTipState> {
-  const player = await requireSession();
-  const matchId = field(formData, "matchId");
-  const yellowCardsTotal = Number(field(formData, "yellowCardsTotal"));
-  const redCardsTotal = Number(field(formData, "redCardsTotal"));
+function clampCardInput(value: number, max: number) {
+  if (!Number.isInteger(value) || value < 0 || value > max) return null;
+  return value;
+}
 
-  if (!Number.isInteger(yellowCardsTotal)) {
-    return { error: "Skriv inn et helt antall gule kort." };
-  }
-  if (!Number.isInteger(redCardsTotal)) {
-    return { error: "Skriv inn et helt antall røde kort." };
-  }
+export async function saveLivePotTipAction(input: SaveLivePotTipInput): Promise<SaveLivePotTipState> {
+  const player = await requireSession();
+  const matchId = String(input.matchId ?? "").trim();
+  const homeYellowCardsTotal = clampCardInput(input.homeYellowCardsTotal, LIVE_POT_MAX_YELLOW_CARDS);
+  const awayYellowCardsTotal = clampCardInput(input.awayYellowCardsTotal, LIVE_POT_MAX_YELLOW_CARDS);
+  const homeRedCardsTotal = clampCardInput(input.homeRedCardsTotal, LIVE_POT_MAX_RED_CARDS);
+  const awayRedCardsTotal = clampCardInput(input.awayRedCardsTotal, LIVE_POT_MAX_RED_CARDS);
+
+  if (homeYellowCardsTotal === null || awayYellowCardsTotal === null) return { error: "Fordel gule kort som hele tall." };
+  if (homeRedCardsTotal === null || awayRedCardsTotal === null) return { error: "Fordel røde kort som hele tall." };
+
+  const yellowCardsTotal = homeYellowCardsTotal + awayYellowCardsTotal;
+  const redCardsTotal = homeRedCardsTotal + awayRedCardsTotal;
+  const updatedAt = new Date().toISOString();
 
   const tip: LivePotTip = {
     playerId: player.id,
     matchId,
     yellowCardsTotal,
     redCardsTotal,
-    updatedAt: new Date().toISOString(),
+    homeYellowCardsTotal,
+    awayYellowCardsTotal,
+    homeRedCardsTotal,
+    awayRedCardsTotal,
+    updatedAt,
   };
 
   try {
@@ -314,7 +436,7 @@ export async function saveLivePotTipAction(
   }
 
   revalidateApp(matchId);
-  return { status: "Bonustipset er notert i dommerboka." };
+  return { status: "Kortbonus lagret", updatedAt };
 }
 
 export async function autofillBonusTipsAction(formData: FormData) {

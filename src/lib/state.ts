@@ -77,8 +77,12 @@ type StoredLivePotTip = Partial<LivePotTip> & {
   playerId: string;
   matchId: string;
   yellowCardsTotal?: number;
+  homeYellowCardsTotal?: number;
+  awayYellowCardsTotal?: number;
   redCard?: "yes" | "no";
   redCardsTotal?: number;
+  homeRedCardsTotal?: number;
+  awayRedCardsTotal?: number;
   updatedAt?: string;
 };
 
@@ -107,18 +111,35 @@ function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[
 }
 
 function normalizeLivePotTips(tips: StoredLivePotTip[] = []): LivePotTip[] {
-  return tips.map((tip) => ({
-    playerId: tip.playerId,
-    matchId: tip.matchId,
-    yellowCardsTotal: Number.isInteger(tip.yellowCardsTotal) ? tip.yellowCardsTotal! : 0,
-    redCardsTotal:
-      Number.isInteger(tip.redCardsTotal)
-        ? tip.redCardsTotal!
-        : tip.redCard === "yes"
-          ? 1
+  return tips.map((tip) => {
+    const homeYellowCardsTotal = Number.isInteger(tip.homeYellowCardsTotal) ? tip.homeYellowCardsTotal! : undefined;
+    const awayYellowCardsTotal = Number.isInteger(tip.awayYellowCardsTotal) ? tip.awayYellowCardsTotal! : undefined;
+    const homeRedCardsTotal = Number.isInteger(tip.homeRedCardsTotal) ? tip.homeRedCardsTotal! : undefined;
+    const awayRedCardsTotal = Number.isInteger(tip.awayRedCardsTotal) ? tip.awayRedCardsTotal! : undefined;
+    const hasYellowDistribution = homeYellowCardsTotal !== undefined && awayYellowCardsTotal !== undefined;
+    const hasRedDistribution = homeRedCardsTotal !== undefined && awayRedCardsTotal !== undefined;
+
+    return {
+      playerId: tip.playerId,
+      matchId: tip.matchId,
+      yellowCardsTotal: Number.isInteger(tip.yellowCardsTotal)
+        ? tip.yellowCardsTotal!
+        : hasYellowDistribution
+          ? homeYellowCardsTotal + awayYellowCardsTotal
           : 0,
-    updatedAt: tip.updatedAt ?? new Date(0).toISOString(),
-  }));
+      redCardsTotal:
+        Number.isInteger(tip.redCardsTotal)
+          ? tip.redCardsTotal!
+          : hasRedDistribution
+            ? homeRedCardsTotal + awayRedCardsTotal
+            : tip.redCard === "yes"
+              ? 1
+              : 0,
+      ...(hasYellowDistribution ? { homeYellowCardsTotal, awayYellowCardsTotal } : {}),
+      ...(hasRedDistribution ? { homeRedCardsTotal, awayRedCardsTotal } : {}),
+      updatedAt: tip.updatedAt ?? new Date(0).toISOString(),
+    };
+  });
 }
 
 type StoredLineupPlayer = Partial<LineupPlayer> & {

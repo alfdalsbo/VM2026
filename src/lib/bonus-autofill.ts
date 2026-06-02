@@ -1,4 +1,5 @@
 import { isLivePotOpen, saveLivePotTipInState } from "@/lib/live-pot";
+import { getRealSquadPlayerIds, getRealSquadPlayers, realSquadPlayers } from "@/lib/bonus-player-options";
 import { getPrediction, savePredictionInState } from "@/lib/scoring";
 import type { AppState, LivePotTip, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
@@ -22,6 +23,10 @@ type MatchBonusOdds = {
   awayAssists?: OddsPick[];
   yellowCardsTotal?: number;
   redCardsTotal?: number;
+  homeYellowCardsTotal?: number;
+  awayYellowCardsTotal?: number;
+  homeRedCardsTotal?: number;
+  awayRedCardsTotal?: number;
 };
 
 export type BonusAutofillResult = {
@@ -32,6 +37,10 @@ export type BonusAutofillResult = {
   awayAssists: string[];
   yellowCardsTotal: number;
   redCardsTotal: number;
+  homeYellowCardsTotal: number;
+  awayYellowCardsTotal: number;
+  homeRedCardsTotal: number;
+  awayRedCardsTotal: number;
 };
 
 export type BonusAutofillSummary = {
@@ -67,6 +76,34 @@ function normalizeName(value: string) {
 function clampInteger(value: number | undefined, fallback: number, min: number, max: number) {
   if (typeof value !== "number" || !Number.isInteger(value)) return fallback;
   return Math.max(min, Math.min(max, value));
+}
+
+function splitCards(total: number, seed: string) {
+  if (total <= 0) return { home: 0, away: 0 };
+  const drift = (hashNumber(seed) % 3) - 1;
+  const home = Math.max(0, Math.min(total, Math.floor(total / 2) + drift + (total % 2)));
+  return { home, away: total - home };
+}
+
+function splitCardsWithOdds(total: number, seed: string, homeValue?: number, awayValue?: number) {
+  const fallback = splitCards(total, seed);
+  const hasHome = Number.isInteger(homeValue);
+  const hasAway = Number.isInteger(awayValue);
+  if (!hasHome && !hasAway) return fallback;
+
+  if (hasHome && !hasAway) {
+    const home = clampInteger(homeValue, fallback.home, 0, total);
+    return { home, away: total - home };
+  }
+
+  if (!hasHome && hasAway) {
+    const away = clampInteger(awayValue, fallback.away, 0, total);
+    return { home: total - away, away };
+  }
+
+  const home = clampInteger(homeValue, fallback.home, 0, total);
+  const away = clampInteger(awayValue, total - home, 0, total - home);
+  return { home, away };
 }
 
 function fallbackWeight(player: TeamSquadPlayer, kind: "scorer" | "assist") {
@@ -125,14 +162,15 @@ function choosePlayers({
   seed: string;
   kind: "scorer" | "assist";
 }) {
+  const realSquad = realSquadPlayers(squad);
   const oddsCandidates = (odds ?? [])
     .map((pick) => {
-      const id = resolveOddsPlayer(pick, squad);
+      const id = resolveOddsPlayer(pick, realSquad);
       return id ? { id, weight: oddsWeight(pick) } : null;
     })
     .filter((candidate): candidate is { id: string; weight: number } => Boolean(candidate));
 
-  const fallbackCandidates = squad.map((player) => ({
+  const fallbackCandidates = realSquad.map((player) => ({
     id: player.id,
     weight: fallbackWeight(player, kind),
   }));
@@ -169,12 +207,20 @@ export async function getBonusAutofillForMatch(
 ): Promise<BonusAutofillResult> {
   const odds = await fetchConfiguredOdds(match);
   const source: BonusAutofillSource = odds ? "odds" : "fallback";
-  const homeSquad = state.teamProfiles.find((profile) => profile.teamName === match.homeTeam)?.squad ?? [];
-  const awaySquad = state.teamProfiles.find((profile) => profile.teamName === match.awayTeam)?.squad ?? [];
+  const homeSquad = getRealSquadPlayers(state, match.homeTeam);
+  const awaySquad = getRealSquadPlayers(state, match.awayTeam);
   const homeGoals = prediction?.homeGoals ?? 0;
   const awayGoals = prediction?.awayGoals ?? 0;
   const yellowFallback = 3 + (hashNumber(`${match.id}:yellow`) % 4);
   const redFallback = hashNumber(`${match.id}:red`) % 7 === 0 ? 1 : 0;
+  const yellowCardsTotal = clampInteger(odds?.yellowCardsTotal, yellowFallback, 0, 12);
+  const redCardsTotal = clampInteger(odds?.redCardsTotal, redFallback, 0, 5);
+  const yellowSplit = splitCardsWithOdds(yellowCardsTotal, `${match.id}:yellow-split`, odds?.homeYellowCardsTotal, odds?.awayYellowCardsTotal);
+  const redSplit = splitCardsWithOdds(redCardsTotal, `${match.id}:red-split`, odds?.homeRedCardsTotal, odds?.awayRedCardsTotal);
+  const homeYellowCardsTotal = yellowSplit.home;
+  const awayYellowCardsTotal = yellowSplit.away;
+  const homeRedCardsTotal = redSplit.home;
+  const awayRedCardsTotal = redSplit.away;
 
   return {
     source,
@@ -206,15 +252,24 @@ export async function getBonusAutofillForMatch(
       seed: `${match.id}:away`,
       kind: "assist",
     }),
-    yellowCardsTotal: clampInteger(odds?.yellowCardsTotal, yellowFallback, 0, 12),
-    redCardsTotal: clampInteger(odds?.redCardsTotal, redFallback, 0, 5),
+    yellowCardsTotal: homeYellowCardsTotal + awayYellowCardsTotal,
+    redCardsTotal: homeRedCardsTotal + awayRedCardsTotal,
+    homeYellowCardsTotal,
+    awayYellowCardsTotal,
+    homeRedCardsTotal,
+    awayRedCardsTotal,
   };
 }
 
-function fillSlots(existing: string[] | undefined, picks: string[], max: number) {
-  const retained = (existing ?? []).slice(0, max);
+function fillSlots(existing: string[] | undefined, picks: string[], max: number, validIds: Set<string>) {
+  const retained = (existing ?? []).filter((id) => validIds.has(id)).slice(0, max);
   if (retained.length >= max) return retained;
-  return [...retained, ...picks].slice(0, max);
+  return [...retained, ...picks.filter((id) => validIds.has(id))].slice(0, max);
+}
+
+function listsEqual(left: string[] | undefined, right: string[]) {
+  const current = left ?? [];
+  return current.length === right.length && current.every((id, index) => id === right[index]);
 }
 
 export async function autofillBonusTipsInState({
@@ -244,18 +299,25 @@ export async function autofillBonusTipsInState({
 
     let touched = false;
     if (prediction) {
-      const homeScorers = fillSlots(prediction.homeScorers, autofill.homeScorers, prediction.homeGoals);
-      const awayScorers = fillSlots(prediction.awayScorers, autofill.awayScorers, prediction.awayGoals);
-      const homeAssists = fillSlots(prediction.homeAssists, autofill.homeAssists, prediction.homeGoals);
-      const awayAssists = fillSlots(prediction.awayAssists, autofill.awayAssists, prediction.awayGoals);
+      const homeIds = getRealSquadPlayerIds(next, match.homeTeam);
+      const awayIds = getRealSquadPlayerIds(next, match.awayTeam);
+      const homeScorers = fillSlots(prediction.homeScorers, autofill.homeScorers, prediction.homeGoals, homeIds);
+      const awayScorers = fillSlots(prediction.awayScorers, autofill.awayScorers, prediction.awayGoals, awayIds);
+      const homeAssists = fillSlots(prediction.homeAssists, autofill.homeAssists, prediction.homeGoals, homeIds);
+      const awayAssists = fillSlots(prediction.awayAssists, autofill.awayAssists, prediction.awayGoals, awayIds);
       const beforeSlots =
-        (prediction.homeScorers?.length ?? 0) +
-        (prediction.awayScorers?.length ?? 0) +
-        (prediction.homeAssists?.length ?? 0) +
-        (prediction.awayAssists?.length ?? 0);
+        (prediction.homeScorers ?? []).filter((id) => homeIds.has(id)).length +
+        (prediction.awayScorers ?? []).filter((id) => awayIds.has(id)).length +
+        (prediction.homeAssists ?? []).filter((id) => homeIds.has(id)).length +
+        (prediction.awayAssists ?? []).filter((id) => awayIds.has(id)).length;
       const afterSlots = homeScorers.length + awayScorers.length + homeAssists.length + awayAssists.length;
 
-      if (afterSlots > beforeSlots) {
+      if (
+        !listsEqual(prediction.homeScorers, homeScorers) ||
+        !listsEqual(prediction.awayScorers, awayScorers) ||
+        !listsEqual(prediction.homeAssists, homeAssists) ||
+        !listsEqual(prediction.awayAssists, awayAssists)
+      ) {
         next = savePredictionInState(
           next,
           {
@@ -268,7 +330,7 @@ export async function autofillBonusTipsInState({
           },
           now,
         );
-        playerSlotsFilled += afterSlots - beforeSlots;
+        playerSlotsFilled += Math.max(0, afterSlots - beforeSlots);
         touched = true;
       }
     }
@@ -280,6 +342,10 @@ export async function autofillBonusTipsInState({
         matchId: match.id,
         yellowCardsTotal: autofill.yellowCardsTotal,
         redCardsTotal: autofill.redCardsTotal,
+        homeYellowCardsTotal: autofill.homeYellowCardsTotal,
+        awayYellowCardsTotal: autofill.awayYellowCardsTotal,
+        homeRedCardsTotal: autofill.homeRedCardsTotal,
+        awayRedCardsTotal: autofill.awayRedCardsTotal,
         updatedAt: new Date().toISOString(),
       };
       next = saveLivePotTipInState(next, tip);

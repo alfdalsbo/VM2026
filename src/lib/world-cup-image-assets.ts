@@ -20,6 +20,9 @@ export type WorldCupImageAsset = {
   tags: string[];
   orientation: "landscape" | "portrait" | "square";
   focus: "center" | "top" | "bottom";
+  displayMode: "contain" | "cover";
+  cropSafe: boolean;
+  homeEligible: boolean;
 };
 
 export type WorldCupImageContext = {
@@ -62,6 +65,9 @@ export const worldCupImageFallback: WorldCupImageAsset = {
   tags: ["fallback", "archive", "typographic"],
   orientation: "landscape",
   focus: "center",
+  displayMode: "contain",
+  cropSafe: false,
+  homeEligible: true,
 };
 
 export const worldCupImageAssets = generatedWorldCupImageAssets;
@@ -110,10 +116,28 @@ export function getRelevantWorldCupImages(context: WorldCupImageContext = {}, li
   return typeof limit === "number" ? pool.slice(0, limit) : pool;
 }
 
+export function getHomeWorldCupImages(context: WorldCupImageContext = {}, limit?: number): WorldCupImageAsset[] {
+  const relevant = getRelevantWorldCupImages(context).filter(isHomeEligibleWorldCupImage);
+  const fallback = getApprovedWorldCupImages({ includeFallback: false }).filter(isHomeEligibleWorldCupImage);
+  const pool = relevant.length ? relevant : fallback.length ? fallback : [worldCupImageFallback];
+  return typeof limit === "number" ? pool.slice(0, limit) : pool;
+}
+
+export function isHomeEligibleWorldCupImage(asset: WorldCupImageAsset): boolean {
+  return isProductionWorldCupImage(asset) && asset.homeEligible;
+}
+
 export function pickWorldCupImage(context: WorldCupImageContext = {}): WorldCupImageAsset {
   const pool = getRelevantWorldCupImages(context);
   if (!pool.length) return worldCupImageFallback;
   const seed = context.seed ?? `${context.surface ?? "global"}-${context.matchId ?? ""}-${context.momentId ?? ""}-${context.year ?? ""}`;
+  return pool[hashString(seed) % pool.length];
+}
+
+export function pickHomeWorldCupImage(context: WorldCupImageContext = {}): WorldCupImageAsset {
+  const pool = getHomeWorldCupImages(context);
+  if (!pool.length) return worldCupImageFallback;
+  const seed = context.seed ?? `${context.surface ?? "home"}-${context.matchId ?? ""}-${context.momentId ?? ""}-${context.year ?? ""}`;
   return pool[hashString(seed) % pool.length];
 }
 

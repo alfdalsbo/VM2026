@@ -1,6 +1,6 @@
 import { DailyImageViewer } from "@/components/daily-image-viewer";
 import { getMatchNostalgia } from "@/lib/world-cup-nostalgia";
-import { getRelevantWorldCupImages, pickWorldCupImage } from "@/lib/world-cup-image-assets";
+import { getHomeWorldCupImages, pickHomeWorldCupImage } from "@/lib/world-cup-image-assets";
 import type { WorldCupMatch } from "@/lib/types";
 
 export function DailyMatchImage({ dateKey, matches = [] }: { dateKey: string; matches?: WorldCupMatch[] }) {
@@ -14,9 +14,9 @@ export function DailyMatchImage({ dateKey, matches = [] }: { dateKey: string; ma
     tags: uniqueStrings(["archive", ...moments.flatMap((moment) => moment.tags)]),
     stage: matches[0]?.stage,
   };
-  const images = getRelevantWorldCupImages(context, 36);
+  const images = getHomeWorldCupImages(context, 36);
   if (images.length === 0) return null;
-  const picked = pickWorldCupImage(context);
+  const picked = pickHomeWorldCupImage(context);
   const initialAsset = images.some((image) => image.id === picked.id) ? picked : images[0];
 
   return <DailyImageViewer images={images} initialAsset={initialAsset} seed={dateKey} surfaceKey="home-daily-image" />;

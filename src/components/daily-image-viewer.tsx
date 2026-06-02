@@ -72,6 +72,7 @@ export function DailyImageViewer({
   }
 
   const interactive = images.length > 1;
+  const objectPosition = asset.focus === "top" ? "center top" : asset.focus === "bottom" ? "center bottom" : "center";
 
   return (
     <figure
@@ -80,15 +81,19 @@ export function DailyImageViewer({
       onTouchEnd={interactive ? handleTouchEnd : undefined}
       onClick={interactive ? showRandom : undefined}
       data-interactive={interactive ? "true" : undefined}
+      data-display-mode={asset.displayMode}
+      data-orientation={asset.orientation}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={asset.src}
-        alt={asset.alt}
-        className="daily-image-photo"
-        draggable={false}
-        style={{ objectPosition: asset.focus === "top" ? "center top" : asset.focus === "bottom" ? "center bottom" : "center" }}
-      />
+      <div className="daily-image-stage">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={asset.src}
+          alt={asset.alt}
+          className="daily-image-photo"
+          draggable={false}
+          style={{ objectPosition }}
+        />
+      </div>
       {interactive ? (
         <button
           type="button"

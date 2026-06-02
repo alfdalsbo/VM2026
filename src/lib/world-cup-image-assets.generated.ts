@@ -21,6 +21,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1998","norway","brazil","flo","diagram","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "bergkampscore3-e97db9ac",
@@ -42,6 +45,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1998","netherlands","argentina","bergkamp","diagram","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "argentina-en-el-mundial-1930-los-sports-1930-08-08-387-98fe54bb",
@@ -63,6 +69,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "ademir-de-menezes-1950-1a40d7bd",
@@ -84,6 +93,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1950","brazil","uruguay","maracanazo","archive","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "alemania-v-hungria-estadio-1954-07-17-583-01-0ac79dca",
@@ -105,6 +117,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1954","germany","hungary","final","miracle-of-bern","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "brazil-v-italia-1970-01-cbe19ee7",
@@ -126,6 +141,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1970","brazil","italy","final","pele","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "ausschnitt-mildred-scheel-83e23c6b",
@@ -147,6 +165,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1974","germany","netherlands","cruyff","total-football","final","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "abrazo-alma-todos-a304a2f8",
@@ -168,6 +189,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1978","argentina","netherlands","final","kempes","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "arg-frg-1986-06-29-d25bb68f",
@@ -189,6 +213,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1986","argentina","germany","maradona","final","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "2006-fifa-world-cup-italy-buffon-materazzi-and-perrott-6b259833",
@@ -210,6 +237,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2006","italy","france","final","penalties","zidane","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "2010-fifa-world-cup-spain-with-cup-85615f44",
@@ -231,6 +261,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "2026-fifa-world-cup-federal-interagency-coordination-p-52e805dc",
@@ -252,6 +285,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2026","usa","host","venue","format","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "argentina-lineup-v-uruguay-1930-5839c4aa",
@@ -273,6 +309,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","diagram","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "alemania-v-hungria-estadio-1954-07-17-583-02-c9ae481f",
@@ -294,6 +333,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1954","germany","hungary","final","miracle-of-bern","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "brazil-v-italia-1970-02-d2dd62e4",
@@ -315,6 +357,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1970","brazil","italy","final","pele","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "beckenbauer-cruyff-alfieri-42a25afc",
@@ -336,6 +381,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1974","germany","netherlands","cruyff","total-football","final","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "arg-ger-1986-06-29-ar-8a2a84cb",
@@ -357,6 +405,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1986","argentina","germany","maradona","final","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "2006-07-09-italy-france-line-up-el-c489e06e",
@@ -378,6 +429,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2006","italy","france","final","penalties","zidane","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "2010-world-cup-spain-with-cup-29047488",
@@ -399,6 +453,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "2026-fifa-world-cup-federal-interagency-coordination-p-d8bc48d9",
@@ -420,6 +477,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2026","usa","host","venue","format","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "dorado-gol-uruguay-a812f46c",
@@ -441,6 +501,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "ademir-de-menezes-estadio-1950-08-05-377-45b75777",
@@ -462,6 +525,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1950","brazil","uruguay","maracanazo","archive","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "alemania-v-hungria-estadio-1954-07-17-583-03-4c568f4f",
@@ -483,6 +549,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1954","germany","hungary","final","miracle-of-bern","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "alfieri-monumental-mundial-78-47d602cf",
@@ -504,6 +573,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1978","argentina","netherlands","final","kempes","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "argentina-before-playing-final-9e50448e",
@@ -525,6 +597,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1986","argentina","germany","maradona","final","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "closing-ceremony-stage-at-soccer-city-4782789551-7cc3118d",
@@ -546,6 +621,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "2026-fifa-world-cup-federal-interagency-coordination-p-9c3c35ab",
@@ -567,6 +645,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2026","usa","host","venue","format","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "fans-uruguayos-celebrando-aa7b5e72",
@@ -588,6 +669,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "ademir-de-menezes-691225ee",
@@ -609,6 +693,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1950","brazil","uruguay","maracanazo","archive","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "brazil-v-italia-1970-04-659662f3",
@@ -630,6 +717,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1970","brazil","italy","final","pele","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "bundesarchiv-bild-183-n0716-0314-fu-ball-wm-brd-nieder-a9bb7000",
@@ -651,6 +741,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1974","germany","netherlands","cruyff","total-football","final","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "ardiles-v-holanda-7f70e7f3",
@@ -672,6 +765,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1978","argentina","netherlands","final","kempes","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "fabio-grosso-in-world-cup-final-2006-d1e0982c",
@@ -693,6 +789,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2006","italy","france","final","penalties","zidane","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "dutch-fan-at-final-world-cup-game-4783378268-ba329189",
@@ -714,6 +813,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "alemania-v-hungria-estadio-1954-07-17-583-05-b1613085",
@@ -735,6 +837,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1954","germany","hungary","final","miracle-of-bern","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "brazil-v-italia-1970-05-1260ae07",
@@ -756,6 +861,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1970","brazil","italy","final","pele","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "bundesarchiv-bild-183-n0716-0314-fu-ball-wm-brd-nieder-dfa57b4f",
@@ -777,6 +885,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1974","germany","netherlands","cruyff","total-football","final","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "argentina-celebrando-copa-cropped-db880f49",
@@ -798,6 +909,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1986","argentina","germany","maradona","final","photo","commons"],
     orientation: "portrait",
     focus: "top",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "football-stadium-berlin-d9415e4f",
@@ -819,6 +933,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2006","italy","france","final","penalties","zidane","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "dutch-fans-with-slaughtered-octopus-on-their-heads-a-w-61d8d56b",
@@ -840,6 +957,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "nasazzi-ferreira-final-a8eac938",
@@ -861,6 +981,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "augusto-augusto-da-costa-capitaine-du-bresil-en-finale-801d56bd",
@@ -882,6 +1005,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1950","brazil","uruguay","maracanazo","archive","photo","commons"],
     orientation: "portrait",
     focus: "top",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "brazil-v-italy-1970-06-8b62512f",
@@ -903,6 +1029,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1970","brazil","italy","final","pele","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "bundesarchiv-bild-183-n0716-0314-fu-ball-wm-brd-nieder-973d86b6",
@@ -924,6 +1053,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1974","germany","netherlands","cruyff","total-football","final","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "arg-ned-1978-8e212984",
@@ -945,6 +1077,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1978","argentina","netherlands","final","kempes","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "fan-outside-soccer-city-for-final-game-4783375624-e35eecb9",
@@ -966,6 +1101,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "2026-fifa-world-cup-federal-interagency-coordination-p-05301e47",
@@ -987,6 +1125,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2026","usa","host","venue","format","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "nasazzi-ferreira-dce53dcd",
@@ -1008,6 +1149,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "pele-celebrating-1970-cropped-547c4f37",
@@ -1029,6 +1173,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1970","brazil","italy","final","pele","photo","commons"],
     orientation: "landscape",
     focus: "top",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "argentina-germany-entering-f29e6cc4",
@@ -1050,6 +1197,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1986","argentina","germany","maradona","final","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "fifa-world-cup-2010-final-anthems-79a6989d",
@@ -1071,6 +1221,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2010","spain","netherlands","final","iniesta","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "2026-fifa-world-cup-federal-interagency-coordination-p-e0df24c6",
@@ -1092,6 +1245,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["2026","usa","host","venue","format","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: false,
   },
   {
     id: "pablo-dorado-cropped-caa7c4bb",
@@ -1113,6 +1269,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "portrait",
     focus: "top",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "pedrocea-8e1951be",
@@ -1134,6 +1293,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "peucelle-gol-vs-uruguay-31789443",
@@ -1155,6 +1317,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "santos-iriarte-cropped-c41e0c7f",
@@ -1176,6 +1341,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "portrait",
     focus: "top",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "stabile-goal-v-uruguay-1930-3ac996e4",
@@ -1197,6 +1365,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "uru-arg-1930-07-30-461e6b6e",
@@ -1218,6 +1389,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "uru-arg-1930-fin-cm-he-604f8f8d",
@@ -1239,6 +1413,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "uru-arg-1930-fin-cm-072f4915",
@@ -1260,6 +1437,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","diagram","commons"],
     orientation: "portrait",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: false,
+    homeEligible: true,
   },
   {
     id: "uruguay-1930-festejando-su-victoria-68e8880b",
@@ -1281,6 +1461,9 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   },
   {
     id: "uruguay-argentina-final-0a3cccbc",
@@ -1302,5 +1485,8 @@ export const worldCupImageAssets: WorldCupImageAsset[] = [
     tags: ["1930","final","uruguay","argentina","rimet","early-world-cup","photo","commons"],
     orientation: "landscape",
     focus: "center",
+    displayMode: "contain",
+    cropSafe: true,
+    homeEligible: true,
   }
 ];

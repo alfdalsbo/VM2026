@@ -1963,6 +1963,7 @@ select {
 }
 
 .daily-image {
+  background: #211711;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 18px 40px rgba(47, 30, 18, 0.12);
@@ -1975,6 +1976,30 @@ select {
   .daily-image {
     margin-bottom: 22px;
   }
+}
+
+.daily-image-stage {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(255, 250, 242, 0.1), rgba(245, 208, 131, 0.08)),
+    repeating-linear-gradient(90deg, rgba(255, 250, 242, 0.08), rgba(255, 250, 242, 0.08) 1px, transparent 1px, transparent 16px),
+    #211711;
+  display: grid;
+  height: clamp(240px, 52vw, 560px);
+  justify-items: center;
+  overflow: hidden;
+  padding: clamp(10px, 2vw, 18px);
+  position: relative;
+}
+
+.daily-image[data-display-mode="cover"] .daily-image-stage {
+  aspect-ratio: 2 / 1;
+  height: auto;
+  padding: 0;
+}
+
+.daily-image[data-display-mode="contain"][data-orientation="portrait"] .daily-image-stage {
+  height: clamp(300px, 68vw, 640px);
 }
 
 .daily-image[data-interactive="true"] {
@@ -2042,13 +2067,20 @@ select {
 }
 
 .daily-image-photo {
-  aspect-ratio: 2 / 1;
   display: block;
-  height: auto;
-  object-fit: cover;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
+  object-fit: contain;
   object-position: center;
   -webkit-user-drag: none;
   width: 100%;
+}
+
+.daily-image[data-display-mode="cover"] .daily-image-photo {
+  object-fit: cover;
 }
 
 .image-context-toggle {

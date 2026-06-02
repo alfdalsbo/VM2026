@@ -336,6 +336,20 @@ function imageFocus(title) {
   return "center";
 }
 
+function imageDisplayPolicy({ mediaType, orientation, title, tags }) {
+  const lowerTitle = title.toLowerCase();
+  const tagText = tags.join(" ").toLowerCase();
+  const cropRiskPattern = /(federal interagency|coordination plan|fan|octopus|stage|ceremony|line-up|lineup|diagram|map|cropped|portrait)/i;
+  const weakHomePattern = /(federal interagency|coordination plan|octopus|stage|ceremony|fan outside|dutch fan)/i;
+  const combinedText = `${lowerTitle} ${tagText}`;
+  const cropSafe = mediaType === "photo" && orientation === "landscape" && !cropRiskPattern.test(combinedText);
+  return {
+    displayMode: "contain",
+    cropSafe,
+    homeEligible: mediaType !== "map" && !weakHomePattern.test(combinedText),
+  };
+}
+
 async function download(url, filename) {
   try {
     await access(join(OUTPUT_DIR, filename));
@@ -366,6 +380,9 @@ function toAsset(page, spec) {
   const id = fileSlug(page.title);
   const extension = getDownloadedExtension(info.thumburl, info.mime);
   const filename = `${id}${extension}`;
+  const tags = Array.from(new Set([...spec.tags, mediaType, "commons"]));
+  const orientation = info.width >= info.height ? "landscape" : "portrait";
+  const displayPolicy = imageDisplayPolicy({ mediaType, orientation, title: page.title, tags });
   return {
     id,
     src: `${PUBLIC_PREFIX}/${filename}`,
@@ -384,9 +401,10 @@ function toAsset(page, spec) {
     teams: spec.teams,
     matchIds: [],
     momentIds: spec.momentIds,
-    tags: Array.from(new Set([...spec.tags, mediaType, "commons"])),
-    orientation: info.width >= info.height ? "landscape" : "portrait",
+    tags,
+    orientation,
     focus: imageFocus(page.title),
+    ...displayPolicy,
   };
 }
 
@@ -419,6 +437,9 @@ function renderAsset(asset) {
     tags: ${tsString(asset.tags)},
     orientation: ${tsString(asset.orientation)},
     focus: ${tsString(asset.focus)},
+    displayMode: ${tsString(asset.displayMode)},
+    cropSafe: ${asset.cropSafe ? "true" : "false"},
+    homeEligible: ${asset.homeEligible ? "true" : "false"},
   }`;
 }
 

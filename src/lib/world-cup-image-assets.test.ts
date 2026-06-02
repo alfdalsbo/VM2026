@@ -6,8 +6,10 @@ import { describe, expect, it } from "vitest";
 import { chooseFreshWorldCupImage } from "@/lib/world-cup-image-freshness";
 import {
   getApprovedWorldCupImages,
+  getHomeWorldCupImages,
   getRelevantWorldCupImages,
   isAllowedWorldCupImageLicense,
+  isHomeEligibleWorldCupImage,
   scoreWorldCupImage,
   worldCupImageAssets,
 } from "@/lib/world-cup-image-assets";
@@ -32,8 +34,23 @@ describe("world-cup image assets", () => {
       expect(isAllowedWorldCupImageLicense(asset.license)).toBe(true);
       expect(asset.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
       expect(asset.tags.length).toBeGreaterThan(0);
+      expect(["contain", "cover"]).toContain(asset.displayMode);
+      expect(typeof asset.cropSafe).toBe("boolean");
+      expect(typeof asset.homeEligible).toBe("boolean");
       expect(`${asset.title} ${asset.tags.join(" ")}`).not.toMatch(/logo|wordmark|emblem|mascot|trophy/i);
     }
+  });
+
+  it("keeps home images full-frame and filters weak front-page assets", () => {
+    const homeImages = getHomeWorldCupImages({ surface: "home" }, 100);
+    const norwayHomeImages = getHomeWorldCupImages({ teams: ["Norge"], momentId: "norway-return-2026", tags: ["diagram"] }, 5);
+
+    expect(homeImages.length).toBeGreaterThanOrEqual(40);
+    expect(homeImages.every(isHomeEligibleWorldCupImage)).toBe(true);
+    expect(homeImages.every((asset) => asset.displayMode === "contain")).toBe(true);
+    expect(homeImages.some((asset) => /federal interagency|coordination plan|octopus/i.test(`${asset.title} ${asset.tags.join(" ")}`))).toBe(false);
+    expect(norwayHomeImages[0]?.id).toBe("flopass3-e5ebe8bf");
+    expect(norwayHomeImages[0]?.displayMode).toBe("contain");
   });
 
   it("scores Norway and final contexts toward relevant assets", () => {

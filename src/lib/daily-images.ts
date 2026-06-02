@@ -29,6 +29,9 @@ const localUnapprovedImage: DailyImageAsset = {
   tags: ["1994", "baggio", "unapproved"],
   orientation: "landscape",
   focus: "center",
+  displayMode: "contain",
+  cropSafe: false,
+  homeEligible: false,
 };
 
 export const dailyImageFallback = worldCupImageFallback;

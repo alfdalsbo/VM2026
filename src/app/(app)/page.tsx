@@ -2,10 +2,9 @@ import Link from "next/link";
 
 import { Avatar } from "@/components/avatar";
 import { DailyMatchImage } from "@/components/daily-match-image";
-import { HomeArchiveImageBank } from "@/components/home-archive-image-bank";
+import { HomeDailyWorldCupMoment } from "@/components/home-daily-world-cup-moment";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { NextMatchCard } from "@/components/next-match-card";
-import { NostalgiaHero } from "@/components/nostalgia";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
 import { MatchupLinks } from "@/components/team-link";
 import { Panel } from "@/components/ui";
@@ -84,7 +83,7 @@ export default async function HomePage() {
         {!dashboardMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>
 
-      <HomeArchiveImageBank dateKey={focusKey} matches={focusMatches} />
+      <HomeDailyWorldCupMoment dateKey={focusKey} matches={focusMatches} moment={dailyNostalgia} />
 
       <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <Panel className="matchday-winner-panel">
@@ -111,8 +110,6 @@ export default async function HomePage() {
 
         <ScoringRulesPanel />
       </div>
-
-      <NostalgiaHero moment={dailyNostalgia} />
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
         <Panel>

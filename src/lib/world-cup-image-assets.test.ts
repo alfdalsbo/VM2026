@@ -60,6 +60,22 @@ describe("world-cup image assets", () => {
     const brazilFinal = getRelevantWorldCupImages({ teams: ["Brasil", "Italia"], stage: "final", tags: ["1970"] }, 5);
     expect(brazilFinal.some((asset) => asset.tags.includes("1970"))).toBe(true);
     expect(scoreWorldCupImage(brazilFinal[0], { stage: "final" })).toBeGreaterThan(0);
+
+    const argentina = getRelevantWorldCupImages({ teams: ["Argentina"], momentId: "maradona-1986", tags: ["1986"] }, 5);
+    expect(argentina.some((asset) => asset.teams.includes("Argentina") || asset.tags.includes("argentina"))).toBe(true);
+
+    const franceSenegal = getRelevantWorldCupImages({ teams: ["Frankrike", "Senegal"], tags: ["2002"] }, 5);
+    expect(franceSenegal.some((asset) => asset.tags.includes("senegal") || asset.tags.includes("france"))).toBe(true);
+
+    const englandCroatia = getRelevantWorldCupImages({ teams: ["England", "Kroatia"], tags: ["2018"], stage: "semifinal" }, 5);
+    expect(englandCroatia.some((asset) => asset.teams.includes("England") || asset.teams.includes("Croatia"))).toBe(true);
+  });
+
+  it("falls back to approved VM images when the daily context has no obvious hook", () => {
+    const fallback = getRelevantWorldCupImages({ teams: ["Atlantis"], tags: ["fictional-context"], seed: "fallback" }, 5);
+
+    expect(fallback).toHaveLength(5);
+    expect(fallback.every((asset) => getApprovedWorldCupImages({ includeFallback: false }).some((approved) => approved.id === asset.id))).toBe(true);
   });
 
   it("selects fresh images outside recent global and surface history", () => {

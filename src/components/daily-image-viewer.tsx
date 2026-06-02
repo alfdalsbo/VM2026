@@ -18,11 +18,15 @@ export function DailyImageViewer({
   initialAsset,
   seed = "daily-image",
   surfaceKey = "daily-home",
+  shuffleAriaLabel = "Vis nytt arkivfunn",
+  shuffleLabel = "Nytt arkivfunn",
 }: {
   images: DailyImageAsset[];
   initialAsset: DailyImageAsset;
   seed?: string;
   surfaceKey?: string;
+  shuffleAriaLabel?: string;
+  shuffleLabel?: string;
 }) {
   const [asset, setAsset] = useState(initialAsset);
   const startX = useRef<number | null>(null);
@@ -102,10 +106,10 @@ export function DailyImageViewer({
             event.stopPropagation();
             showRandom();
           }}
-          aria-label="Vis nytt arkivfunn"
+          aria-label={shuffleAriaLabel}
         >
           <Shuffle className="h-4 w-4" aria-hidden="true" />
-          <span>Nytt arkivfunn</span>
+          <span>{shuffleLabel}</span>
         </button>
       ) : null}
       <details className="image-context-toggle daily-image-context" onClick={(event) => event.stopPropagation()}>

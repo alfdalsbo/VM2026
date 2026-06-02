@@ -1994,35 +1994,101 @@ select {
   width: 100%;
 }
 
-.home-archive-bank {
-  margin: 4px 0 10px;
+.home-daily-vm-moment {
+  background:
+    linear-gradient(135deg, rgba(15, 47, 74, 0.1), transparent 46%),
+    linear-gradient(180deg, rgba(255, 250, 242, 0.96), rgba(247, 241, 232, 0.96));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(47, 30, 18, 0.12);
+  display: grid;
+  gap: clamp(18px, 3vw, 28px);
+  grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.1fr);
+  overflow: hidden;
+  padding: clamp(14px, 2.4vw, 22px);
 }
 
-.home-archive-bank-header {
-  align-items: end;
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  margin-bottom: 12px;
+.home-daily-vm-moment-media,
+.home-daily-vm-moment-copy {
+  min-width: 0;
 }
 
-.home-archive-bank-header span {
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.home-archive-bank .daily-image {
+.home-daily-vm-moment-media .daily-image {
+  height: 100%;
   margin-bottom: 0;
 }
 
-@media (max-width: 640px) {
-  .home-archive-bank-header {
-    align-items: start;
-    flex-direction: column;
-    gap: 8px;
+.home-daily-vm-moment-media .daily-image-stage {
+  height: 100%;
+  min-height: clamp(260px, 35vw, 480px);
+}
+
+.home-daily-vm-moment-copy {
+  align-self: center;
+}
+
+.home-daily-vm-moment-meta {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 850;
+  gap: 8px;
+  margin-top: 10px;
+  text-transform: uppercase;
+}
+
+.home-daily-vm-moment-meta span {
+  background: rgba(255, 250, 242, 0.72);
+  border: 1px solid rgba(47, 30, 18, 0.1);
+  border-radius: 999px;
+  padding: 5px 8px;
+}
+
+.home-daily-vm-moment h2 {
+  color: #1f1712;
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 0.95;
+  margin-top: 14px;
+  overflow-wrap: break-word;
+}
+
+.home-daily-vm-moment p:not(.eyebrow) {
+  color: #3f3126;
+  font-size: 1.02rem;
+  font-weight: 760;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+.home-daily-vm-moment strong {
+  background: rgba(180, 35, 47, 0.09);
+  border-left: 4px solid var(--red);
+  border-radius: 6px;
+  color: #3f3126;
+  display: block;
+  font-weight: 900;
+  line-height: 1.45;
+  margin-top: 16px;
+  padding: 12px 14px;
+}
+
+.home-daily-vm-moment a {
+  color: var(--red-dark);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  margin-top: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 780px) {
+  .home-daily-vm-moment {
+    grid-template-columns: 1fr;
   }
 }
 

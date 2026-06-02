@@ -58,51 +58,43 @@ export function ImageContextToggle({
         onClick={() => setOpen((current) => !current)}
       >
         <Info className="h-4 w-4" aria-hidden="true" />
+        <span>{open ? "Skjul bildetekst" : "Les bildetekst"}</span>
       </button>
       {open ? (
-        <>
-          <button
-            type="button"
-            className="image-context-backdrop"
-            aria-label="Lukk bildekontekst"
-            onClick={() => setOpen(false)}
-            tabIndex={-1}
-          />
-          <section id={panelId} className="image-context-card" role="dialog" aria-modal="false" aria-labelledby={titleId}>
-            <div className="image-context-card-header">
-              <strong id={titleId}>{title}</strong>
-              <button
-                type="button"
-                className="image-context-close"
-                aria-label="Lukk bildekontekst"
-                onClick={() => setOpen(false)}
-                ref={closeButtonRef}
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
-            <span className="image-context-label">Hva ser vi?</span>
-            <p>{caption}</p>
-            <span className="image-context-label">Hvorfor betyr det noe?</span>
-            <p>{context}</p>
-            {facts.length ? (
-              <>
-                <span className="image-context-label">Nerdekrok</span>
-                <ul>
-                  {facts.map((fact) => (
-                    <li key={fact}>{fact}</li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {creditLine ? <span>{creditLine}</span> : null}
-            {sourceUrl ? (
-              <a href={sourceUrl} target="_blank" rel="noreferrer">
-                Kilde
-              </a>
-            ) : null}
-          </section>
-        </>
+        <section id={panelId} className="image-context-card" role="region" aria-labelledby={titleId}>
+          <div className="image-context-card-header">
+            <strong id={titleId}>{title}</strong>
+            <button
+              type="button"
+              className="image-context-close"
+              aria-label="Lukk bildekontekst"
+              onClick={() => setOpen(false)}
+              ref={closeButtonRef}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+          <span className="image-context-label">Hva ser vi?</span>
+          <p>{caption}</p>
+          <span className="image-context-label">Hvorfor betyr det noe?</span>
+          <p>{context}</p>
+          {facts.length ? (
+            <>
+              <span className="image-context-label">Nerdekrok</span>
+              <ul>
+                {facts.map((fact) => (
+                  <li key={fact}>{fact}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {creditLine ? <span>{creditLine}</span> : null}
+          {sourceUrl ? (
+            <a href={sourceUrl} target="_blank" rel="noreferrer">
+              Kilde
+            </a>
+          ) : null}
+        </section>
       ) : null}
     </div>
   );

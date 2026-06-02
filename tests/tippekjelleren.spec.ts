@@ -72,18 +72,15 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByText("Arkivfunn fra kjelleren")).toHaveCount(0);
   const momentImageContextButton = dailyVmMoment.getByRole("button", { name: /Vis bildekontekst/ }).first();
   await expect(momentImageContextButton).toBeVisible();
+  await expect(momentImageContextButton).toContainText("Les bildetekst");
   await momentImageContextButton.click();
   const momentImageContextCard = dailyVmMoment.locator(".daily-image .image-context-card");
   await expect(momentImageContextCard).toBeVisible();
   await expect(momentImageContextCard).toContainText("Hva ser vi?");
   await expect(momentImageContextCard).toContainText("Hvorfor betyr det noe?");
   await expect(momentImageContextCard).toContainText("Nerdekrok");
-  if (testInfo.project.name === "mobile") {
-    await expect(dailyVmMoment.locator(".image-context-backdrop")).toBeVisible();
-    await expect
-      .poll(async () => momentImageContextCard.evaluate((element) => getComputedStyle(element).position))
-      .toBe("fixed");
-  }
+  await expect(dailyVmMoment.locator(".image-context-backdrop")).toHaveCount(0);
+  await expect.poll(async () => momentImageContextCard.evaluate((element) => getComputedStyle(element).position)).not.toBe("fixed");
   await dailyVmMoment.locator(".image-context-close").click();
   await expect(momentImageContextCard).toHaveCount(0);
   await expect(dailyVmMoment.getByRole("button", { name: "Vis nytt bilde til VM-øyeblikket" })).toBeVisible();
@@ -138,7 +135,9 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   const vmArchiveContextButton = page.getByRole("button", { name: /Vis bildekontekst/ }).first();
   await expect(vmArchiveContextButton).toBeVisible();
   await vmArchiveContextButton.click();
-  await expect(page.locator(".image-wall-context .image-context-card").first()).toBeVisible();
+  const vmImageContextCard = page.locator(".image-wall-context .image-context-card").first();
+  await expect(vmImageContextCard).toBeVisible();
+  await expect.poll(async () => vmImageContextCard.evaluate((element) => getComputedStyle(element).position)).not.toBe("fixed");
   await page.keyboard.press("Escape");
   await expect(page.locator(".image-wall-context .image-context-card")).toHaveCount(0);
   await expect(page.getByLabel("Tiår")).toBeVisible();

@@ -217,7 +217,7 @@ function initialCards(tip: LivePotTip | null, currentYellowCards: number): CardD
   }
 
   return {
-    ...splitTotal(Math.min(LIVE_POT_MAX_YELLOW_CARDS, currentYellowCards + 2), LIVE_POT_MAX_YELLOW_CARDS),
+    ...splitTotal(Math.min(LIVE_POT_MAX_YELLOW_CARDS, currentYellowCards), LIVE_POT_MAX_YELLOW_CARDS),
     homeRedCardsTotal: 0,
     awayRedCardsTotal: 0,
   };

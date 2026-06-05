@@ -263,9 +263,19 @@ function hasStoredBonus(prediction: Prediction | null) {
   );
 }
 
+const POSITION_SHORT_LABELS: Record<TeamSquadPlayer["position"], string> = {
+  goalkeeper: "K",
+  defender: "F",
+  midfielder: "M",
+  forward: "A",
+  unknown: "",
+};
+
 function playerOptionLabel(player: TeamSquadPlayer) {
   const shirt = player.shirtNumber ? `${player.shirtNumber} ` : "";
-  return `${shirt}${player.name}`;
+  const position = POSITION_SHORT_LABELS[player.position];
+  const suffix = position ? ` (${position})` : "";
+  return `${shirt}${player.name}${suffix}`;
 }
 
 function getDisplay({

@@ -202,18 +202,14 @@ function TeamSection({
               <span>Scorer</span>
               <select value={scorers[index] ?? ""} onChange={(event) => onScorerChange(index, event.target.value)}>
                 <option value="">Velg scorer</option>
-                {squad.map((player) => (
-                  <option key={player.id} value={player.id}>{playerOptionLabel(player)}</option>
-                ))}
+                <PlayerOptions squad={squad} />
               </select>
             </label>
             <label className="scorer-slot-field">
               <span>Assist</span>
               <select value={assists[index] ?? ""} onChange={(event) => onAssistChange(index, event.target.value)}>
                 <option value="">Ingen/usikker</option>
-                {squad.map((player) => (
-                  <option key={player.id} value={player.id}>{playerOptionLabel(player)}</option>
-                ))}
+                <PlayerOptions squad={squad} />
               </select>
             </label>
           </div>
@@ -263,19 +259,63 @@ function hasStoredBonus(prediction: Prediction | null) {
   );
 }
 
-const POSITION_SHORT_LABELS: Record<TeamSquadPlayer["position"], string> = {
-  goalkeeper: "K",
-  defender: "F",
-  midfielder: "M",
-  forward: "A",
-  unknown: "",
+const POSITION_GROUP_ORDER: TeamSquadPlayer["position"][] = [
+  "goalkeeper",
+  "defender",
+  "midfielder",
+  "forward",
+  "unknown",
+];
+
+const POSITION_GROUP_LABELS: Record<TeamSquadPlayer["position"], string> = {
+  goalkeeper: "Keepere",
+  defender: "Forsvar",
+  midfielder: "Midtbane",
+  forward: "Angrep",
+  unknown: "Uten posisjon",
 };
+
+function splitNameAndClub(rawName: string) {
+  const match = rawName.match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+  if (!match) return { name: rawName, club: null as string | null };
+  return { name: match[1].trim(), club: match[2].trim() };
+}
 
 function playerOptionLabel(player: TeamSquadPlayer) {
   const shirt = player.shirtNumber ? `${player.shirtNumber} ` : "";
-  const position = POSITION_SHORT_LABELS[player.position];
-  const suffix = position ? ` (${position})` : "";
-  return `${shirt}${player.name}${suffix}`;
+  const { name, club } = splitNameAndClub(player.name);
+  return club ? `${shirt}${name} · ${club}` : `${shirt}${name}`;
+}
+
+function squadOptionGroups(squad: TeamSquadPlayer[]) {
+  const byPosition = new Map<TeamSquadPlayer["position"], TeamSquadPlayer[]>();
+  for (const player of squad) {
+    const bucket = byPosition.get(player.position) ?? [];
+    bucket.push(player);
+    byPosition.set(player.position, bucket);
+  }
+  return POSITION_GROUP_ORDER
+    .map((position) => ({
+      position,
+      label: POSITION_GROUP_LABELS[position],
+      players: byPosition.get(position) ?? [],
+    }))
+    .filter((group) => group.players.length > 0);
+}
+
+function PlayerOptions({ squad }: { squad: TeamSquadPlayer[] }) {
+  const groups = squadOptionGroups(squad);
+  return (
+    <>
+      {groups.map((group) => (
+        <optgroup key={group.position} label={group.label}>
+          {group.players.map((player) => (
+            <option key={player.id} value={player.id}>{playerOptionLabel(player)}</option>
+          ))}
+        </optgroup>
+      ))}
+    </>
+  );
 }
 
 function getDisplay({

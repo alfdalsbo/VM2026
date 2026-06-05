@@ -284,7 +284,9 @@ function splitNameAndClub(rawName: string) {
 function playerOptionLabel(player: TeamSquadPlayer) {
   const shirt = player.shirtNumber ? `${player.shirtNumber} ` : "";
   const { name } = splitNameAndClub(player.name);
-  return `${shirt}${name}`;
+  const goals = player.goals ?? 0;
+  const assists = player.assists ?? 0;
+  return `${shirt}${name} (m:${goals}, a:${assists})`;
 }
 
 function squadOptionGroups(squad: TeamSquadPlayer[]) {

@@ -88,8 +88,8 @@ export default async function LivePage() {
                 <th>Turnering</th>
                 <th>Tips</th>
                 <th>Premie</th>
-                <th>Eksakte gule</th>
-                <th>Eksakte røde</th>
+                <th>Gule kort</th>
+                <th>Røde kort</th>
               </tr>
             </thead>
             <tbody>

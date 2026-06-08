@@ -473,6 +473,7 @@ export async function autofillBonusTipsAction(formData: FormData) {
       : matchId === BONUS_AUTOFILL_ALL_OPEN
       ? state.matches.map((match) => match.id)
       : [matchId].filter(Boolean);
+  const replaceExisting = Boolean(matchId && matchId !== BONUS_AUTOFILL_PREDICTED_OPEN && matchId !== BONUS_AUTOFILL_ALL_OPEN);
   let message = "Ingen tomme bonustips å autofylle.";
 
   try {
@@ -480,6 +481,7 @@ export async function autofillBonusTipsAction(formData: FormData) {
       state,
       playerId: player.id,
       matchIds,
+      replaceExisting,
     });
     await saveAppState(result.state);
     for (const id of matchIds) revalidateApp(id);

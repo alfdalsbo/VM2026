@@ -29,6 +29,11 @@ type MatchBonusOdds = {
   awayRedCardsTotal?: number;
 };
 
+type CandidatePool = {
+  source: BonusAutofillSource;
+  candidates: Array<{ id: string; weight: number }>;
+};
+
 export type BonusAutofillResult = {
   source: BonusAutofillSource;
   homeScorers: string[];
@@ -133,11 +138,21 @@ function resolveOddsPlayer(pick: OddsPick, squad: TeamSquadPlayer[]) {
   return squad.find((player) => normalizeName(player.name) === target || normalizeName(player.shortName ?? "") === target)?.id ?? null;
 }
 
+function dedupeCandidates(candidates: Array<{ id: string; weight: number }>) {
+  const byId = new Map<string, number>();
+  for (const candidate of candidates) {
+    if (candidate.weight <= 0) continue;
+    byId.set(candidate.id, Math.max(byId.get(candidate.id) ?? 0, candidate.weight));
+  }
+  return Array.from(byId, ([id, weight]) => ({ id, weight }));
+}
+
 function weightedPick(
   candidates: Array<{ id: string; weight: number }>,
   seed: string,
+  excludedIds = new Set<string>(),
 ) {
-  const usable = candidates.filter((candidate) => candidate.weight > 0);
+  const usable = candidates.filter((candidate) => candidate.weight > 0 && !excludedIds.has(candidate.id));
   if (!usable.length) return null;
   const total = usable.reduce((sum, candidate) => sum + candidate.weight, 0);
   const target = (hashNumber(seed) / 0xffffffff) * total;
@@ -149,40 +164,88 @@ function weightedPick(
   return usable.at(-1)?.id ?? null;
 }
 
-function choosePlayers({
+function candidatePool({
   squad,
   odds,
-  slots,
-  seed,
   kind,
 }: {
   squad: TeamSquadPlayer[];
   odds: OddsPick[] | undefined;
-  slots: number;
-  seed: string;
   kind: "scorer" | "assist";
 }) {
   const realSquad = realSquadPlayers(squad);
-  const oddsCandidates = (odds ?? [])
+  const oddsCandidates = dedupeCandidates(
+    (odds ?? [])
     .map((pick) => {
       const id = resolveOddsPlayer(pick, realSquad);
       return id ? { id, weight: oddsWeight(pick) } : null;
     })
-    .filter((candidate): candidate is { id: string; weight: number } => Boolean(candidate));
+      .filter((candidate): candidate is { id: string; weight: number } => Boolean(candidate)),
+  );
 
-  const fallbackCandidates = realSquad.map((player) => ({
-    id: player.id,
-    weight: fallbackWeight(player, kind),
-  }));
-  const candidates = oddsCandidates.length ? oddsCandidates : fallbackCandidates;
-  const picks: string[] = [];
+  if (oddsCandidates.length) return { source: "odds", candidates: oddsCandidates } satisfies CandidatePool;
+
+  return {
+    source: "fallback",
+    candidates: dedupeCandidates(
+      realSquad.map((player) => ({
+        id: player.id,
+        weight: fallbackWeight(player, kind),
+      })),
+    ),
+  };
+}
+
+function chooseGoalBonusPlayers({
+  squad,
+  scorerOdds,
+  assistOdds,
+  slots,
+  seed,
+}: {
+  squad: TeamSquadPlayer[];
+  scorerOdds: OddsPick[] | undefined;
+  assistOdds: OddsPick[] | undefined;
+  slots: number;
+  seed: string;
+}) {
+  const scorerCandidates = candidatePool({ squad, odds: scorerOdds, kind: "scorer" });
+  const assistCandidates = candidatePool({ squad, odds: assistOdds, kind: "assist" });
+  const usedScorers = new Set<string>();
+  const usedAssists = new Set<string>();
+  const scorers: string[] = [];
+  const assists: string[] = [];
 
   for (let index = 0; index < slots; index += 1) {
-    const picked = weightedPick(candidates, `${seed}:${kind}:${index}`);
-    if (picked) picks.push(picked);
+    const scorer =
+      weightedPick(scorerCandidates.candidates, `${seed}:scorer:${index}`, usedScorers) ??
+      weightedPick(scorerCandidates.candidates, `${seed}:scorer:${index}:repeat`);
+
+    if (scorer) {
+      scorers.push(scorer);
+      usedScorers.add(scorer);
+    }
+
+    const freshAssistExclusions = new Set(usedAssists);
+    if (scorer) freshAssistExclusions.add(scorer);
+    const repeatAssistExclusions = new Set<string>();
+    if (scorer) repeatAssistExclusions.add(scorer);
+
+    const assist =
+      weightedPick(assistCandidates.candidates, `${seed}:assist:${index}`, freshAssistExclusions) ??
+      weightedPick(assistCandidates.candidates, `${seed}:assist:${index}:repeat`, repeatAssistExclusions);
+
+    if (assist) {
+      assists.push(assist);
+      usedAssists.add(assist);
+    }
   }
 
-  return picks;
+  return {
+    source: slots > 0 && (scorerCandidates.source === "odds" || assistCandidates.source === "odds") ? "odds" : "fallback",
+    scorers,
+    assists,
+  };
 }
 
 async function fetchConfiguredOdds(match: WorldCupMatch): Promise<MatchBonusOdds | null> {
@@ -200,13 +263,24 @@ async function fetchConfiguredOdds(match: WorldCupMatch): Promise<MatchBonusOdds
   }
 }
 
+function hasUsableCardOdds(odds: MatchBonusOdds | null) {
+  if (!odds) return false;
+  return [
+    odds.yellowCardsTotal,
+    odds.redCardsTotal,
+    odds.homeYellowCardsTotal,
+    odds.awayYellowCardsTotal,
+    odds.homeRedCardsTotal,
+    odds.awayRedCardsTotal,
+  ].some((value) => Number.isInteger(value));
+}
+
 export async function getBonusAutofillForMatch(
   match: WorldCupMatch,
   prediction: Prediction | null,
   state: AppState,
 ): Promise<BonusAutofillResult> {
   const odds = await fetchConfiguredOdds(match);
-  const source: BonusAutofillSource = odds ? "odds" : "fallback";
   const homeSquad = getRealSquadPlayers(state, match.homeTeam);
   const awaySquad = getRealSquadPlayers(state, match.awayTeam);
   const homeGoals = prediction?.homeGoals ?? 0;
@@ -221,37 +295,29 @@ export async function getBonusAutofillForMatch(
   const awayYellowCardsTotal = yellowSplit.away;
   const homeRedCardsTotal = redSplit.home;
   const awayRedCardsTotal = redSplit.away;
+  const homePlayers = chooseGoalBonusPlayers({
+    squad: homeSquad,
+    scorerOdds: odds?.homeScorers,
+    assistOdds: odds?.homeAssists,
+    slots: homeGoals,
+    seed: `${match.id}:home`,
+  });
+  const awayPlayers = chooseGoalBonusPlayers({
+    squad: awaySquad,
+    scorerOdds: odds?.awayScorers,
+    assistOdds: odds?.awayAssists,
+    slots: awayGoals,
+    seed: `${match.id}:away`,
+  });
+  const source: BonusAutofillSource =
+    homePlayers.source === "odds" || awayPlayers.source === "odds" || hasUsableCardOdds(odds) ? "odds" : "fallback";
 
   return {
     source,
-    homeScorers: choosePlayers({
-      squad: homeSquad,
-      odds: odds?.homeScorers,
-      slots: homeGoals,
-      seed: `${match.id}:home`,
-      kind: "scorer",
-    }),
-    awayScorers: choosePlayers({
-      squad: awaySquad,
-      odds: odds?.awayScorers,
-      slots: awayGoals,
-      seed: `${match.id}:away`,
-      kind: "scorer",
-    }),
-    homeAssists: choosePlayers({
-      squad: homeSquad,
-      odds: odds?.homeAssists,
-      slots: homeGoals,
-      seed: `${match.id}:home`,
-      kind: "assist",
-    }),
-    awayAssists: choosePlayers({
-      squad: awaySquad,
-      odds: odds?.awayAssists,
-      slots: awayGoals,
-      seed: `${match.id}:away`,
-      kind: "assist",
-    }),
+    homeScorers: homePlayers.scorers,
+    awayScorers: awayPlayers.scorers,
+    homeAssists: homePlayers.assists,
+    awayAssists: awayPlayers.assists,
     yellowCardsTotal: homeYellowCardsTotal + awayYellowCardsTotal,
     redCardsTotal: homeRedCardsTotal + awayRedCardsTotal,
     homeYellowCardsTotal,
@@ -267,9 +333,24 @@ function fillSlots(existing: string[] | undefined, picks: string[], max: number,
   return [...retained, ...picks.filter((id) => validIds.has(id))].slice(0, max);
 }
 
+function autofillSlots(existing: string[] | undefined, picks: string[], max: number, validIds: Set<string>, replaceExisting: boolean) {
+  if (replaceExisting) return picks.filter((id) => validIds.has(id)).slice(0, max);
+  return fillSlots(existing, picks, max, validIds);
+}
+
 function listsEqual(left: string[] | undefined, right: string[]) {
   const current = left ?? [];
   return current.length === right.length && current.every((id, index) => id === right[index]);
+}
+
+function countChangedSlots(left: string[] | undefined, right: string[]) {
+  const current = left ?? [];
+  const max = Math.max(current.length, right.length);
+  let changed = 0;
+  for (let index = 0; index < max; index += 1) {
+    if (current[index] !== right[index]) changed += 1;
+  }
+  return changed;
 }
 
 export async function autofillBonusTipsInState({
@@ -277,11 +358,13 @@ export async function autofillBonusTipsInState({
   playerId,
   matchIds,
   now = new Date(),
+  replaceExisting = false,
 }: {
   state: AppState;
   playerId: string;
   matchIds: string[];
   now?: Date;
+  replaceExisting?: boolean;
 }): Promise<{ state: AppState; summary: BonusAutofillSummary }> {
   let next = state;
   let matchesTouched = 0;
@@ -301,10 +384,10 @@ export async function autofillBonusTipsInState({
     if (prediction) {
       const homeIds = getRealSquadPlayerIds(next, match.homeTeam);
       const awayIds = getRealSquadPlayerIds(next, match.awayTeam);
-      const homeScorers = fillSlots(prediction.homeScorers, autofill.homeScorers, prediction.homeGoals, homeIds);
-      const awayScorers = fillSlots(prediction.awayScorers, autofill.awayScorers, prediction.awayGoals, awayIds);
-      const homeAssists = fillSlots(prediction.homeAssists, autofill.homeAssists, prediction.homeGoals, homeIds);
-      const awayAssists = fillSlots(prediction.awayAssists, autofill.awayAssists, prediction.awayGoals, awayIds);
+      const homeScorers = autofillSlots(prediction.homeScorers, autofill.homeScorers, prediction.homeGoals, homeIds, replaceExisting);
+      const awayScorers = autofillSlots(prediction.awayScorers, autofill.awayScorers, prediction.awayGoals, awayIds, replaceExisting);
+      const homeAssists = autofillSlots(prediction.homeAssists, autofill.homeAssists, prediction.homeGoals, homeIds, replaceExisting);
+      const awayAssists = autofillSlots(prediction.awayAssists, autofill.awayAssists, prediction.awayGoals, awayIds, replaceExisting);
       const beforeSlots =
         (prediction.homeScorers ?? []).filter((id) => homeIds.has(id)).length +
         (prediction.awayScorers ?? []).filter((id) => awayIds.has(id)).length +
@@ -330,13 +413,18 @@ export async function autofillBonusTipsInState({
           },
           now,
         );
-        playerSlotsFilled += Math.max(0, afterSlots - beforeSlots);
+        playerSlotsFilled += replaceExisting
+          ? countChangedSlots(prediction.homeScorers, homeScorers) +
+            countChangedSlots(prediction.awayScorers, awayScorers) +
+            countChangedSlots(prediction.homeAssists, homeAssists) +
+            countChangedSlots(prediction.awayAssists, awayAssists)
+          : Math.max(0, afterSlots - beforeSlots);
         touched = true;
       }
     }
 
     const existingCardTip = next.livePotTips.find((tip) => tip.playerId === playerId && tip.matchId === match.id);
-    if (!existingCardTip) {
+    if (!existingCardTip || replaceExisting) {
       const tip: LivePotTip = {
         playerId,
         matchId: match.id,
@@ -349,7 +437,7 @@ export async function autofillBonusTipsInState({
         updatedAt: new Date().toISOString(),
       };
       next = saveLivePotTipInState(next, tip);
-      cardTipsFilled += 1;
+      if (!existingCardTip || replaceExisting) cardTipsFilled += 1;
       touched = true;
     }
 

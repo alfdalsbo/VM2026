@@ -51,9 +51,33 @@ ADMIN_PLAYER_IDS=alf
 BLOB_READ_WRITE_TOKEN=vercel-blob-token
 CRON_SECRET=lang-tilfeldig-cron-hemmelighet
 DATABASE_URL=postgres://...
+BONUS_ODDS_URL=https://example.com/tippekjelleren-bonus-odds.json
 ```
 
 `DATABASE_URL` kan peke på Supabase/Postgres og får førsteprioritet. Uten `DATABASE_URL` bruker appen Vercel Blob når `BLOB_READ_WRITE_TOKEN` finnes. Hvis ingen varig lagring er konfigurert, faller den tilbake til lokal fil under `.data/`, som bare er egnet for lokal utvikling.
+
+`BONUS_ODDS_URL` er valgfri og brukes kun server-side til autofyll av kampbonus. Feeden skal være provider-nøytral JSON, indeksert på appens kamp-ID-er:
+
+```json
+{
+  "matches": {
+    "m001": {
+      "homeScorers": [{ "playerId": "mex-9", "weight": 0.42 }, { "playerName": "Santiago Gimenez", "odds": 2.8 }],
+      "awayScorers": [{ "playerId": "rsa-11", "odds": 4.5 }],
+      "homeAssists": [{ "playerId": "mex-10", "weight": 0.25 }],
+      "awayAssists": [{ "playerName": "Percy Tau", "odds": 5.2 }],
+      "yellowCardsTotal": 5,
+      "redCardsTotal": 0,
+      "homeYellowCardsTotal": 3,
+      "awayYellowCardsTotal": 2,
+      "homeRedCardsTotal": 0,
+      "awayRedCardsTotal": 0
+    }
+  }
+}
+```
+
+`weight` brukes direkte når den finnes. Ellers konverteres `odds` til implisitt sannsynlighet med `1 / odds`. Spillere som ikke matcher syncede VM-tropper blir ignorert, og appen faller tilbake til intern prognose når det ikke finnes brukbare oddsdata.
 
 ## Kontroll
 

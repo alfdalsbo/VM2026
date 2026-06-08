@@ -6,9 +6,12 @@ import { initialState } from "@/lib/state";
 import { teamSlug } from "@/lib/teams";
 import {
   deriveTournamentBonusResult,
+  formatTournamentBonusPlayer,
   getTournamentBonusPlayerOptions,
+  getTournamentBonusTeamOptions,
   saveTournamentBonusPredictionInState,
   scoreTournamentBonusPrediction,
+  tournamentBonusTeamName,
 } from "@/lib/tournament-bonus";
 import type { AppState, MatchEvent, TournamentBonusPrediction } from "@/lib/types";
 
@@ -42,6 +45,16 @@ function tournamentPrediction(overrides: Partial<TournamentBonusPrediction> = {}
 }
 
 describe("tournament bonus", () => {
+  it("uses Norwegian team names for tournament bonus choices and summaries", () => {
+    const base = withRealSquad(initialState(), "South Africa");
+    const teamOptions = getTournamentBonusTeamOptions(base);
+    expect(teamOptions.find((team) => team.slug === teamSlug("South Africa"))?.name).toBe("Sør-Afrika");
+    expect(tournamentBonusTeamName(base, teamSlug("South Africa"))).toBe("Sør-Afrika");
+
+    const player = getTournamentBonusPlayerOptions(base).find((option) => option.teamName === "South Africa")!;
+    expect(formatTournamentBonusPlayer(player)).toContain("(Sør-Afrika)");
+  });
+
   it("saves valid tournament bonus tips before first kickoff and locks after kickoff", () => {
     const base = withRealSquad(initialState(), "Mexico");
     const options = getTournamentBonusPlayerOptions(base);

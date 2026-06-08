@@ -1,6 +1,7 @@
 import { playerProfileIdFor } from "@/lib/player-profiles";
 import { SCORE_RULES } from "@/lib/scoring-rules";
 import { isPlaceholderTeam, teamSlug } from "@/lib/teams";
+import { displayTeamName } from "@/lib/display";
 import type {
   AppState,
   MatchEvent,
@@ -22,6 +23,7 @@ export type TournamentBonusScore = {
 export type TournamentBonusTeamOption = {
   slug: string;
   name: string;
+  searchText: string;
 };
 
 export type TournamentBonusPlayerOption = {
@@ -66,7 +68,11 @@ export function isTournamentBonusOpen(state: AppState, now = new Date()) {
 export function getTournamentBonusTeamOptions(state: AppState): TournamentBonusTeamOption[] {
   return state.teamProfiles
     .filter((profile) => profile.teamName && !isPlaceholderTeam(profile.teamName))
-    .map((profile) => ({ slug: profile.slug, name: profile.teamName }))
+    .map((profile) => ({
+      slug: profile.slug,
+      name: displayTeamName(profile.teamName),
+      searchText: [profile.teamName, profile.slug, profile.abbreviation, profile.countryCode].filter(Boolean).join(" "),
+    }))
     .sort((a, b) => a.name.localeCompare(b.name, "nb"));
 }
 
@@ -323,12 +329,13 @@ function unique<T>(items: Array<T | null | undefined>) {
 }
 
 export function formatTournamentBonusPlayer(option: Pick<TournamentBonusPlayerOption, "name" | "teamName">) {
-  return `${option.name} (${option.teamName})`;
+  return `${option.name} (${displayTeamName(option.teamName)})`;
 }
 
 export function tournamentBonusTeamName(state: AppState, slug: string | null | undefined) {
   if (!slug) return null;
-  return state.teamProfiles.find((team) => team.slug === slug)?.teamName ?? null;
+  const teamName = state.teamProfiles.find((team) => team.slug === slug)?.teamName ?? null;
+  return teamName ? displayTeamName(teamName) : null;
 }
 
 export function tournamentBonusPlayerName(state: AppState, playerProfileId: string | null | undefined) {
@@ -336,7 +343,7 @@ export function tournamentBonusPlayerName(state: AppState, playerProfileId: stri
   const option = getTournamentBonusPlayerOptions(state).find((player) => player.id === playerProfileId);
   if (option) return formatTournamentBonusPlayer(option);
   const profile = state.playerProfiles.find((player) => player.id === playerProfileId);
-  return profile ? `${profile.name} (${profile.teamName})` : null;
+  return profile ? `${profile.name} (${displayTeamName(profile.teamName)})` : null;
 }
 
 export function hasAnyRealTournamentBonusPlayers(teamProfiles: TeamProfile[]) {

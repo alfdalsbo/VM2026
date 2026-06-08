@@ -1,6 +1,7 @@
 import { saveTournamentBonusPredictionAction } from "@/app/actions";
 import { PlayerCombobox } from "@/components/player-combobox";
 import { Panel } from "@/components/ui";
+import { displayTeamName } from "@/lib/display";
 import { formatOsloDateTime } from "@/lib/format";
 import type { PlayerComboboxOption } from "@/lib/player-combobox";
 import {
@@ -19,6 +20,7 @@ export function TournamentBonusPanel({ state, player }: { state: AppState; playe
   const prediction = getTournamentBonusPrediction(state, player.id);
   const teams = getTournamentBonusTeamOptions(state);
   const playerOptions = getTournamentBonusPlayerOptions(state);
+  const comboboxTeamOptions = tournamentTeamComboboxOptions(teams);
   const comboboxPlayerOptions = tournamentPlayerComboboxOptions(playerOptions);
   const open = isTournamentBonusOpen(state);
   const lockAt = getTournamentBonusLockAt(state);
@@ -44,17 +46,14 @@ export function TournamentBonusPanel({ state, player }: { state: AppState; playe
         {canSubmit ? (
           <form action={saveTournamentBonusPredictionAction} className="tournament-bonus-form">
             <input type="hidden" name="next" value="/live" />
-            <label>
-              <span>VM-vinner</span>
-              <select name="winnerTeamSlug" defaultValue={prediction?.winnerTeamSlug ?? ""} required>
-                <option value="">Velg lag</option>
-                {teams.map((team) => (
-                  <option key={team.slug} value={team.slug}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PlayerCombobox
+              label="VM-vinner"
+              name="winnerTeamSlug"
+              placeholder="Velg lag"
+              options={comboboxTeamOptions}
+              defaultValue={prediction?.winnerTeamSlug ?? ""}
+              required
+            />
             <PlayerCombobox
               label="Toppscorer"
               name="topScorerPlayerProfileId"
@@ -97,7 +96,7 @@ export function TournamentBonusPanel({ state, player }: { state: AppState; playe
           <TournamentBonusSummary
             title="Fasit"
             rows={[
-              ["VM-vinner", result.winnerTeamName ?? "-"],
+              ["VM-vinner", result.winnerTeamName ? displayTeamName(result.winnerTeamName) : "-"],
               ["Toppscorer", formatStatWinners(result.topScorers)],
               ["Assistkonge", formatStatWinners(result.assistKings)],
             ]}
@@ -136,7 +135,17 @@ function TournamentBonusSummary({
 
 function formatStatWinners(rows: PlayerTournamentStat[]) {
   if (!rows.length) return "-";
-  return rows.map((row) => `${row.playerName} (${row.teamName})`).join(", ");
+  return rows.map((row) => `${row.playerName} (${displayTeamName(row.teamName)})`).join(", ");
+}
+
+function tournamentTeamComboboxOptions(
+  teams: ReturnType<typeof getTournamentBonusTeamOptions>,
+): PlayerComboboxOption[] {
+  return teams.map((team) => ({
+    value: team.slug,
+    label: team.name,
+    searchText: team.searchText,
+  }));
 }
 
 function tournamentPlayerComboboxOptions(
@@ -145,8 +154,8 @@ function tournamentPlayerComboboxOptions(
   return playerOptions.map((option) => ({
     value: option.id,
     label: option.name,
-    meta: option.teamName,
-    groupLabel: option.teamName,
-    searchText: [formatTournamentBonusPlayer(option), option.teamSlug, option.position].join(" "),
+    meta: displayTeamName(option.teamName),
+    groupLabel: displayTeamName(option.teamName),
+    searchText: [formatTournamentBonusPlayer(option), displayTeamName(option.teamName), option.teamSlug, option.position].join(" "),
   }));
 }

@@ -495,6 +495,181 @@ select {
   width: 100%;
 }
 
+.player-combobox {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  position: relative;
+  width: 100%;
+}
+
+.player-combobox-label {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.player-combobox-control {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid rgba(17, 19, 15, 0.14);
+  border-radius: 8px;
+  display: grid;
+  gap: 2px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height: 40px;
+  min-width: 0;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.player-combobox-control:focus-within {
+  border-color: rgba(180, 35, 47, 0.48);
+  box-shadow: 0 0 0 3px rgba(180, 35, 47, 0.12);
+}
+
+.player-combobox-search-icon {
+  color: var(--ink-muted);
+  margin-left: 10px;
+}
+
+.player-combobox-input {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: #17130f;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 750;
+  min-height: 38px;
+  min-width: 0;
+  outline: none;
+  padding: 0 6px;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.player-combobox-input::placeholder {
+  color: rgba(111, 90, 70, 0.76);
+}
+
+.player-combobox-icon-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  padding: 0;
+  transition: color 120ms ease, transform 120ms ease;
+  width: 32px;
+}
+
+.player-combobox-icon-button:hover,
+.player-combobox-icon-button:focus-visible {
+  color: var(--red-dark);
+  outline: none;
+}
+
+.player-combobox-open .player-combobox-icon-button:last-child {
+  transform: rotate(180deg);
+}
+
+.player-combobox-menu {
+  background: #fffdf8;
+  border: 1px solid rgba(17, 19, 15, 0.16);
+  border-radius: 8px;
+  box-shadow: 0 14px 30px rgba(47, 30, 18, 0.14);
+  display: grid;
+  gap: 3px;
+  margin-top: 2px;
+  max-height: min(320px, 54vh);
+  overflow: auto;
+  padding: 6px;
+  scroll-padding: 6px;
+  width: 100%;
+  z-index: 10;
+}
+
+.player-combobox-group {
+  color: var(--ink-muted);
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  padding: 7px 8px 3px;
+  text-transform: uppercase;
+}
+
+.player-combobox-option {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #17130f;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 38px;
+  padding: 7px 9px;
+  text-align: left;
+  width: 100%;
+}
+
+.player-combobox-option:hover,
+.player-combobox-option-active {
+  background: rgba(200, 145, 42, 0.13);
+  border-color: rgba(200, 145, 42, 0.34);
+}
+
+.player-combobox-option-selected {
+  background: rgba(21, 128, 61, 0.1);
+  border-color: rgba(21, 128, 61, 0.22);
+}
+
+.player-combobox-option-empty {
+  color: var(--ink-muted);
+}
+
+.player-combobox-option-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.player-combobox-option-main span,
+.player-combobox-option-main small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-combobox-option-main span {
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.player-combobox-option-main small {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.player-combobox-empty {
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 10px;
+}
+
+.player-combobox-disabled {
+  opacity: 0.66;
+}
+
 .knockout-fields {
   border-top: 1px solid var(--line);
   display: grid;
@@ -4004,12 +4179,22 @@ th {
   min-width: 0;
 }
 
-.scorer-slot-field span {
+.scorer-slot-field > span,
+.scorer-slot-field .player-combobox-label {
   color: var(--ink-muted);
   font-size: 0.66rem;
   font-weight: 850;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.scorer-slot-field .player-combobox-control {
+  min-height: 38px;
+}
+
+.scorer-slot-field .player-combobox-input {
+  font-size: 0.88rem;
+  min-height: 36px;
 }
 
 .scorer-slot-field select {

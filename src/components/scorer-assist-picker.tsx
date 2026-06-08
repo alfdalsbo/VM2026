@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { saveMatchBonusPredictionAction, type SaveMatchBonusPredictionInput } from "@/app/actions";
+import { PlayerCombobox } from "@/components/player-combobox";
 import { TeamLink } from "@/components/team-link";
 import { realSquadPlayers } from "@/lib/bonus-player-options";
 import { teamFlagEmoji } from "@/lib/display";
 import { cx } from "@/lib/format";
+import type { PlayerComboboxOption } from "@/lib/player-combobox";
 import type { Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
 type BonusDraft = {
@@ -172,6 +174,7 @@ function TeamSection({
   onAssistChange: (index: number, value: string) => void;
 }) {
   const flag = teamFlagEmoji(team);
+  const playerOptions = useMemo(() => squadPlayerOptions(squad, team), [squad, team]);
 
   if (goals === 0) {
     return (
@@ -198,20 +201,24 @@ function TeamSection({
         {Array.from({ length: goals }, (_, index) => (
           <div key={`${team}-${index}`} className="scorer-slot-row">
             <span className="scorer-slot-number">{index + 1}</span>
-            <label className="scorer-slot-field">
-              <span>Scorer</span>
-              <select value={scorers[index] ?? ""} onChange={(event) => onScorerChange(index, event.target.value)}>
-                <option value="">Velg scorer</option>
-                <PlayerOptions squad={squad} />
-              </select>
-            </label>
-            <label className="scorer-slot-field">
-              <span>Assist</span>
-              <select value={assists[index] ?? ""} onChange={(event) => onAssistChange(index, event.target.value)}>
-                <option value="">Ingen/usikker</option>
-                <PlayerOptions squad={squad} />
-              </select>
-            </label>
+            <PlayerCombobox
+              className="scorer-slot-field"
+              label="Scorer"
+              placeholder="Velg scorer"
+              emptyLabel="Velg scorer"
+              options={playerOptions}
+              value={scorers[index] ?? ""}
+              onChange={(value) => onScorerChange(index, value)}
+            />
+            <PlayerCombobox
+              className="scorer-slot-field"
+              label="Assist"
+              placeholder="Ingen/usikker"
+              emptyLabel="Ingen/usikker"
+              options={playerOptions}
+              value={assists[index] ?? ""}
+              onChange={(value) => onAssistChange(index, value)}
+            />
           </div>
         ))}
       </div>
@@ -289,7 +296,11 @@ function playerOptionLabel(player: TeamSquadPlayer) {
   return `${shirt}${name} (m:${goals}, a:${assists})`;
 }
 
-function squadOptionGroups(squad: TeamSquadPlayer[]) {
+function squadOptionGroups(squad: TeamSquadPlayer[]): Array<{
+  position: TeamSquadPlayer["position"];
+  label: string;
+  players: TeamSquadPlayer[];
+}> {
   const byPosition = new Map<TeamSquadPlayer["position"], TeamSquadPlayer[]>();
   for (const player of squad) {
     const bucket = byPosition.get(player.position) ?? [];
@@ -305,18 +316,26 @@ function squadOptionGroups(squad: TeamSquadPlayer[]) {
     .filter((group) => group.players.length > 0);
 }
 
-function PlayerOptions({ squad }: { squad: TeamSquadPlayer[] }) {
-  const groups = squadOptionGroups(squad);
-  return (
-    <>
-      {groups.map((group) => (
-        <optgroup key={group.position} label={group.label}>
-          {group.players.map((player) => (
-            <option key={player.id} value={player.id}>{playerOptionLabel(player)}</option>
-          ))}
-        </optgroup>
-      ))}
-    </>
+function squadPlayerOptions(squad: TeamSquadPlayer[], team: string): PlayerComboboxOption[] {
+  return squadOptionGroups(squad).flatMap((group) =>
+    group.players.map((player) => ({
+      value: player.id,
+      label: playerOptionLabel(player),
+      groupLabel: group.label,
+      searchText: [
+        player.name,
+        player.shortName,
+        player.shirtNumber,
+        player.position,
+        player.positionDetail,
+        team,
+        group.label,
+        `m:${player.goals ?? 0}`,
+        `a:${player.assists ?? 0}`,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    })),
   );
 }
 

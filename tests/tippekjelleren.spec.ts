@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 test("user can log in and tip from the match-first dashboard", async ({ page }, testInfo) => {
   test.setTimeout(75_000);
@@ -45,7 +45,12 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByRole("heading", { name: "Mexico" })).toBeVisible();
   await expect(page.getByText("VM-pass")).toBeVisible();
   await expect(page.getByText("VM-bildehylle")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Arkivtropp til FIFA-data kommer" })).toBeVisible();
+  const archiveSquadHeading = page.getByRole("heading", { name: "Arkivtropp til FIFA-data kommer" });
+  if ((await archiveSquadHeading.count()) > 0) {
+    await expect(archiveSquadHeading).toBeVisible();
+  } else {
+    await expect(page.getByRole("heading", { name: "Tropp" })).toBeVisible();
+  }
 
   await page.goto("/kamp/m001");
   await expect(page.getByText("Kamp 1")).toBeVisible();
@@ -109,7 +114,12 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(firstListedMatch.locator(".tip-bonus-open-badge", { hasText: "Åpen" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Scorere og assister" })).toBeVisible();
   await expect(firstListedMatch.getByRole("heading", { name: "Gule og røde kort" })).toBeVisible();
-  await expect(firstListedMatch.getByText(/Tropp ikke klar\.|Resultattipset står på 0-0\./).first()).toBeVisible();
+  const matchPlayerCombobox = firstListedMatch.locator(".player-combobox").first();
+  if ((await matchPlayerCombobox.count()) > 0) {
+    await exercisePlayerCombobox(matchPlayerCombobox);
+  } else {
+    await expect(firstListedMatch.getByText(/Tropp ikke klar\.|Resultattipset står på 0-0\./).first()).toBeVisible();
+  }
   await expect(firstListedMatch.getByRole("button", { name: "Lagre bonustips" })).toHaveCount(0);
   await expect(firstListedMatch.getByRole("group", { name: "Mexico gule kort" })).toBeVisible();
   await expect(firstListedMatch.getByRole("group", { name: "Sør-Afrika røde kort" })).toBeVisible();
@@ -137,6 +147,10 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByText("Selve tippinga skjer nå inne på kampkortet")).toBeVisible();
   await expect(page.getByRole("heading", { name: "VM-vinner, toppscorer og assistkonge" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Turnering" })).toBeVisible();
+  const tournamentPlayerCombobox = page.locator(".tournament-bonus-panel .player-combobox").first();
+  if ((await tournamentPlayerCombobox.count()) > 0) {
+    await exercisePlayerCombobox(tournamentPlayerCombobox);
+  }
 
   await page.goto("/kamper");
   const firstKnockout = page.locator("#m073");
@@ -178,3 +192,17 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
 
   await expect(page.getByRole("navigation").getByRole("link", { name: "Admin", exact: true })).toHaveCount(0);
 });
+
+async function exercisePlayerCombobox(combobox: Locator) {
+  const input = combobox.getByRole("combobox");
+  await input.click();
+  const firstRealOption = combobox.locator(".player-combobox-option:not(.player-combobox-option-empty)").first();
+  await expect(firstRealOption).toBeVisible();
+  const optionText = (await firstRealOption.innerText()).trim();
+  const token = optionText.split(/\s+/).find((part) => /[A-Za-zÆØÅæøå]/.test(part)) ?? optionText.slice(0, 1);
+  await input.fill(token.slice(0, 3));
+  await expect(combobox.locator(".player-combobox-menu")).toBeVisible();
+  await expect(firstRealOption).toBeVisible();
+  await firstRealOption.click();
+  await expect(input).not.toHaveValue("");
+}

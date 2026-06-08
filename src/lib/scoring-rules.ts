@@ -9,6 +9,9 @@ export const SCORE_RULES = {
     assist: 2,
     yellowExact: 1,
     redExact: 1,
+    tournamentWinner: 15,
+    tournamentTopScorer: 10,
+    tournamentAssistKing: 10,
     winnerAward: 10,
   },
 } as const;

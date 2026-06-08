@@ -4,7 +4,7 @@ Privat VM 2026-app for vennegjengen. Appen lar en fast gjeng logge inn med felle
 
 ## Funksjoner
 
-- Fast brukerliste: Alf Kåre, Anders, Danny, Fredrik, Glenn Ruben, Jørgen, Steinar, Sverre og Vegard.
+- Fast brukerliste: Alf Kåre, Anders, Danny, Fredrik, Glenn Ruben, Jørgen, Ruben, Steinar, Sverre og Vegard.
 - VM 2026-kampene er seedet fra FIFAs offentlige kampkalender.
 - Rask resultattipping med scorefelt for eksakt resultat.
 - Tips låses automatisk ved kampstart i Europe/Oslo-tid.
@@ -70,9 +70,9 @@ Playwright:
 npm run test:e2e
 ```
 
-## GitHub-sync hvert 10. minutt
+## GitHub-sync to ganger daglig
 
-Workflowen `.github/workflows/sync-world-cup.yml` kaller produksjons-endepunktet hvert tiende minutt i juni og juli 2026. For at den skal virke må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`.
+Workflowen `.github/workflows/sync-world-cup.yml` kaller produksjons-endepunktet kl. 06:00 og 18:00 UTC i juni og juli 2026. For at den skal virke må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`.
 
 ```bash
 gh auth login

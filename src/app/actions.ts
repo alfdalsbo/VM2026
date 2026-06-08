@@ -25,7 +25,8 @@ import {
   savePredictionInState,
 } from "@/lib/scoring";
 import { getAppState, saveAppState } from "@/lib/state";
-import type { AvatarSelection, KnockoutPredictionResolution, LivePotTip, Prediction } from "@/lib/types";
+import { saveTournamentBonusPredictionInState } from "@/lib/tournament-bonus";
+import type { AvatarSelection, KnockoutPredictionResolution, LivePotTip, Prediction, TournamentBonusPrediction } from "@/lib/types";
 
 function field(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -437,6 +438,28 @@ export async function saveLivePotTipAction(input: SaveLivePotTipInput): Promise<
 
   revalidateApp(matchId);
   return { status: "Kortbonus lagret", updatedAt };
+}
+
+export async function saveTournamentBonusPredictionAction(formData: FormData) {
+  const player = await requireSession();
+  const next = safeNext(field(formData, "next") || "/live");
+  const prediction: TournamentBonusPrediction = {
+    playerId: player.id,
+    winnerTeamSlug: field(formData, "winnerTeamSlug"),
+    topScorerPlayerProfileId: field(formData, "topScorerPlayerProfileId"),
+    assistKingPlayerProfileId: field(formData, "assistKingPlayerProfileId"),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const state = await getAppState();
+    await saveAppState(saveTournamentBonusPredictionInState(state, prediction));
+  } catch (error) {
+    redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Turneringsbonusen gikk ikke gjennom.")}`);
+  }
+
+  revalidateApp();
+  redirect(`${next}?status=${encodeURIComponent("Turneringsbonus lagret")}`);
 }
 
 export async function autofillBonusTipsAction(formData: FormData) {

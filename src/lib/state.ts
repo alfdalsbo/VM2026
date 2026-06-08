@@ -9,7 +9,20 @@ import { derivePlayerProfilesFromState } from "@/lib/player-profiles";
 import { players } from "@/lib/players";
 import { isPredictionForCurrentMatchup } from "@/lib/scoring";
 import { createSeedTeamProfiles, mergeTeamProfiles } from "@/lib/teams";
-import type { AppState, LineupPlayer, MatchLineup, MatchEvent, LivePotTip, PlayerProfile, Prediction, SyncState, TournamentStats } from "@/lib/types";
+import { emptyTournamentBonusResult } from "@/lib/tournament-bonus";
+import type {
+  AppState,
+  LineupPlayer,
+  MatchLineup,
+  MatchEvent,
+  LivePotTip,
+  PlayerProfile,
+  Prediction,
+  SyncState,
+  TournamentBonusPrediction,
+  TournamentBonusResult,
+  TournamentStats,
+} from "@/lib/types";
 import { worldCupMatches, worldCupRounds } from "@/lib/world-cup-2026";
 
 const stateFile = process.env.VERCEL
@@ -45,7 +58,7 @@ export function emptyTournamentStats(): TournamentStats {
 
 export function initialState(): AppState {
   const state: AppState = {
-    version: 6,
+    version: 7,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
@@ -58,6 +71,8 @@ export function initialState(): AppState {
     avatarSelections: [],
     followedMatches: [],
     playerProfiles: [],
+    tournamentBonusPredictions: [],
+    tournamentBonusResult: emptyTournamentBonusResult(),
     sync: emptySyncState(),
     tournamentStats: emptyTournamentStats(),
   };
@@ -85,6 +100,45 @@ type StoredLivePotTip = Partial<LivePotTip> & {
   awayRedCardsTotal?: number;
   updatedAt?: string;
 };
+
+type StoredTournamentBonusPrediction = Partial<TournamentBonusPrediction> & {
+  playerId: string;
+};
+
+function normalizeTournamentBonusPredictions(predictions: StoredTournamentBonusPrediction[] = []): TournamentBonusPrediction[] {
+  return predictions
+    .map((prediction) => ({
+      playerId: prediction.playerId,
+      winnerTeamSlug: String(prediction.winnerTeamSlug ?? "").trim(),
+      topScorerPlayerProfileId: String(prediction.topScorerPlayerProfileId ?? "").trim(),
+      assistKingPlayerProfileId: String(prediction.assistKingPlayerProfileId ?? "").trim(),
+      updatedAt: prediction.updatedAt ?? new Date(0).toISOString(),
+    }))
+    .filter(
+      (prediction) =>
+        prediction.playerId &&
+        prediction.winnerTeamSlug &&
+        prediction.topScorerPlayerProfileId &&
+        prediction.assistKingPlayerProfileId,
+    );
+}
+
+function normalizeTournamentBonusResult(result: Partial<TournamentBonusResult> | null | undefined): TournamentBonusResult {
+  const empty = emptyTournamentBonusResult();
+  if (!result) return empty;
+  return {
+    ...empty,
+    winnerTeamSlug: result.winnerTeamSlug ?? null,
+    winnerTeamName: result.winnerTeamName ?? null,
+    topScorerPlayerProfileIds: result.topScorerPlayerProfileIds ?? [],
+    topScorers: result.topScorers ?? [],
+    assistKingPlayerProfileIds: result.assistKingPlayerProfileIds ?? [],
+    assistKings: result.assistKings ?? [],
+    updatedAt: result.updatedAt ?? null,
+    source: result.source ?? null,
+    unavailableReason: result.unavailableReason ?? empty.unavailableReason,
+  };
+}
 
 function normalizePredictions(predictions: StoredPrediction[] = []): Prediction[] {
   return predictions.map((prediction) => ({
@@ -227,7 +281,7 @@ function mergeWithSeed(state: AppState): AppState {
 
   const merged: AppState = {
     ...state,
-    version: 6,
+    version: 7,
     players,
     rounds: worldCupRounds,
     matches,
@@ -240,6 +294,10 @@ function mergeWithSeed(state: AppState): AppState {
     avatarSelections: state.avatarSelections ?? [],
     followedMatches: state.followedMatches ?? [],
     playerProfiles: (state.playerProfiles ?? []) as PlayerProfile[],
+    tournamentBonusPredictions: normalizeTournamentBonusPredictions(
+      (state.tournamentBonusPredictions ?? []) as StoredTournamentBonusPrediction[],
+    ),
+    tournamentBonusResult: normalizeTournamentBonusResult(state.tournamentBonusResult),
     sync: state.sync ?? emptySyncState(),
     tournamentStats: state.tournamentStats ?? emptyTournamentStats(),
   };

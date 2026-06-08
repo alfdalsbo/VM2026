@@ -4,6 +4,7 @@ import { createTeamProfile, teamSlug } from "@/lib/teams";
 import { applyKnockoutResolversToState } from "@/lib/tournament";
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
 import { derivePlayerProfilesFromState, playerProfileIdFor } from "@/lib/player-profiles";
+import { deriveTournamentBonusResult } from "@/lib/tournament-bonus";
 import type {
   AppState,
   CoachInfo,
@@ -729,9 +730,20 @@ function buildTournamentStatsFromTeamProfiles(current: TournamentStats, teamProf
   const topScorers = playerRows
     .filter(({ player }) => (player.goals ?? 0) > 0)
     .map(({ player, teamName }) => ({
+      playerProfileId: player.playerProfileId ?? playerProfileIdFor(teamName, player.id, player.name),
       playerName: player.name,
       teamName,
       value: player.goals ?? 0,
+    }))
+    .sort((a, b) => b.value - a.value || a.playerName.localeCompare(b.playerName, "nb"))
+    .slice(0, 20);
+  const assistMakers = playerRows
+    .filter(({ player }) => (player.assists ?? 0) > 0)
+    .map(({ player, teamName }) => ({
+      playerProfileId: player.playerProfileId ?? playerProfileIdFor(teamName, player.id, player.name),
+      playerName: player.name,
+      teamName,
+      value: player.assists ?? 0,
     }))
     .sort((a, b) => b.value - a.value || a.playerName.localeCompare(b.playerName, "nb"))
     .slice(0, 20);
@@ -748,6 +760,7 @@ function buildTournamentStatsFromTeamProfiles(current: TournamentStats, teamProf
     ({ player }) =>
       player.matchesPlayed != null ||
       player.goals != null ||
+      player.assists != null ||
       player.yellowCards != null ||
       player.redCards != null,
   );
@@ -755,13 +768,11 @@ function buildTournamentStatsFromTeamProfiles(current: TournamentStats, teamProf
   return {
     ...fallback,
     topScorers: topScorers.length || hasSquadStats ? topScorers : fallback.topScorers,
-    assistMakers: fallback.assistMakers,
+    assistMakers: assistMakers.length || hasSquadStats ? assistMakers : fallback.assistMakers,
     discipline: discipline.length || hasSquadStats ? discipline : fallback.discipline,
     updatedAt: hasSquadStats ? syncedAt : fallback.updatedAt,
     source: hasSquadStats ? "FIFA public squad API" : fallback.source,
-    unavailableReason: hasSquadStats
-      ? "FIFA har ikke levert assistdata i gratisendepunktet ennå."
-      : fallback.unavailableReason,
+    unavailableReason: hasSquadStats && !assistMakers.length ? "FIFA har ikke levert assistdata i gratisendepunktet ennå." : fallback.unavailableReason,
   };
 }
 
@@ -904,10 +915,14 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
       tournamentStats,
     };
     const withManualData = applyManualWorldCupOverrides(withProfiles);
-    const withManualOverrides = applyManualWorldCupOverrides({
+    const withPlayerProfiles = applyManualWorldCupOverrides({
       ...withManualData,
       playerProfiles: derivePlayerProfilesFromState(withManualData, syncedAt),
     });
+    const withManualOverrides = {
+      ...withPlayerProfiles,
+      tournamentBonusResult: deriveTournamentBonusResult(withPlayerProfiles, syncedAt),
+    };
     const next = {
       ...withManualOverrides,
       sync: syncState({

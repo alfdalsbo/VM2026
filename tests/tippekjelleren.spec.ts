@@ -11,6 +11,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
     "Fredrik",
     "Glenn Ruben",
     "Jørgen",
+    "Ruben",
     "Steinar",
     "Sverre",
     "Vegard",
@@ -134,6 +135,8 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
   await expect(page.getByRole("heading", { name: "Bonustabell" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Autofyll/ })).toHaveCount(0);
   await expect(page.getByText("Selve tippinga skjer nå inne på kampkortet")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "VM-vinner, toppscorer og assistkonge" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Turnering" })).toBeVisible();
 
   await page.goto("/kamper");
   const firstKnockout = page.locator("#m073");

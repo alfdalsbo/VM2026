@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { LiveAutoRefresh } from "@/components/live-auto-refresh";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
+import { TournamentBonusPanel } from "@/components/tournament-bonus-panel";
 import { Panel, Stat } from "@/components/ui";
 import { getAvatarMap } from "@/lib/avatars";
 import { requireSession } from "@/lib/auth";
@@ -17,7 +18,7 @@ export const metadata = {
 };
 
 export default async function LivePage() {
-  const [, state] = await Promise.all([requireSession(), getAppState()]);
+  const [player, state] = await Promise.all([requireSession(), getAppState()]);
   const openMatches = state.matches.filter((match) => isLivePotOpen(match));
   const liveMatches = state.matches.filter((match) => match.status === "live" || match.status === "halftime");
   const standings = computeBonusTipStandings(state);
@@ -42,9 +43,12 @@ export default async function LivePage() {
 
       <ScoringRulesPanel />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <TournamentBonusPanel state={state} player={player} />
+
+      <div className="grid gap-4 md:grid-cols-4">
         <Stat label="Åpne kamper" value={openMatches.length} />
         <Stat label="Kort-bonustips" value={state.livePotTips.length} />
+        <Stat label="Turneringstips" value={state.tournamentBonusPredictions.length} />
         <Stat
           label="Leder bonustips"
           value={leader ? leader.player.shortName : "-"}
@@ -81,6 +85,7 @@ export default async function LivePage() {
                 <th>Bonustips</th>
                 <th>Kampbonus</th>
                 <th>Kort</th>
+                <th>Turnering</th>
                 <th>Tips</th>
                 <th>Premie</th>
                 <th>Eksakte gule</th>
@@ -100,6 +105,7 @@ export default async function LivePage() {
                   <td className="font-black">{standing.points}</td>
                   <td>{standing.matchBonusPoints}</td>
                   <td>{standing.liveBonusPoints}</td>
+                  <td>{standing.tournamentBonusPoints}</td>
                   <td>{standing.tips}</td>
                   <td>{standing.resultAward}</td>
                   <td>{standing.exactYellows}</td>

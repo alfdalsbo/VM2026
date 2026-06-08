@@ -29,6 +29,9 @@ export function ScoringRulesPanel({ compact = false }: { compact?: boolean }) {
             <li><strong>+{bonus.assist}</strong><span>Riktig assist</span></li>
             <li><strong>+{bonus.yellowExact}</strong><span>Eksakt antall gule kort</span></li>
             <li><strong>+{bonus.redExact}</strong><span>Eksakt antall røde kort</span></li>
+            <li><strong>+{bonus.tournamentWinner}</strong><span>VM-vinner</span></li>
+            <li><strong>+{bonus.tournamentTopScorer}</strong><span>Toppscorer</span></li>
+            <li><strong>+{bonus.tournamentAssistKing}</strong><span>Assistkonge</span></li>
           </ul>
           {!compact ? <p>Bom gir 0. Bonustips har egen tabell, og vinneren får +{bonus.winnerAward} i resultattips ved VM-slutt.</p> : null}
         </section>

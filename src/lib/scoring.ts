@@ -3,6 +3,7 @@ import { footballCopy } from "@/lib/football-jargon";
 import { hasUnresolvedKnockoutTeams, matchupKeyForMatch } from "@/lib/knockout-placeholders";
 import { scoreLivePotTip } from "@/lib/live-pot";
 import { BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
+import { getTournamentBonusPrediction, scoreTournamentBonusPrediction } from "@/lib/tournament-bonus";
 
 export { BONUS_TIPS_WINNER_AWARD };
 
@@ -12,7 +13,9 @@ export type BonusTipsStanding = {
   points: number;
   matchBonusPoints: number;
   liveBonusPoints: number;
+  tournamentBonusPoints: number;
   tips: number;
+  tournamentBonusTips: number;
   liveTips: number;
   exactYellows: number;
   redCardHits: number;
@@ -265,10 +268,12 @@ export function computeStandings(state: AppState): Standing[] {
     let resultTipPoints = 0;
     let matchBonusPoints = 0;
     let liveBonusPoints = 0;
+    let tournamentBonusPoints = 0;
     let exactResults = 0;
     let outcomeHits = 0;
     let predictions = 0;
     let bonusTips = 0;
+    let tournamentBonusTips = 0;
     let liveTips = 0;
     let liveExactYellows = 0;
     let liveRedCardHits = 0;
@@ -308,7 +313,14 @@ export function computeStandings(state: AppState): Standing[] {
       }
     }
 
-    const bonusPoints = matchBonusPoints + liveBonusPoints;
+    const tournamentBonusPrediction = getTournamentBonusPrediction(state, player.id);
+    if (tournamentBonusPrediction) {
+      tournamentBonusPoints = scoreTournamentBonusPrediction(state, tournamentBonusPrediction).total;
+      tournamentBonusTips = 1;
+      bonusTips += 1;
+    }
+
+    const bonusPoints = matchBonusPoints + liveBonusPoints + tournamentBonusPoints;
 
     return {
       rank: 0,
@@ -318,8 +330,10 @@ export function computeStandings(state: AppState): Standing[] {
       bonusPoints,
       matchBonusPoints,
       liveBonusPoints,
+      tournamentBonusPoints,
       bonusWinnerAward: 0,
       bonusTips,
+      tournamentBonusTips,
       liveTips,
       liveExactYellows,
       liveRedCardHits,
@@ -393,7 +407,9 @@ export function computeBonusTipStandings(state: AppState): BonusTipsStanding[] {
     points: row.bonusPoints,
     matchBonusPoints: row.matchBonusPoints,
     liveBonusPoints: row.liveBonusPoints,
+    tournamentBonusPoints: row.tournamentBonusPoints,
     tips: row.bonusTips,
+    tournamentBonusTips: row.tournamentBonusTips,
     liveTips: row.liveTips,
     exactYellows: row.liveExactYellows,
     redCardHits: row.liveRedCardHits,
@@ -405,6 +421,7 @@ export function computeBonusTipStandings(state: AppState): BonusTipsStanding[] {
       b.points - a.points ||
       b.matchBonusPoints - a.matchBonusPoints ||
       b.liveBonusPoints - a.liveBonusPoints ||
+      b.tournamentBonusPoints - a.tournamentBonusPoints ||
       b.exactYellows - a.exactYellows ||
       b.redCardHits - a.redCardHits ||
       a.player.shortName.localeCompare(b.player.shortName, "nb")

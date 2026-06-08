@@ -204,7 +204,7 @@ function buildPlayerRecords(
       title: "Bonusjegeren",
       value: bonusLeader.points ? `${bonusLeader.player.shortName}: ${bonusLeader.points} p` : "Ingen fangst",
       detail: bonusLeader.points
-        ? `${bonusLeader.matchBonusPoints} kampbonus · ${bonusLeader.liveBonusPoints} livebonus. Ekstraregnskapet har fått fører.`
+        ? `${bonusLeader.matchBonusPoints} kampbonus · ${bonusLeader.liveBonusPoints} kort · ${bonusLeader.tournamentBonusPoints} turnering. Ekstraregnskapet har fått fører.`
         : "Ingen har klart å smugle bonuspoeng inn bakveien ennå.",
       meter: bonusStandings[0]?.points ? percentageNumber(bonusLeader.points, bonusStandings[0].points) : 0,
     });

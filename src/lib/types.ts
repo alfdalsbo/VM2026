@@ -296,6 +296,14 @@ export type LivePotTip = {
   updatedAt: string;
 };
 
+export type TournamentBonusPrediction = {
+  playerId: string;
+  winnerTeamSlug: string;
+  topScorerPlayerProfileId: string;
+  assistKingPlayerProfileId: string;
+  updatedAt: string;
+};
+
 export type AvatarSelection = {
   playerId: string;
   avatar: string;
@@ -318,6 +326,7 @@ export type SyncState = {
 };
 
 export type PlayerTournamentStat = {
+  playerProfileId?: string | null;
   playerName: string;
   teamName: string;
   value: number;
@@ -338,6 +347,18 @@ export type TournamentStats = {
   unavailableReason: string | null;
 };
 
+export type TournamentBonusResult = {
+  winnerTeamSlug: string | null;
+  winnerTeamName: string | null;
+  topScorerPlayerProfileIds: string[];
+  topScorers: PlayerTournamentStat[];
+  assistKingPlayerProfileIds: string[];
+  assistKings: PlayerTournamentStat[];
+  updatedAt: string | null;
+  source: string | null;
+  unavailableReason: string | null;
+};
+
 export type AppState = {
   players: Player[];
   rounds: Round[];
@@ -351,6 +372,8 @@ export type AppState = {
   avatarSelections: AvatarSelection[];
   followedMatches: FollowedMatch[];
   playerProfiles: PlayerProfile[];
+  tournamentBonusPredictions: TournamentBonusPrediction[];
+  tournamentBonusResult: TournamentBonusResult;
   sync: SyncState;
   tournamentStats: TournamentStats;
   version: number;
@@ -381,8 +404,10 @@ export type Standing = {
   bonusPoints: number;
   matchBonusPoints: number;
   liveBonusPoints: number;
+  tournamentBonusPoints: number;
   bonusWinnerAward: number;
   bonusTips: number;
+  tournamentBonusTips: number;
   liveTips: number;
   liveExactYellows: number;
   liveRedCardHits: number;

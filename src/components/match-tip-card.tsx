@@ -34,6 +34,7 @@ import {
   isMatchLocked,
   scorePrediction,
 } from "@/lib/scoring";
+import { getLockedMatchPredictionDigest, type LockedPredictionDigest } from "@/lib/prediction-insights";
 import { getBroadcastForMatch } from "@/lib/tournament";
 import type { AppState, KnockoutPredictionResolution, Player, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 import { getMatchHeadToHeadMoment } from "@/lib/world-cup-head-to-head";
@@ -151,6 +152,7 @@ export function MatchTipCard({
           <>
             <LockedView
               match={match}
+              player={player}
               prediction={displayedPrediction}
               state={state}
               homeSquad={homeSquad}
@@ -680,12 +682,14 @@ function SaveSignal({ signal, message }: { signal: SaveSignal; message: string }
 
 function LockedView({
   match,
+  player,
   prediction,
   state,
   homeSquad,
   awaySquad,
 }: {
   match: WorldCupMatch;
+  player: Player;
   prediction: Prediction | null;
   state: AppState;
   homeSquad: TeamSquadPlayer[];
@@ -696,6 +700,7 @@ function LockedView({
   const awayFlag = teamFlagEmoji(match.awayTeam);
   const hasResult = Boolean(match.result);
   const isLive = match.status === "live" || match.status === "halftime";
+  const digest = getLockedMatchPredictionDigest(state, match, player.id);
   const resolveName = (squad: TeamSquadPlayer[], id: string) => squad.find((p) => p.id === id && p.source !== "placeholder")?.name ?? null;
   const scorerLine = [
     ...(prediction?.homeScorers ?? []).map((id) => resolveName(homeSquad, id)),
@@ -728,6 +733,36 @@ function LockedView({
           {score.bonus ? ` · bonustips ${score.bonus}` : ""}
         </p>
       ) : null}
+      {digest ? <LockedPredictionDigestView digest={digest} /> : null}
+    </div>
+  );
+}
+
+function LockedPredictionDigestView({ digest }: { digest: LockedPredictionDigest }) {
+  return (
+    <div className="other-predictions locked-prediction-digest">
+      <p>Gjengens kupong etter lås</p>
+      <div className="prediction-outcome-distribution" aria-label="Tippefordeling">
+        <span>{digest.outcomeLabels.home}: {digest.outcomeCounts.home}</span>
+        <span>{digest.outcomeLabels.draw}: {digest.outcomeCounts.draw}</span>
+        <span>{digest.outcomeLabels.away}: {digest.outcomeCounts.away}</span>
+      </div>
+      {digest.lonelyScore ? (
+        <strong className="locked-prediction-lonely">
+          {digest.lonelyScore.playerName} står alene på {digest.lonelyScore.scoreLabel}.
+        </strong>
+      ) : null}
+      <div className="locked-prediction-chips">
+        {digest.rows.map((row) => (
+          <span
+            key={row.player.id}
+            className={cx("locked-prediction-chip", row.isViewer && "locked-prediction-chip-current", !row.delivered && "locked-prediction-chip-default")}
+          >
+            {row.player.shortName} {row.scoreLabel}
+            {!row.delivered ? <em>standard</em> : null}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

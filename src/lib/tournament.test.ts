@@ -46,7 +46,15 @@ describe("tournament helpers", () => {
   it("builds knockout flow with next match references", () => {
     const flow = buildKnockoutFlow(initialState());
     expect(flow[0].stage).toBe("round_of_32");
-    expect(flow[0].matches[0].nextLabels).toContain("Vinner til kamp 90");
+    const match73 = flow[0].matches.find((item) => item.match.matchNumber === 73);
+    const match90 = flow[1].matches.find((item) => item.match.matchNumber === 90);
+    const bronzeFinal = flow.find((round) => round.stage === "third_place")?.matches[0];
+    const final = flow.find((round) => round.stage === "final")?.matches[0];
+
+    expect(match73?.nextLabels).toContain("Vinner til kamp 90");
+    expect(match90?.sourceReferences.map((reference) => reference.matchNumber)).toEqual([73, 75]);
+    expect(final?.sourceReferences.map((reference) => reference.label)).toEqual(["Vinner kamp 101", "Vinner kamp 102"]);
+    expect(bronzeFinal?.sourceReferences.map((reference) => reference.label)).toEqual(["Taper kamp 101", "Taper kamp 102"]);
   });
 
   it("fills direct knockout placeholders from completed group tables", () => {

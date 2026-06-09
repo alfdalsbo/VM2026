@@ -2,9 +2,9 @@ import Link from "next/link";
 
 import { Avatar } from "@/components/avatar";
 import { DailyMatchImage } from "@/components/daily-match-image";
-import { HomeDailyWorldCupMoment } from "@/components/home-daily-world-cup-moment";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { NextMatchCard } from "@/components/next-match-card";
+import { PredictionDeadlinePanel } from "@/components/prediction-deadline-panel";
 import { ScoringRulesPanel } from "@/components/scoring-rules-panel";
 import { MatchupLinks } from "@/components/team-link";
 import { Panel } from "@/components/ui";
@@ -13,9 +13,9 @@ import { requireSession } from "@/lib/auth";
 import { footballCopy, pickDashboardLine } from "@/lib/football-jargon";
 import { formatOsloDate, formatScore } from "@/lib/format";
 import { getAvatarMap } from "@/lib/avatars";
+import { getPredictionDeadlineSummary } from "@/lib/prediction-insights";
 import { computeStandings, getPrediction, scorePrediction } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
-import { pickDailyNostalgiaMoment } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
   title: "Hjem",
@@ -47,7 +47,6 @@ export default async function HomePage() {
   const nextOpenMatch = state.matches.find((match) => new Date(match.kickoffAt).getTime() > now.getTime());
   const focusKey = todayMatches.length ? todayKey : nextOpenMatch ? osloDateKey(nextOpenMatch.kickoffAt) : todayKey;
   const focusMatches = todayMatches.length ? todayMatches : matchesOnDate(state, focusKey);
-  const dailyNostalgia = pickDailyNostalgiaMoment(focusKey, focusMatches);
   const dashboardMatches = focusMatches;
   const tomorrowKey = focusMatches[0] ? osloDateKey(new Date(new Date(focusMatches[0].kickoffAt).getTime() + 24 * 60 * 60 * 1000)) : todayKey;
   const tomorrowMatches = matchesOnDate(state, tomorrowKey);
@@ -59,6 +58,7 @@ export default async function HomePage() {
   const avatars = getAvatarMap(state);
   const awards = getAwards(state);
   const matchdayVerdict = getMatchdayVerdict(state, now);
+  const deadlineSummary = getPredictionDeadlineSummary(state, player.id, now);
 
   return (
     <div className="dashboard space-y-5">
@@ -76,14 +76,14 @@ export default async function HomePage() {
         </Link>
       </section>
 
+      <PredictionDeadlinePanel summary={deadlineSummary} />
+
       <div className="tip-day-matches">
         {dashboardMatches.map((match) => (
           <MatchTipCard key={match.id} match={match} player={player} state={state} bonusNext="/" />
         ))}
         {!dashboardMatches.length ? <Panel><p className="lead">{footballCopy.dashboardFallback}</p></Panel> : null}
       </div>
-
-      <HomeDailyWorldCupMoment dateKey={focusKey} matches={focusMatches} moment={dailyNostalgia} />
 
       <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <Panel className="matchday-winner-panel">

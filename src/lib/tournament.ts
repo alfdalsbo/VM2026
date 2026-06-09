@@ -1,7 +1,7 @@
 import { formatScore } from "@/lib/format";
 import { isKnockoutPlaceholder } from "@/lib/knockout-placeholders";
 import { hasFinalResult } from "@/lib/scoring";
-import type { AppState, BroadcastInfo, TournamentStage, WorldCupMatch } from "@/lib/types";
+import type { AppState, BroadcastInfo, TeamSide, TournamentStage, WorldCupMatch } from "@/lib/types";
 import { worldCupMatches } from "@/lib/world-cup-2026";
 
 export type GroupStanding = {
@@ -24,8 +24,29 @@ export type KnockoutMatch = {
   winner: string | null;
 };
 
+export type KnockoutFlowReferenceKind = "winner" | "runner_up";
+
+export type KnockoutFlowSourceReference = {
+  kind: KnockoutFlowReferenceKind;
+  matchNumber: number;
+  side: TeamSide;
+  label: string;
+};
+
+export type KnockoutFlowNextReference = {
+  kind: KnockoutFlowReferenceKind;
+  matchNumber: number;
+  stage: TournamentStage;
+  stageLabel: string;
+  targetSide: TeamSide;
+  label: string;
+};
+
 export type KnockoutFlowMatch = KnockoutMatch & {
+  bracketOrder: number;
   nextLabels: string[];
+  nextReferences: KnockoutFlowNextReference[];
+  sourceReferences: KnockoutFlowSourceReference[];
 };
 
 export type KnockoutFlowRound = {
@@ -155,8 +176,13 @@ export function computeKnockoutBracket(state: AppState): KnockoutMatch[] {
 }
 
 export function buildKnockoutFlow(state: AppState): KnockoutFlowRound[] {
+  const bracketOrderByMatchNumber = buildBracketOrder();
+  const seedByMatchNumber = new Map(worldCupMatches.map((match) => [match.matchNumber, match]));
   const knockout = computeKnockoutBracket(state).map((item) => ({
     ...item,
+    bracketOrder: bracketOrderByMatchNumber.get(item.match.matchNumber) ?? Number.MAX_SAFE_INTEGER,
+    nextReferences: nextMatchReferences(item.match.matchNumber),
+    sourceReferences: sourceReferencesForMatch(seedByMatchNumber.get(item.match.matchNumber) ?? item.match),
     nextLabels: nextMatchLabels(item.match.matchNumber),
   }));
 
@@ -164,7 +190,12 @@ export function buildKnockoutFlow(state: AppState): KnockoutFlowRound[] {
     .map((stage) => {
       const matches = knockout
         .filter((item) => item.stage === stage)
-        .sort((a, b) => a.match.kickoffAt.localeCompare(b.match.kickoffAt));
+        .sort(
+          (a, b) =>
+            a.bracketOrder - b.bracketOrder ||
+            a.match.matchNumber - b.match.matchNumber ||
+            a.match.kickoffAt.localeCompare(b.match.kickoffAt),
+        );
       return {
         stage,
         stageLabel: matches[0]?.stageLabel ?? stage,
@@ -179,16 +210,102 @@ export function resultSummary(match: WorldCupMatch) {
 }
 
 function nextMatchLabels(matchNumber: number) {
-  const tokens = [
-    { token: `W${matchNumber}`, label: "Vinner" },
-    { token: `RU${matchNumber}`, label: "Taper" },
-  ];
+  return nextMatchReferences(matchNumber).map((reference) => reference.label);
+}
 
-  return tokens.flatMap(({ token, label }) =>
-    worldCupMatches
-      .filter((match) => match.stage !== "group" && (match.homeTeam === token || match.awayTeam === token))
-      .map((match) => `${label} til kamp ${match.matchNumber}`),
-  );
+function referenceKindLabel(kind: KnockoutFlowReferenceKind) {
+  return kind === "winner" ? "Vinner" : "Taper";
+}
+
+function parseMatchReference(value: string) {
+  const match = value.match(/^(W|RU)(\d+)$/);
+  if (!match) return null;
+  const kind: KnockoutFlowReferenceKind = match[1] === "W" ? "winner" : "runner_up";
+  const matchNumber = Number(match[2]);
+  return {
+    kind,
+    matchNumber,
+    label: `${referenceKindLabel(kind)} kamp ${matchNumber}`,
+  };
+}
+
+function sourceReferencesForMatch(match: Pick<WorldCupMatch, "homeTeam" | "awayTeam">): KnockoutFlowSourceReference[] {
+  return ([
+    ["home", match.homeTeam],
+    ["away", match.awayTeam],
+  ] as const).flatMap(([side, team]) => {
+    const reference = parseMatchReference(team);
+    return reference ? [{ ...reference, side }] : [];
+  });
+}
+
+function nextMatchReferences(matchNumber: number): KnockoutFlowNextReference[] {
+  return worldCupMatches
+    .flatMap((match) =>
+      ([
+        ["home", match.homeTeam],
+        ["away", match.awayTeam],
+      ] as const).flatMap(([targetSide, team]) => {
+        const reference = parseMatchReference(team);
+        if (!reference || reference.matchNumber !== matchNumber || match.stage === "group") return [];
+        return [
+          {
+            ...reference,
+            label: `${referenceKindLabel(reference.kind)} til kamp ${match.matchNumber}`,
+            matchNumber: match.matchNumber,
+            stage: match.stage,
+            stageLabel: match.stageLabel,
+            targetSide,
+          },
+        ];
+      }),
+    )
+    .sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "winner" ? -1 : 1;
+      return a.matchNumber - b.matchNumber;
+    });
+}
+
+function buildBracketOrder() {
+  const seedByMatchNumber = new Map(worldCupMatches.map((match) => [match.matchNumber, match]));
+  const stageOrders = new Map<TournamentStage, number[]>();
+  const finalMatches = worldCupMatches
+    .filter((match) => match.stage === "final")
+    .sort((a, b) => a.matchNumber - b.matchNumber);
+
+  function addToStageOrder(match: WorldCupMatch) {
+    const existing = stageOrders.get(match.stage) ?? [];
+    if (!existing.includes(match.matchNumber)) {
+      stageOrders.set(match.stage, [...existing, match.matchNumber]);
+    }
+  }
+
+  function walkWinnerTree(matchNumber: number) {
+    const match = seedByMatchNumber.get(matchNumber);
+    if (!match || match.stage === "group") return;
+    addToStageOrder(match);
+    for (const reference of sourceReferencesForMatch(match).filter((item) => item.kind === "winner")) {
+      walkWinnerTree(reference.matchNumber);
+    }
+  }
+
+  for (const match of finalMatches) {
+    walkWinnerTree(match.matchNumber);
+  }
+
+  for (const match of worldCupMatches.filter((item) => item.stage !== "group")) {
+    addToStageOrder(match);
+  }
+
+  const orderByMatchNumber = new Map<number, number>();
+  for (const [stage, matchNumbers] of stageOrders) {
+    const stageOffset = knockoutStageOrder.indexOf(stage) * 1000;
+    matchNumbers.forEach((matchNumber, index) => {
+      orderByMatchNumber.set(matchNumber, stageOffset + index);
+    });
+  }
+
+  return orderByMatchNumber;
 }
 
 function matchWinner(match: WorldCupMatch) {

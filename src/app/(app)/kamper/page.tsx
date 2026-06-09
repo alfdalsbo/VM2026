@@ -1,9 +1,11 @@
 import { BonusAutofillButton } from "@/components/bonus-autofill-button";
 import { MatchTipCard } from "@/components/match-tip-card";
+import { PredictionDeadlinePanel } from "@/components/prediction-deadline-panel";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
 import { BONUS_AUTOFILL_PREDICTED_OPEN } from "@/lib/bonus-autofill";
 import { formatOsloDate } from "@/lib/format";
+import { getPredictionDeadlineSummary } from "@/lib/prediction-insights";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
@@ -25,6 +27,7 @@ function osloDateKey(value: string) {
 
 export default async function MatchesPage() {
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
+  const deadlineSummary = getPredictionDeadlineSummary(state, player.id);
 
   const buckets = new Map<string, { kickoff: string; matches: typeof state.matches }>();
   for (const match of state.matches) {
@@ -62,6 +65,8 @@ export default async function MatchesPage() {
           />
         </div>
       </Panel>
+
+      <PredictionDeadlinePanel summary={deadlineSummary} />
 
       <div className="tip-day-list">
         {groupedByDate.map(({ key, kickoff, matches }) => (

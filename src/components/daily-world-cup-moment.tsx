@@ -3,7 +3,7 @@ import type { WorldCupMatch } from "@/lib/types";
 import { getRelevantWorldCupImages, pickWorldCupImage } from "@/lib/world-cup-image-assets";
 import { getMatchNostalgia, type NostalgiaMoment } from "@/lib/world-cup-nostalgia";
 
-export function HomeDailyWorldCupMoment({
+export function DailyWorldCupMoment({
   dateKey,
   matches = [],
   moment,
@@ -14,7 +14,7 @@ export function HomeDailyWorldCupMoment({
 }) {
   const matchMoments = uniqueById(matches.map(getMatchNostalgia));
   const context = {
-    surface: "home-daily-vm-moment",
+    surface: "daily-vm-moment",
     seed: dateKey,
     matchId: matches[0]?.id,
     momentId: moment.id,
@@ -30,24 +30,24 @@ export function HomeDailyWorldCupMoment({
   const contextLabel = matches.length > 0 ? "Kampnært arkivspor" : "Fra VM-historien";
 
   return (
-    <section className="home-daily-vm-moment" aria-labelledby="home-daily-vm-moment-title">
-      <div className="home-daily-vm-moment-media">
+    <section className="daily-vm-moment" aria-labelledby="daily-vm-moment-title">
+      <div className="daily-vm-moment-media">
         <DailyImageViewer
           images={images}
           initialAsset={initialAsset}
           seed={`${dateKey}-${moment.id}`}
-          surfaceKey="home-daily-vm-moment"
+          surfaceKey="daily-vm-moment"
           shuffleAriaLabel="Vis nytt bilde til VM-øyeblikket"
           shuffleLabel="Nytt bilde"
         />
       </div>
-      <div className="home-daily-vm-moment-copy">
+      <div className="daily-vm-moment-copy">
         <p className="eyebrow">Dagens VM-øyeblikk</p>
-        <div className="home-daily-vm-moment-meta">
+        <div className="daily-vm-moment-meta">
           <span>{moment.year}</span>
           <span>{contextLabel}</span>
         </div>
-        <h2 id="home-daily-vm-moment-title">{moment.title}</h2>
+        <h2 id="daily-vm-moment-title">{moment.title}</h2>
         <p>{moment.body}</p>
         <strong>{moment.cellarVerdict}</strong>
         <a href={moment.source.url} target="_blank" rel="noreferrer">

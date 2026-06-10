@@ -5164,11 +5164,19 @@ th {
 
 /* ===== Norge-drakt-tema: rød flate, hvit krage-navbar, blå/hvit/rød kant ===== */
 .shirt-header {
-  position: sticky;
-  top: 0;
+  /* På mobil IKKE sticky: iOS Safari forskyver start-scrollen («siden laster
+     nedscrollet») når en høy sticky header er øverst. Sticky kun på desktop. */
+  position: relative;
   z-index: 30;
   background: #ffffff;
   box-shadow: 0 8px 18px rgba(70, 10, 14, 0.12);
+}
+
+@media (min-width: 768px) {
+  .shirt-header {
+    position: sticky;
+    top: 0;
+  }
 }
 
 .shirt-header::after {

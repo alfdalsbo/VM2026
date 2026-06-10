@@ -5305,3 +5305,44 @@ th {
     scroll-snap-align: start;
   }
 }
+
+/* ===== TV-guide: stable info per kamp på mobil (tabellen er for bred) ===== */
+@media (max-width: 640px) {
+  .tv-guide-table thead {
+    display: none;
+  }
+
+  .tv-guide-table,
+  .tv-guide-table tbody,
+  .tv-guide-table tr,
+  .tv-guide-table td {
+    display: block;
+    width: auto;
+  }
+
+  .tv-guide-table tr {
+    padding: 9px 0;
+  }
+
+  .tv-guide-table tr + tr {
+    border-top: 1px solid var(--line);
+  }
+
+  .tv-guide-table td {
+    border: none;
+    padding: 1px 0;
+    font-size: 0.82rem;
+  }
+
+  .tv-guide-table td:first-child {
+    font-size: 0.92rem;
+    font-weight: 800;
+    margin-bottom: 3px;
+  }
+
+  .tv-guide-table td[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+}

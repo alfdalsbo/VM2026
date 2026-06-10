@@ -99,7 +99,7 @@ export default async function WorldCupPage() {
         </div>
         <Panel>
           <div className="table-wrap">
-            <table>
+            <table className="tv-guide-table">
               <thead>
                 <tr>
                   <th>Kamp</th>
@@ -114,9 +114,9 @@ export default async function WorldCupPage() {
                     <td className="font-bold">
                       Kamp {match.matchNumber}: <MatchupLinks match={match} />
                     </td>
-                    <td>{formatOsloDateTime(match.kickoffAt)}</td>
-                    <td>{formatBroadcast(match)}</td>
-                    <td>{formatMatchStatus(match)}</td>
+                    <td data-label="Tid">{formatOsloDateTime(match.kickoffAt)}</td>
+                    <td data-label="TV">{formatBroadcast(match)}</td>
+                    <td data-label="Status">{formatMatchStatus(match)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f1e8;
+  --background: #c81f2d;
   --foreground: #17130f;
   --panel: #fffaf2;
   --ink-muted: #6f5a46;
@@ -10,6 +10,11 @@
   --red-dark: #7f1d1d;
   --blue: #0f2f4a;
   --gold: #c8912a;
+  /* Norge-drakt (Umbro retro): rød kropp, hvit krage, blå/hvit/rød kant */
+  --shirt-red: #c81f2d;
+  --shirt-navy: #172a4d;
+  --shirt-white: #f6f1ea;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.72'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
 @theme inline {
@@ -25,9 +30,16 @@
 
 body {
   background:
-    linear-gradient(180deg, rgba(180, 35, 47, 0.08), transparent 260px),
-    radial-gradient(circle at 20% 0%, rgba(200, 145, 42, 0.16), transparent 360px),
-    var(--background);
+    /* slitt korn */
+    var(--grain),
+    /* vertikal draktstripe-tekstur */
+    repeating-linear-gradient(90deg, transparent 0 6px, rgba(92, 10, 16, 0.11) 6px 7px),
+    /* flat rød — ingen gradient */
+    var(--shirt-red);
+  /* NB: ingen background-attachment: fixed — iOS Safari får layout-/scroll-bug
+     av fixed body-bakgrunn, og teksturen er uniform så den ser lik ut uansett */
+  background-size: 180px 180px, auto, auto;
+  background-blend-mode: overlay, normal, normal;
   color: var(--foreground);
   font-family: var(--font-sans);
 }
@@ -5141,4 +5153,76 @@ th {
   .share-archive-strip {
     text-align: center;
   }
+}
+
+/* ===== Norge-drakt-tema: rød flate, hvit krage-navbar, blå/hvit/rød kant ===== */
+.shirt-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(70, 10, 14, 0.12);
+}
+
+.shirt-header::after {
+  content: "";
+  display: block;
+  height: 30px;
+  /* blå gjøres litt større enn hvit for å se like store ut (irradiasjon:
+     mørk stripe mellom lyse flater ser optisk mindre ut) */
+  background: linear-gradient(
+    180deg,
+    var(--shirt-navy) 0 17px,
+    var(--shirt-white) 17px 30px
+  );
+}
+
+.shirt-header .nav-pill {
+  background: #fff;
+  border: 1px solid rgba(23, 42, 77, 0.28);
+  color: var(--shirt-navy);
+}
+
+.shirt-header .nav-pill:hover {
+  background: var(--shirt-navy);
+  border-color: var(--shirt-navy);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Bar tekst rett på den røde flaten skal være lys ... */
+.eyebrow {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.section-title,
+.dashboard-title {
+  color: #ffffff;
+}
+
+.lead,
+.dashboard-line {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ... men inni de lyse boksene skal blekket være mørkt igjen */
+.panel .eyebrow,
+.match-card .eyebrow,
+.stat-card .eyebrow,
+.next-match-card .eyebrow {
+  color: var(--red-dark);
+}
+
+.panel .section-title,
+.panel .dashboard-title,
+.match-card .section-title,
+.stat-card .section-title {
+  color: var(--foreground);
+}
+
+.panel .lead,
+.match-card .lead,
+.stat-card .lead,
+.panel .dashboard-line {
+  color: var(--ink-muted);
 }

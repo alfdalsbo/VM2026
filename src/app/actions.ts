@@ -16,6 +16,7 @@ import { footballCopy } from "@/lib/football-jargon";
 import { toggleFollowedMatchInState } from "@/lib/followed-matches";
 import { clampScore } from "@/lib/format";
 import { LIVE_POT_MAX_RED_CARDS, LIVE_POT_MAX_YELLOW_CARDS, saveLivePotTipInState } from "@/lib/live-pot";
+import { sanitizeGoalBonusSlots } from "@/lib/match-bonus-slots";
 import { getPlayer } from "@/lib/players";
 import {
   getPrediction,
@@ -157,13 +158,6 @@ function parseKnockoutResolutionInput(input: SaveResultPredictionInput): Knockou
   throw new Error("Velg ekstraomganger eller straffer.");
 }
 
-function validBonusIds(ids: string[] | undefined, validIds: Set<string>, max: number) {
-  return (ids ?? [])
-    .map((id) => String(id ?? "").trim())
-    .filter((id) => id && validIds.has(id))
-    .slice(0, max);
-}
-
 function sanitizeMatchBonusIds({
   state,
   match,
@@ -185,12 +179,24 @@ function sanitizeMatchBonusIds({
 }) {
   const homeIds = getRealSquadPlayerIds(state, match.homeTeam);
   const awayIds = getRealSquadPlayerIds(state, match.awayTeam);
+  const homeBonus = sanitizeGoalBonusSlots({
+    scorers: homeScorers,
+    assists: homeAssists,
+    validIds: homeIds,
+    goals: homeGoals,
+  });
+  const awayBonus = sanitizeGoalBonusSlots({
+    scorers: awayScorers,
+    assists: awayAssists,
+    validIds: awayIds,
+    goals: awayGoals,
+  });
 
   return {
-    homeScorers: validBonusIds(homeScorers, homeIds, homeGoals),
-    awayScorers: validBonusIds(awayScorers, awayIds, awayGoals),
-    homeAssists: validBonusIds(homeAssists, homeIds, homeGoals),
-    awayAssists: validBonusIds(awayAssists, awayIds, awayGoals),
+    homeScorers: homeBonus.scorers,
+    awayScorers: awayBonus.scorers,
+    homeAssists: homeBonus.assists,
+    awayAssists: awayBonus.assists,
   };
 }
 
@@ -284,6 +290,16 @@ export async function saveResultPredictionAction(input: SaveResultPredictionInpu
   }
 
   const existing = getPrediction(state, player.id, matchId);
+  const bonusIds = sanitizeMatchBonusIds({
+    state,
+    match,
+    homeGoals,
+    awayGoals,
+    homeScorers: existing?.homeScorers,
+    awayScorers: existing?.awayScorers,
+    homeAssists: existing?.homeAssists,
+    awayAssists: existing?.awayAssists,
+  });
   const updatedAt = new Date().toISOString();
   const prediction: Prediction = {
     playerId: player.id,
@@ -292,10 +308,10 @@ export async function saveResultPredictionAction(input: SaveResultPredictionInpu
     awayGoals,
     outcome: inferPredictionOutcome(homeGoals, awayGoals),
     knockoutResolution,
-    homeScorers: (existing?.homeScorers ?? []).slice(0, homeGoals),
-    awayScorers: (existing?.awayScorers ?? []).slice(0, awayGoals),
-    homeAssists: (existing?.homeAssists ?? []).slice(0, homeGoals),
-    awayAssists: (existing?.awayAssists ?? []).slice(0, awayGoals),
+    homeScorers: bonusIds.homeScorers,
+    awayScorers: bonusIds.awayScorers,
+    homeAssists: bonusIds.homeAssists,
+    awayAssists: bonusIds.awayAssists,
     updatedAt,
   };
 

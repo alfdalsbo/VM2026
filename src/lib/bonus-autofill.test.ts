@@ -184,6 +184,90 @@ describe("bonus autofill", () => {
     expect(result.summary.source).toBe("odds");
   });
 
+  it("uses sparse odds as a guide without repeating one favorite across USA-Paraguay slots", async () => {
+    const state = withRealSquads(initialState(), "USA", "Paraguay");
+    const [usaFavorite] = squadFor(state, "USA");
+    const [paraguayFavorite] = squadFor(state, "Paraguay");
+    useOddsFeed({
+      matches: {
+        m004: {
+          homeScorers: [{ playerId: usaFavorite.id, odds: 1.8 }],
+          homeAssists: [{ playerId: usaFavorite.id, odds: 2.2 }],
+          awayScorers: [{ playerId: paraguayFavorite.id, weight: 20 }],
+          awayAssists: [{ playerId: paraguayFavorite.id, weight: 20 }],
+        },
+      },
+    });
+    const base = savePredictionInState(
+      state,
+      prediction({ matchId: "m004", homeGoals: 3, awayGoals: 2 }),
+      new Date("2026-06-01T10:00:00Z"),
+    );
+    const result = await autofillBonusTipsInState({
+      state: base,
+      playerId: "alf",
+      matchIds: ["m004"],
+      now: new Date("2026-06-01T10:00:00Z"),
+      replaceExisting: true,
+    });
+    const tip = result.state.predictions.find((item) => item.playerId === "alf" && item.matchId === "m004")!;
+
+    expect(tip.homeScorers).toContain(usaFavorite.id);
+    expect(tip.awayScorers).toContain(paraguayFavorite.id);
+    expect(tip.homeScorers).toHaveLength(3);
+    expect(tip.awayScorers).toHaveLength(2);
+    expect(new Set(tip.homeScorers).size).toBeGreaterThan(1);
+    expect(new Set(tip.awayScorers).size).toBeGreaterThan(1);
+    tip.homeScorers?.forEach((scorer, index) => {
+      expect(scorer).not.toBe(tip.homeAssists?.[index]);
+    });
+    tip.awayScorers?.forEach((scorer, index) => {
+      expect(scorer).not.toBe(tip.awayAssists?.[index]);
+    });
+    expect(result.summary.source).toBe("odds");
+  });
+
+  it("leaves assist empty instead of using the scorer when no distinct teammate exists", async () => {
+    const stateWithSquad = withRealSquads(initialState(), "USA");
+    const [onlyPlayer] = squadFor(stateWithSquad, "USA");
+    const state: AppState = {
+      ...stateWithSquad,
+      teamProfiles: stateWithSquad.teamProfiles.map((profile) =>
+        profile.teamName === "USA"
+          ? {
+              ...profile,
+              squad: [onlyPlayer],
+            }
+          : profile,
+      ),
+    };
+    useOddsFeed({
+      matches: {
+        m004: {
+          homeScorers: [{ playerId: onlyPlayer.id, weight: 10 }],
+          homeAssists: [{ playerId: onlyPlayer.id, weight: 10 }],
+        },
+      },
+    });
+    const base = savePredictionInState(
+      state,
+      prediction({ matchId: "m004", homeGoals: 1, awayGoals: 0 }),
+      new Date("2026-06-01T10:00:00Z"),
+    );
+    const result = await autofillBonusTipsInState({
+      state: base,
+      playerId: "alf",
+      matchIds: ["m004"],
+      now: new Date("2026-06-01T10:00:00Z"),
+      replaceExisting: true,
+    });
+    const tip = result.state.predictions.find((item) => item.playerId === "alf" && item.matchId === "m004")!;
+
+    expect(tip.homeScorers).toEqual([onlyPlayer.id]);
+    expect(tip.homeAssists).toEqual([]);
+    expect(result.summary.source).toBe("odds");
+  });
+
   it("does not repeat a scorer before realistic alternatives are used", async () => {
     const state = withRealSquads(initialState(), "Mexico");
     const base = savePredictionInState(state, prediction({ homeGoals: 3 }), new Date("2026-06-01T10:00:00Z"));
@@ -260,7 +344,7 @@ describe("bonus autofill", () => {
     expect(result.summary.source).toBe("fallback");
   });
 
-  it("can replace existing single-match autofill values while bulk stays non-destructive", async () => {
+  it("can replace existing single-match autofill values while bulk only corrects impossible assist pairs", async () => {
     const state = withRealSquads(initialState(), "Mexico");
     const [badPick] = squadFor(state, "Mexico");
     const withBadAutofill = savePredictionInState(
@@ -281,7 +365,9 @@ describe("bonus autofill", () => {
     });
     const bulkTip = bulkResult.state.predictions.find((item) => item.playerId === "alf" && item.matchId === "m001")!;
     expect(bulkTip.homeScorers).toEqual([badPick.id, badPick.id, badPick.id]);
-    expect(bulkTip.homeAssists).toEqual([badPick.id, badPick.id, badPick.id]);
+    bulkTip.homeScorers?.forEach((scorer, index) => {
+      expect(scorer).not.toBe(bulkTip.homeAssists?.[index]);
+    });
 
     const replaceResult = await autofillBonusTipsInState({
       state: withBadAutofill,

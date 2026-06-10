@@ -114,10 +114,7 @@ export function ScorerAssistPicker({
   }, [currentKey, lastSavedKey, prepared, router, startTransition]);
 
   function setSlot(field: keyof BonusDraft, index: number, value: string) {
-    setDraft((current) => ({
-      ...current,
-      [field]: replaceSlot(current[field], index, value),
-    }));
+    setDraft((current) => normalizePairedDraftSlot(current, field, index, value));
   }
 
   if (homeGoals + awayGoals === 0) {
@@ -206,7 +203,7 @@ function TeamSection({
               label="Scorer"
               placeholder="Velg scorer"
               emptyLabel="Velg scorer"
-              options={playerOptions}
+              options={withoutPairedPlayerOption(playerOptions, assists[index])}
               value={scorers[index] ?? ""}
               onChange={(value) => onScorerChange(index, value)}
             />
@@ -215,7 +212,7 @@ function TeamSection({
               label="Assist"
               placeholder="Ingen/usikker"
               emptyLabel="Ingen/usikker"
-              options={playerOptions}
+              options={withoutPairedPlayerOption(playerOptions, scorers[index])}
               value={assists[index] ?? ""}
               onChange={(value) => onAssistChange(index, value)}
             />
@@ -251,6 +248,41 @@ function replaceSlot(values: string[], index: number, value: string) {
   while (next.length <= index) next.push("");
   next[index] = value;
   return next;
+}
+
+function normalizePairedDraftSlot(current: BonusDraft, field: keyof BonusDraft, index: number, value: string): BonusDraft {
+  const next: BonusDraft = {
+    ...current,
+    [field]: replaceSlot(current[field], index, value),
+  };
+
+  if (field === "homeScorers" && value && next.homeAssists[index] === value) {
+    next.homeAssists = replaceSlot(next.homeAssists, index, "");
+  }
+  if (field === "awayScorers" && value && next.awayAssists[index] === value) {
+    next.awayAssists = replaceSlot(next.awayAssists, index, "");
+  }
+  if (field === "homeAssists" && value && next.homeScorers[index] === value) {
+    next.homeAssists = replaceSlot(next.homeAssists, index, "");
+  }
+  if (field === "awayAssists" && value && next.awayScorers[index] === value) {
+    next.awayAssists = replaceSlot(next.awayAssists, index, "");
+  }
+
+  return next;
+}
+
+function withoutPairedPlayerOption(options: PlayerComboboxOption[], pairedPlayerId: string | undefined) {
+  if (!pairedPlayerId) return options;
+  return options.map((option) =>
+    option.value === pairedPlayerId
+      ? {
+          ...option,
+          disabled: true,
+          meta: option.meta ? `${option.meta} · valgt på samme mål` : "Valgt på samme mål",
+        }
+      : option,
+  );
 }
 
 function saveKey(input: SaveMatchBonusPredictionInput) {

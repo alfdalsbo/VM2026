@@ -1,5 +1,6 @@
 import { isLivePotOpen, saveLivePotTipInState } from "@/lib/live-pot";
 import { getRealSquadPlayerIds, getRealSquadPlayers, realSquadPlayers } from "@/lib/bonus-player-options";
+import { sanitizeGoalBonusSlots } from "@/lib/match-bonus-slots";
 import { getPrediction, savePredictionInState } from "@/lib/scoring";
 import type { AppState, LivePotTip, Prediction, TeamSquadPlayer, WorldCupMatch } from "@/lib/types";
 
@@ -33,6 +34,9 @@ type CandidatePool = {
   source: BonusAutofillSource;
   candidates: Array<{ id: string; weight: number }>;
 };
+
+const ODDS_WEIGHT_MULTIPLIER = 100;
+const ODDS_FALLBACK_WEIGHT_MULTIPLIER = 0.01;
 
 export type BonusAutofillResult = {
   source: BonusAutofillSource;
@@ -174,6 +178,12 @@ function candidatePool({
   kind: "scorer" | "assist";
 }) {
   const realSquad = realSquadPlayers(squad);
+  const fallbackCandidates = dedupeCandidates(
+    realSquad.map((player) => ({
+      id: player.id,
+      weight: fallbackWeight(player, kind),
+    })),
+  );
   const oddsCandidates = dedupeCandidates(
     (odds ?? [])
     .map((pick) => {
@@ -183,16 +193,25 @@ function candidatePool({
       .filter((candidate): candidate is { id: string; weight: number } => Boolean(candidate)),
   );
 
-  if (oddsCandidates.length) return { source: "odds", candidates: oddsCandidates } satisfies CandidatePool;
+  if (oddsCandidates.length) {
+    return {
+      source: "odds",
+      candidates: dedupeCandidates([
+        ...oddsCandidates.map((candidate) => ({
+          ...candidate,
+          weight: candidate.weight * ODDS_WEIGHT_MULTIPLIER,
+        })),
+        ...fallbackCandidates.map((candidate) => ({
+          ...candidate,
+          weight: candidate.weight * ODDS_FALLBACK_WEIGHT_MULTIPLIER,
+        })),
+      ]),
+    } satisfies CandidatePool;
+  }
 
   return {
     source: "fallback",
-    candidates: dedupeCandidates(
-      realSquad.map((player) => ({
-        id: player.id,
-        weight: fallbackWeight(player, kind),
-      })),
-    ),
+    candidates: fallbackCandidates,
   };
 }
 
@@ -384,10 +403,24 @@ export async function autofillBonusTipsInState({
     if (prediction) {
       const homeIds = getRealSquadPlayerIds(next, match.homeTeam);
       const awayIds = getRealSquadPlayerIds(next, match.awayTeam);
-      const homeScorers = autofillSlots(prediction.homeScorers, autofill.homeScorers, prediction.homeGoals, homeIds, replaceExisting);
-      const awayScorers = autofillSlots(prediction.awayScorers, autofill.awayScorers, prediction.awayGoals, awayIds, replaceExisting);
-      const homeAssists = autofillSlots(prediction.homeAssists, autofill.homeAssists, prediction.homeGoals, homeIds, replaceExisting);
-      const awayAssists = autofillSlots(prediction.awayAssists, autofill.awayAssists, prediction.awayGoals, awayIds, replaceExisting);
+      const homeBonus = sanitizeGoalBonusSlots({
+        scorers: autofillSlots(prediction.homeScorers, autofill.homeScorers, prediction.homeGoals, homeIds, replaceExisting),
+        assists: autofillSlots(prediction.homeAssists, autofill.homeAssists, prediction.homeGoals, homeIds, replaceExisting),
+        validIds: homeIds,
+        goals: prediction.homeGoals,
+        assistFallbacks: autofill.homeAssists,
+      });
+      const awayBonus = sanitizeGoalBonusSlots({
+        scorers: autofillSlots(prediction.awayScorers, autofill.awayScorers, prediction.awayGoals, awayIds, replaceExisting),
+        assists: autofillSlots(prediction.awayAssists, autofill.awayAssists, prediction.awayGoals, awayIds, replaceExisting),
+        validIds: awayIds,
+        goals: prediction.awayGoals,
+        assistFallbacks: autofill.awayAssists,
+      });
+      const homeScorers = homeBonus.scorers;
+      const awayScorers = awayBonus.scorers;
+      const homeAssists = homeBonus.assists;
+      const awayAssists = awayBonus.assists;
       const beforeSlots =
         (prediction.homeScorers ?? []).filter((id) => homeIds.has(id)).length +
         (prediction.awayScorers ?? []).filter((id) => awayIds.has(id)).length +

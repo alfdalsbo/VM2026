@@ -9,7 +9,8 @@ const nav = [
   { href: "/", label: "Hjem" },
   { href: "/kamper", label: "Kamper" },
   { href: "/live", label: "Bonustabell" },
-  { href: "/vm", label: "VM" },
+  { href: "/vm", label: "VM26" },
+  { href: "/nerding", label: "Nerding" },
   { href: "/tabell", label: "Resultattips" },
   { href: "/profil", label: "Profil" },
 ];

@@ -1,8 +1,6 @@
 import Link from "next/link";
 
-import { DailyWorldCupMoment } from "@/components/daily-world-cup-moment";
 import { KnockoutFlow } from "@/components/knockout-flow";
-import { NostalgiaArchiveSection } from "@/components/nostalgia";
 import { MatchupLinks, TeamLink } from "@/components/team-link";
 import { Panel } from "@/components/ui";
 import { requireSession } from "@/lib/auth";
@@ -11,44 +9,18 @@ import { formatOsloDateTime } from "@/lib/format";
 import { getAppState } from "@/lib/state";
 import { buildKnockoutFlow, computeGroupTables, formatBroadcast, formatMatchStatus } from "@/lib/tournament";
 import { buildWorldCupStatistics, type VmStatisticCard, type VmStatisticRow } from "@/lib/vm-statistics";
-import { getNostalgiaArchive, pickDailyNostalgiaMoment } from "@/lib/world-cup-nostalgia";
 
 export const metadata = {
-  title: "VM",
+  title: "VM26",
 };
-
-const osloKeyFormatter = new Intl.DateTimeFormat("en-CA", {
-  day: "2-digit",
-  month: "2-digit",
-  timeZone: "Europe/Oslo",
-  year: "numeric",
-});
-
-function osloDateKey(value: string | Date) {
-  const parts = osloKeyFormatter.formatToParts(typeof value === "string" ? new Date(value) : value);
-  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${lookup.year}-${lookup.month}-${lookup.day}`;
-}
-
-function matchesOnDate(state: Awaited<ReturnType<typeof getAppState>>, key: string) {
-  return state.matches.filter((match) => osloDateKey(match.kickoffAt) === key).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
-}
 
 export default async function WorldCupPage() {
   await requireSession();
   const state = await getAppState();
-  const now = new Date();
-  const todayKey = osloDateKey(now);
-  const todayMatches = matchesOnDate(state, todayKey);
-  const nextOpenMatch = state.matches.find((match) => new Date(match.kickoffAt).getTime() > now.getTime());
-  const focusKey = todayMatches.length ? todayKey : nextOpenMatch ? osloDateKey(nextOpenMatch.kickoffAt) : todayKey;
-  const focusMatches = todayMatches.length ? todayMatches : matchesOnDate(state, focusKey);
-  const dailyNostalgia = pickDailyNostalgiaMoment(focusKey, focusMatches);
   const groups = computeGroupTables(state);
   const knockout = buildKnockoutFlow(state);
   const tvMatches = [...state.matches].sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
   const richStats = buildWorldCupStatistics(state, new Date());
-  const archive = getNostalgiaArchive();
 
   return (
     <div className="space-y-6">
@@ -63,13 +35,8 @@ export default async function WorldCupPage() {
           <a href="#utslag">Utslag</a>
           <a href="#tv">TV-guide</a>
           <a href="#statistikk">Statistikk</a>
-          <a href="#arkiv">Kjellerarkivet</a>
         </div>
       </Panel>
-
-      <DailyWorldCupMoment dateKey={focusKey} matches={focusMatches} moment={dailyNostalgia} />
-
-      <NostalgiaArchiveSection archive={archive} />
 
       <section id="grupper" className="space-y-4">
         <div>

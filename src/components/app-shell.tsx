@@ -8,10 +8,10 @@ import type { Player } from "@/lib/types";
 const nav = [
   { href: "/", label: "Hjem" },
   { href: "/kamper", label: "Kamper" },
+  { href: "/tabell", label: "Tabell" },
   { href: "/live", label: "Bonustabell" },
   { href: "/vm", label: "VM26" },
   { href: "/nerding", label: "Nerding" },
-  { href: "/tabell", label: "Tabell" },
   { href: "/profil", label: "Profil" },
 ];
 

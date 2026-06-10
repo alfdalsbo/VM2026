@@ -60,7 +60,44 @@ export function KnockoutFlow({ rounds }: { rounds: KnockoutFlowRound[] }) {
           </div>
         </aside>
       ) : null}
+
+      <KnockoutMobile rounds={rounds} />
     </section>
+  );
+}
+
+const MOBILE_STAGE_ORDER: KnockoutFlowRound["stage"][] = [
+  "round_of_32",
+  "round_of_16",
+  "quarter_final",
+  "semi_final",
+  "final",
+  "third_place",
+];
+
+// Telefon-vennlig variant: rundene i rekkefølge (32-del → finale → bronse),
+// hver runde som en kompakt vannrett sveipestripe i stedet for det brede treet.
+function KnockoutMobile({ rounds }: { rounds: KnockoutFlowRound[] }) {
+  const ordered = MOBILE_STAGE_ORDER.map((stage) => rounds.find((round) => round.stage === stage)).filter(
+    (round): round is KnockoutFlowRound => Boolean(round),
+  );
+
+  return (
+    <div className="knockout-mobile">
+      {ordered.map((round) => (
+        <section key={round.stage} className="knockout-mobile-round" aria-label={round.stageLabel}>
+          <div className="knockout-mobile-round-head">
+            <h4>{round.stageLabel}</h4>
+            <span>{round.matches.length === 1 ? "1 kamp" : `${round.matches.length} kamper`}</span>
+          </div>
+          <div className="knockout-mobile-strip">
+            {round.matches.map((item) => (
+              <KnockoutCard key={item.match.id} item={item} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
 

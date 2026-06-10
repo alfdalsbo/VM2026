@@ -5226,3 +5226,67 @@ th {
 .panel .dashboard-line {
   color: var(--ink-muted);
 }
+
+/* ===== Sluttspill: telefon-vennlig variant ===== */
+.knockout-mobile {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  /* skjul det brede treet + bronse-sidebordet, vis sveipe-variant */
+  .knockout-scroll,
+  .knockout-bronze {
+    display: none;
+  }
+
+  .knockout-mobile {
+    display: grid;
+    gap: 20px;
+  }
+
+  .knockout-mobile-round {
+    display: grid;
+    gap: 10px;
+  }
+
+  .knockout-mobile-round-head {
+    align-items: baseline;
+    color: #fffaf2;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .knockout-mobile-round-head h4 {
+    font-size: 0.82rem;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .knockout-mobile-round-head span {
+    color: rgba(255, 250, 242, 0.66);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .knockout-mobile-strip {
+    display: grid;
+    grid-auto-columns: 80%;
+    grid-auto-flow: column;
+    gap: 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .knockout-mobile-strip > .knockout-card {
+    margin: 0;
+    scroll-snap-align: start;
+  }
+}

@@ -6,7 +6,7 @@ import { BONUS_TIPS_WINNER_AWARD, computeStandings } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
-  title: "Resultattips",
+  title: "Tabell",
 };
 
 export default async function TablePage() {

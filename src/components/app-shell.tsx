@@ -11,7 +11,7 @@ const nav = [
   { href: "/live", label: "Bonustabell" },
   { href: "/vm", label: "VM26" },
   { href: "/nerding", label: "Nerding" },
-  { href: "/tabell", label: "Resultattips" },
+  { href: "/tabell", label: "Tabell" },
   { href: "/profil", label: "Profil" },
 ];
 

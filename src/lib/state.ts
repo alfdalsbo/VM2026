@@ -342,18 +342,6 @@ async function readDatabaseState() {
   return rows[0]?.data ? mergeWithSeed(rows[0].data) : null;
 }
 
-async function writeDatabaseState(state: AppState) {
-  const sql = getSql();
-  if (!sql) return false;
-  await ensureTable(sql);
-  await sql`
-    insert into tippekjelleren_state (id, data, updated_at)
-    values (${stateId}, ${sql.json(state)}, now())
-    on conflict (id) do update set data = excluded.data, updated_at = now()
-  `;
-  return true;
-}
-
 function hasBlobStorage() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN || (process.env.VERCEL_OIDC_TOKEN && process.env.BLOB_STORE_ID));
 }
@@ -395,11 +383,49 @@ export async function getAppState() {
   return (await readDatabaseState()) ?? (await readBlobState()) ?? (await readFileState()) ?? initialState();
 }
 
-export async function saveAppState(state: AppState) {
-  const next = mergeWithSeed(state);
-  if (await writeDatabaseState(next)) return;
-  if (await writeBlobState(next)) return;
+// Fixed key for the Postgres transaction-level advisory lock that serializes
+// every state mutation (VM 2026).
+const STATE_LOCK_KEY = 20262026;
+
+/**
+ * Atomic read-modify-write of the shared app-state blob.
+ *
+ * The whole app state lives in a single row, so two overlapping
+ * read-modify-writes (e.g. a user saving a tip while the FIFA-sync writes, or
+ * two users submitting at once) would otherwise silently overwrite each other
+ * — a lost update. Here the read, the `mutate()` and the write all run inside
+ * one transaction guarded by a Postgres advisory lock, so concurrent writers
+ * serialize and each one applies its change on top of the latest committed
+ * state. `mutate` MUST be synchronous and side-effect free (do any async work
+ * such as fetching before calling this).
+ */
+export async function mutateAppState(mutate: (state: AppState) => AppState): Promise<AppState> {
+  const sql = getSql();
+  if (sql) {
+    await ensureTable(sql);
+    return await sql.begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(${STATE_LOCK_KEY})`;
+      const rows = await tx<{ data: AppState }[]>`
+        select data from tippekjelleren_state where id = ${stateId} limit 1
+      `;
+      const current = mergeWithSeed(rows[0]?.data ?? initialState());
+      const next = mergeWithSeed(mutate(current));
+      await tx`
+        insert into tippekjelleren_state (id, data, updated_at)
+        values (${stateId}, ${tx.json(next)}, now())
+        on conflict (id) do update set data = excluded.data, updated_at = now()
+      `;
+      return next;
+    });
+  }
+
+  // Blob/file fallback (local dev / single writer): no DB lock available, so a
+  // plain read-modify-write. Concurrency isn't a concern on these backends.
+  const current = (await readBlobState()) ?? (await readFileState()) ?? initialState();
+  const next = mergeWithSeed(mutate(current));
+  if (await writeBlobState(next)) return next;
   await writeFileState(next);
+  return next;
 }
 
 export function getStorageMode() {

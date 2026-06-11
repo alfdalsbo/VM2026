@@ -25,7 +25,7 @@ import {
   isKnockoutMatch,
   savePredictionInState,
 } from "@/lib/scoring";
-import { getAppState, saveAppState } from "@/lib/state";
+import { getAppState, mutateAppState } from "@/lib/state";
 import { saveTournamentBonusPredictionInState } from "@/lib/tournament-bonus";
 import type { AvatarSelection, KnockoutPredictionResolution, LivePotTip, Prediction, TournamentBonusPrediction } from "@/lib/types";
 
@@ -257,7 +257,7 @@ export async function savePredictionAction(
   };
 
   try {
-    await saveAppState(savePredictionInState(state, prediction));
+    await mutateAppState((current) => savePredictionInState(current, prediction));
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Tipset gikk ikke gjennom." };
   }
@@ -316,7 +316,7 @@ export async function saveResultPredictionAction(input: SaveResultPredictionInpu
   };
 
   try {
-    await saveAppState(savePredictionInState(state, prediction));
+    await mutateAppState((current) => savePredictionInState(current, prediction));
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Tipset gikk ikke gjennom." };
   }
@@ -357,7 +357,7 @@ export async function saveMatchBonusPredictionAction(
   };
 
   try {
-    await saveAppState(savePredictionInState(state, prediction));
+    await mutateAppState((current) => savePredictionInState(current, prediction));
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Bonustipset gikk ikke gjennom." };
   }
@@ -394,8 +394,6 @@ export async function saveAvatarAction(input: SaveAvatarInput): Promise<SaveAvat
   }
 
   try {
-    const state = await getAppState();
-    const others = (state.avatarSelections ?? []).filter((item) => item.playerId !== player.id);
     const selection: AvatarSelection = {
       playerId: player.id,
       avatar: file,
@@ -404,7 +402,10 @@ export async function saveAvatarAction(input: SaveAvatarInput): Promise<SaveAvat
       scale: clampRange(input.scale, 1, 3, 1),
       updatedAt: new Date().toISOString(),
     };
-    await saveAppState({ ...state, avatarSelections: [...others, selection] });
+    await mutateAppState((current) => ({
+      ...current,
+      avatarSelections: [...(current.avatarSelections ?? []).filter((item) => item.playerId !== player.id), selection],
+    }));
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Avataren ble ikke lagret." };
   }
@@ -446,8 +447,7 @@ export async function saveLivePotTipAction(input: SaveLivePotTipInput): Promise<
   };
 
   try {
-    const state = await getAppState();
-    await saveAppState(saveLivePotTipInState(state, tip));
+    await mutateAppState((current) => saveLivePotTipInState(current, tip));
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Bonustipset gikk ikke gjennom." };
   }
@@ -468,8 +468,7 @@ export async function saveTournamentBonusPredictionAction(formData: FormData) {
   };
 
   try {
-    const state = await getAppState();
-    await saveAppState(saveTournamentBonusPredictionInState(state, prediction));
+    await mutateAppState((current) => saveTournamentBonusPredictionInState(current, prediction));
   } catch (error) {
     redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Turneringsbonusen gikk ikke gjennom.")}`);
   }
@@ -499,7 +498,17 @@ export async function autofillBonusTipsAction(formData: FormData) {
       matchIds,
       replaceExisting,
     });
-    await saveAppState(result.state);
+    await mutateAppState((current) => ({
+      ...current,
+      predictions: [
+        ...current.predictions.filter((p) => !(p.playerId === player.id && matchIds.includes(p.matchId))),
+        ...result.state.predictions.filter((p) => p.playerId === player.id && matchIds.includes(p.matchId)),
+      ],
+      livePotTips: [
+        ...current.livePotTips.filter((t) => !(t.playerId === player.id && matchIds.includes(t.matchId))),
+        ...result.state.livePotTips.filter((t) => t.playerId === player.id && matchIds.includes(t.matchId)),
+      ],
+    }));
     for (const id of matchIds) revalidateApp(id);
     const source = result.summary.source === "odds" ? "odds" : "prognose";
     message =
@@ -517,10 +526,8 @@ export async function toggleFollowMatchAction(formData: FormData) {
   const player = await requireSession();
   const matchId = field(formData, "matchId");
   const next = safeNext(field(formData, "next"));
-  const state = await getAppState();
-
   try {
-    await saveAppState(toggleFollowedMatchInState(state, player.id, matchId));
+    await mutateAppState((current) => toggleFollowedMatchInState(current, player.id, matchId));
   } catch (error) {
     redirect(`${next}?error=${encodeURIComponent(error instanceof Error ? error.message : "Kampen kunne ikke følges.")}#${matchId}`);
   }

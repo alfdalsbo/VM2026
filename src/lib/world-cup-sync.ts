@@ -1,4 +1,4 @@
-import { emptyTournamentStats, getAppState, saveAppState } from "@/lib/state";
+import { emptyTournamentStats, getAppState, mutateAppState } from "@/lib/state";
 import { isKnockoutPlaceholder } from "@/lib/knockout-placeholders";
 import { createTeamProfile, teamSlug } from "@/lib/teams";
 import { applyKnockoutResolversToState } from "@/lib/tournament";
@@ -933,21 +933,33 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
         message: `Oppdatert ${updatedMatches} kamp${updatedMatches === 1 ? "" : "er"} og ${teamSync.updatedTeams} lagprofil${teamSync.updatedTeams === 1 ? "" : "er"} fra FIFA.`,
       }),
     };
-    await saveAppState(next);
+    // Keep the latest user-owned data: a tip/bonus/follow/avatar saved while
+    // this sync ran must not be clobbered by our pre-read snapshot.
+    await mutateAppState((current) => keepUserDataOnSync(next, current));
     return next.sync;
   } catch (error) {
     const completedAt = new Date().toISOString();
-    const state = await getAppState();
-    const next = {
-      ...state,
-      sync: syncState({
-        status: "error",
-        lastStartedAt: startedAt,
-        lastCompletedAt: completedAt,
-        message: error instanceof Error ? error.message : "Ukjent sync-feil.",
-      }),
-    };
-    await saveAppState(next);
-    return next.sync;
+    const sync = syncState({
+      status: "error",
+      lastStartedAt: startedAt,
+      lastCompletedAt: completedAt,
+      message: error instanceof Error ? error.message : "Ukjent sync-feil.",
+    });
+    await mutateAppState((current) => ({ ...current, sync }));
+    return sync;
   }
+}
+
+// User-owned fields the FIFA sync must never overwrite (it owns matches, stats,
+// profiles and sync status). Applied on top of the latest committed state so a
+// tip/bonus/follow/avatar saved during the sync window survives.
+export function keepUserDataOnSync(synced: AppState, current: AppState): AppState {
+  return {
+    ...synced,
+    predictions: current.predictions,
+    tournamentBonusPredictions: current.tournamentBonusPredictions,
+    livePotTips: current.livePotTips,
+    avatarSelections: current.avatarSelections,
+    followedMatches: current.followedMatches,
+  };
 }

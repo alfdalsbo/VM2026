@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { upsertMatchResultInState } from "@/lib/scoring";
+import { defaultPrediction, upsertMatchResultInState } from "@/lib/scoring";
 import { initialState } from "@/lib/state";
-import { applyFifaMatchesToState, mapFifaResult, mergeFifaTeamProfile } from "@/lib/world-cup-sync";
+import { applyFifaMatchesToState, keepUserDataOnSync, mapFifaResult, mergeFifaTeamProfile } from "@/lib/world-cup-sync";
 import type { FifaMatch } from "@/lib/world-cup-sync";
 
 const fifaFinished: FifaMatch = {
@@ -24,6 +24,29 @@ describe("world cup sync", () => {
       source: "fifa",
       updatedBy: "sync:fifa",
     });
+  });
+
+  it("keepUserDataOnSync preserves a tip saved during the sync window", () => {
+    // A tip the user submitted while a sync was running.
+    const tip = { ...defaultPrediction("vegard", "m001"), homeGoals: 2, awayGoals: 1 };
+    const current = { ...initialState(), predictions: [tip] };
+    // The sync's pre-read snapshot lacked the tip but updated a match result.
+    const synced = upsertMatchResultInState(initialState(), "m001", {
+      homeGoals: 0,
+      awayGoals: 0,
+      decidedByPenalties: false,
+      advancingTeam: null,
+      updatedAt: "2026-06-11T21:00:00Z",
+      updatedBy: "sync:fifa",
+    });
+    expect(synced.predictions).toHaveLength(0);
+
+    const merged = keepUserDataOnSync(synced, current);
+
+    // The tip survives (taken from current state)...
+    expect(merged.predictions).toEqual([tip]);
+    // ...while the sync's match update is kept (taken from synced state).
+    expect(merged.matches.find((match) => match.id === "m001")?.result).not.toBeNull();
   });
 
   it("does not overwrite manual results unless forced", () => {

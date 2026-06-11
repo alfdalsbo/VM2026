@@ -435,7 +435,7 @@ function bonusResultAwardForRank(rank: number) {
 
 function applyBonusResultAwardPreview(rows: Standing[], tournamentComplete: boolean) {
   const bonusRows = rows
-    .filter((row) => row.bonusTips > 0)
+    .filter((row) => row.bonusTips > 0 && row.bonusPoints > 0)
     .sort((a, b) => {
       return (
         b.bonusPoints - a.bonusPoints ||

@@ -250,6 +250,22 @@ describe("bonus scoring", () => {
     expect(alf.totalPoints).toBe(0);
   });
 
+  it("does not preview bonustips awards before anyone has earned bonus points", () => {
+    const state: AppState = {
+      ...initialState(),
+      livePotTips: [
+        liveTip({ playerId: "alf", matchId: "m001" }),
+        liveTip({ playerId: "anders", matchId: "m001" }),
+        liveTip({ playerId: "ruben", matchId: "m001" }),
+        liveTip({ playerId: "vegard", matchId: "m001" }),
+      ],
+    };
+
+    const standings = computeStandings(state);
+
+    expect(standings.filter((row) => row.bonusAwardPreview > 0)).toEqual([]);
+  });
+
   it("awards the top three bonustips players result points when the tournament is complete", () => {
     const state: AppState = {
       ...withCompletedTournament(initialState()),

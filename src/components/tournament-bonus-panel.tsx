@@ -1,5 +1,6 @@
 import { saveTournamentBonusPredictionAction } from "@/app/actions";
 import { PlayerCombobox } from "@/components/player-combobox";
+import { TournamentBonusSubmitButton } from "@/components/tournament-bonus-submit-button";
 import { Panel } from "@/components/ui";
 import { displayTeamName } from "@/lib/display";
 import { formatOsloDateTime } from "@/lib/format";
@@ -24,7 +25,7 @@ export function TournamentBonusPanel({ state, player }: { state: AppState; playe
   const comboboxPlayerOptions = tournamentPlayerComboboxOptions(playerOptions);
   const open = isTournamentBonusOpen(state);
   const lockAt = getTournamentBonusLockAt(state);
-  const canSubmit = open && teams.length > 0 && playerOptions.length > 0;
+  const canSubmit = open && (teams.length > 0 || playerOptions.length > 0);
   const result = state.tournamentBonusResult;
 
   return (
@@ -50,29 +51,27 @@ export function TournamentBonusPanel({ state, player }: { state: AppState; playe
               label="VM-vinner"
               name="winnerTeamSlug"
               placeholder="Velg lag"
+              emptyLabel="Ikke valgt"
               options={comboboxTeamOptions}
               defaultValue={prediction?.winnerTeamSlug ?? ""}
-              required
             />
             <PlayerCombobox
               label="Toppscorer"
               name="topScorerPlayerProfileId"
               placeholder="Velg spiller"
+              emptyLabel="Ikke valgt"
               options={comboboxPlayerOptions}
               defaultValue={prediction?.topScorerPlayerProfileId ?? ""}
-              required
             />
             <PlayerCombobox
               label="Assistkonge"
               name="assistKingPlayerProfileId"
               placeholder="Velg spiller"
+              emptyLabel="Ikke valgt"
               options={comboboxPlayerOptions}
               defaultValue={prediction?.assistKingPlayerProfileId ?? ""}
-              required
             />
-            <button type="submit" className="btn-primary tournament-bonus-submit">
-              Lagre turneringsbonus
-            </button>
+            <TournamentBonusSubmitButton hasPrediction={Boolean(prediction)} />
           </form>
         ) : (
           <p className="lead tournament-bonus-empty">

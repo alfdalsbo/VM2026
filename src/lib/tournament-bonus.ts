@@ -109,12 +109,20 @@ export function saveTournamentBonusPredictionInState(
   }
 
   const teams = new Set(getTournamentBonusTeamOptions(state).map((team) => team.slug));
-  if (!teams.has(prediction.winnerTeamSlug)) throw new Error("Velg et gyldig VM-lag.");
+  const hasWinner = Boolean(prediction.winnerTeamSlug);
+  const hasTopScorer = Boolean(prediction.topScorerPlayerProfileId);
+  const hasAssistKing = Boolean(prediction.assistKingPlayerProfileId);
+
+  if (!hasWinner && !hasTopScorer && !hasAssistKing) {
+    throw new Error("Velg minst ett turneringssvar før protokollen får blekk.");
+  }
+
+  if (hasWinner && !teams.has(prediction.winnerTeamSlug)) throw new Error("Velg et gyldig VM-lag.");
 
   const playerIds = new Set(getTournamentBonusPlayerOptions(state).map((player) => player.id));
-  if (!playerIds.size) throw new Error("Troppdata er ikke klar for turneringsbonus ennå.");
-  if (!playerIds.has(prediction.topScorerPlayerProfileId)) throw new Error("Velg en gyldig toppscorer-kandidat.");
-  if (!playerIds.has(prediction.assistKingPlayerProfileId)) throw new Error("Velg en gyldig assistkonge-kandidat.");
+  if ((hasTopScorer || hasAssistKing) && !playerIds.size) throw new Error("Troppdata er ikke klar for turneringsbonus ennå.");
+  if (hasTopScorer && !playerIds.has(prediction.topScorerPlayerProfileId)) throw new Error("Velg en gyldig toppscorer-kandidat.");
+  if (hasAssistKing && !playerIds.has(prediction.assistKingPlayerProfileId)) throw new Error("Velg en gyldig assistkonge-kandidat.");
 
   return {
     ...state,

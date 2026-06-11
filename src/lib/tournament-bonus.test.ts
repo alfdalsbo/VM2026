@@ -70,6 +70,29 @@ describe("tournament bonus", () => {
     ).toThrow("Turneringsbonusen er låst");
   });
 
+  it("allows partial tournament bonus tips but rejects a blank slip", () => {
+    const base = withRealSquad(initialState(), "Mexico");
+    const prediction = tournamentPrediction({
+      topScorerPlayerProfileId: "",
+      assistKingPlayerProfileId: "",
+    });
+
+    const updated = saveTournamentBonusPredictionInState(base, prediction, new Date("2026-06-01T12:00:00Z"));
+    expect(updated.tournamentBonusPredictions).toEqual([prediction]);
+
+    expect(() =>
+      saveTournamentBonusPredictionInState(
+        base,
+        tournamentPrediction({
+          winnerTeamSlug: "",
+          topScorerPlayerProfileId: "",
+          assistKingPlayerProfileId: "",
+        }),
+        new Date("2026-06-01T12:00:00Z"),
+      ),
+    ).toThrow("Velg minst ett turneringssvar");
+  });
+
   it("scores winner, shared top scorer and assist king as bonus points", () => {
     const base = withRealSquad(initialState(), "Mexico");
     const options = getTournamentBonusPlayerOptions(base);

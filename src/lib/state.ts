@@ -117,9 +117,7 @@ function normalizeTournamentBonusPredictions(predictions: StoredTournamentBonusP
     .filter(
       (prediction) =>
         prediction.playerId &&
-        prediction.winnerTeamSlug &&
-        prediction.topScorerPlayerProfileId &&
-        prediction.assistKingPlayerProfileId,
+        (prediction.winnerTeamSlug || prediction.topScorerPlayerProfileId || prediction.assistKingPlayerProfileId),
     );
 }
 

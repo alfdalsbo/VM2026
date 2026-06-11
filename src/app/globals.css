@@ -1163,6 +1163,28 @@ select {
 .tournament-bonus-submit {
   justify-self: start;
   min-height: 40px;
+  min-width: 116px;
+}
+
+.tournament-bonus-submit:disabled {
+  background: var(--red-dark);
+  box-shadow: 0 0 0 3px rgba(180, 35, 47, 0.16);
+  opacity: 0.92;
+}
+
+.tournament-bonus-submit:active {
+  transform: translateY(0);
+}
+
+.tournament-bonus-submit-icon {
+  animation: tournament-bonus-submit-spin 800ms linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes tournament-bonus-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tournament-bonus-empty {

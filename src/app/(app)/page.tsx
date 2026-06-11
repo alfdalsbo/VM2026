@@ -108,7 +108,7 @@ export default async function HomePage() {
           )}
         </Panel>
 
-        <ScoringRulesPanel />
+        <ScoringRulesPanel variant="combined" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">

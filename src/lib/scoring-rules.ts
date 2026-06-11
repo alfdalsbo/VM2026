@@ -16,5 +16,6 @@ export const SCORE_RULES = {
   },
 } as const;
 
+export const BONUS_RESULT_AWARD_BRIDGE_ENABLED = false;
 export const BONUS_TIPS_RESULT_AWARDS = SCORE_RULES.bonusTips.resultAwards;
 export const BONUS_TIPS_WINNER_AWARD = BONUS_TIPS_RESULT_AWARDS[0];

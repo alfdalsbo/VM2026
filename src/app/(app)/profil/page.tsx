@@ -63,11 +63,10 @@ export default async function ProfilePage() {
         </div>
       </Panel>
 
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-5">
         <Stat label="Plass" value={`#${standing?.rank ?? "-"}`} />
         <Stat label="Resultattips" value={standing?.resultTipPoints ?? 0} />
         <Stat label="Bonustips" value={standing?.bonusPoints ?? 0} />
-        <Stat label="Bonuspremie" value={standing?.bonusWinnerAward ?? 0} />
         <Stat label="Treffprosent" value={`${hitRate}%`} />
         <Stat label="Eksakte" value={standing?.exactResults ?? 0} />
       </div>

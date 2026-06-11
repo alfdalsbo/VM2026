@@ -10,7 +10,7 @@ import { requireSession } from "@/lib/auth";
 import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime } from "@/lib/format";
 import { isLivePotOpen } from "@/lib/live-pot";
-import { BONUS_TIPS_RESULT_AWARDS, computeBonusTipStandings } from "@/lib/scoring";
+import { computeBonusTipStandings } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
@@ -24,7 +24,6 @@ export default async function LivePage() {
   const standings = computeBonusTipStandings(state);
   const avatars = getAvatarMap(state);
   const leader = standings.find((row) => row.tips > 0);
-  const resultAwardLabel = BONUS_TIPS_RESULT_AWARDS.map((award) => `${award}+`).join("/");
 
   return (
     <div className="space-y-6">
@@ -42,7 +41,7 @@ export default async function LivePage() {
         </div>
       </Panel>
 
-      <ScoringRulesPanel />
+      <ScoringRulesPanel variant="bonus" />
 
       <TournamentBonusPanel state={state} player={player} />
 
@@ -53,7 +52,7 @@ export default async function LivePage() {
         <Stat
           label="Leder bonustips"
           value={leader ? leader.player.shortName : "-"}
-          detail={leader ? `${leader.points} p · topp 3 gir ${resultAwardLabel}` : "Ingen bonustips ennå"}
+          detail={leader ? `${leader.points} p i egen bonuskamp` : "Ingen bonustips ennå"}
         />
       </div>
 
@@ -88,7 +87,6 @@ export default async function LivePage() {
                 <th>Kort</th>
                 <th>Turnering</th>
                 <th>Tips</th>
-                <th>Premie</th>
                 <th>Gule kort</th>
                 <th>Røde kort</th>
               </tr>
@@ -108,7 +106,6 @@ export default async function LivePage() {
                   <td>{standing.liveBonusPoints}</td>
                   <td>{standing.tournamentBonusPoints}</td>
                   <td>{standing.tips}</td>
-                  <td>{standing.resultAward}</td>
                   <td>{standing.exactYellows}</td>
                   <td>{standing.redCardHits}</td>
                 </tr>

@@ -54,13 +54,14 @@ function stateWithBonusLeader(): AppState {
 }
 
 describe("TablePage", () => {
-  it("shows provisional bonus awards inline with result points", async () => {
+  it("keeps bonus awards out of the result table", async () => {
     stateFixture.current = stateWithBonusLeader();
 
     const html = renderToStaticMarkup(await TablePage());
 
     expect(html).not.toContain("Bonuspremie");
-    expect(html).toContain("result-bonus-preview");
-    expect(html).toContain("10+");
+    expect(html).not.toContain("result-bonus-preview");
+    expect(html).not.toContain("10+");
+    expect(html).toContain("Bonustips føres i sin egen tabell.");
   });
 });

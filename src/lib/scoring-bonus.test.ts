@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { initialState } from "@/lib/state";
-import { BONUS_TIPS_RESULT_AWARDS, computeBonusTipStandings, computeStandings, scorePrediction } from "@/lib/scoring";
+import { computeBonusTipStandings, computeStandings, scorePrediction } from "@/lib/scoring";
 import type { AppState, LivePotTip, MatchEvent, Prediction } from "@/lib/types";
 
 function prediction(overrides: Partial<Prediction> = {}): Prediction {
@@ -225,7 +225,7 @@ describe("bonus scoring", () => {
     expect(alf.tips).toBe(2);
   });
 
-  it("previews top three bonustips awards without changing the result table before the tournament is complete", () => {
+  it("keeps bonustips awards out of the result table before the tournament is complete", () => {
     const state: AppState = {
       ...withFinishedMatches(initialState(), ["m001", "m002", "m003"]),
       livePotTips: [
@@ -244,7 +244,7 @@ describe("bonus scoring", () => {
     const danny = standings.find((row) => row.player.id === "danny")!;
     const fredrik = standings.find((row) => row.player.id === "fredrik")!;
 
-    expect([alf.bonusAwardPreview, anders.bonusAwardPreview, danny.bonusAwardPreview]).toEqual(BONUS_TIPS_RESULT_AWARDS);
+    expect([alf.bonusAwardPreview, anders.bonusAwardPreview, danny.bonusAwardPreview]).toEqual([0, 0, 0]);
     expect(fredrik.bonusAwardPreview).toBe(0);
     expect(alf.bonusWinnerAward).toBe(0);
     expect(alf.totalPoints).toBe(0);
@@ -266,7 +266,7 @@ describe("bonus scoring", () => {
     expect(standings.filter((row) => row.bonusAwardPreview > 0)).toEqual([]);
   });
 
-  it("awards the top three bonustips players result points when the tournament is complete", () => {
+  it("does not award bonustips players result points when the tournament is complete", () => {
     const state: AppState = {
       ...withCompletedTournament(initialState()),
       livePotTips: [
@@ -284,13 +284,14 @@ describe("bonus scoring", () => {
     const anders = standings.find((row) => row.player.id === "anders")!;
     const danny = standings.find((row) => row.player.id === "danny")!;
 
-    expect([alf.bonusWinnerAward, anders.bonusWinnerAward, danny.bonusWinnerAward]).toEqual(BONUS_TIPS_RESULT_AWARDS);
-    expect(alf.totalPoints).toBe(10);
-    expect(anders.totalPoints).toBe(5);
-    expect(danny.totalPoints).toBe(3);
+    expect([alf.bonusWinnerAward, anders.bonusWinnerAward, danny.bonusWinnerAward]).toEqual([0, 0, 0]);
+    expect([alf.bonusAwardPreview, anders.bonusAwardPreview, danny.bonusAwardPreview]).toEqual([0, 0, 0]);
+    expect(alf.totalPoints).toBe(0);
+    expect(anders.totalPoints).toBe(0);
+    expect(danny.totalPoints).toBe(0);
   });
 
-  it("gives tied bonustips ranks the same result award and skips the next rank", () => {
+  it("keeps tied bonustips result awards dormant while the bridge is disabled", () => {
     const state: AppState = {
       ...withFinishedMatches(initialState(), ["m001", "m002"]),
       livePotTips: [
@@ -307,8 +308,8 @@ describe("bonus scoring", () => {
     const anders = standings.find((row) => row.player.id === "anders")!;
     const danny = standings.find((row) => row.player.id === "danny")!;
 
-    expect(alf.bonusAwardPreview).toBe(10);
-    expect(anders.bonusAwardPreview).toBe(10);
-    expect(danny.bonusAwardPreview).toBe(3);
+    expect(alf.bonusAwardPreview).toBe(0);
+    expect(anders.bonusAwardPreview).toBe(0);
+    expect(danny.bonusAwardPreview).toBe(0);
   });
 });

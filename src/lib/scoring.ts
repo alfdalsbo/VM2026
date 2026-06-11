@@ -2,10 +2,10 @@ import type { AppState, BroadcastInfo, MatchEvent, Prediction, PredictionOutcome
 import { footballCopy } from "@/lib/football-jargon";
 import { hasUnresolvedKnockoutTeams, matchupKeyForMatch } from "@/lib/knockout-placeholders";
 import { scoreLivePotTip } from "@/lib/live-pot";
-import { BONUS_TIPS_RESULT_AWARDS, BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
+import { BONUS_RESULT_AWARD_BRIDGE_ENABLED, BONUS_TIPS_RESULT_AWARDS, BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
 import { getTournamentBonusPrediction, scoreTournamentBonusPrediction } from "@/lib/tournament-bonus";
 
-export { BONUS_TIPS_RESULT_AWARDS, BONUS_TIPS_WINNER_AWARD };
+export { BONUS_RESULT_AWARD_BRIDGE_ENABLED, BONUS_TIPS_RESULT_AWARDS, BONUS_TIPS_WINNER_AWARD };
 
 export type BonusTipsStanding = {
   rank: number;
@@ -263,7 +263,6 @@ export function computeStandings(state: AppState): Standing[] {
     .filter(hasFinalResult)
     .sort((a, b) => b.kickoffAt.localeCompare(a.kickoffAt))[0]?.roundId;
 
-  const tournamentComplete = isTournamentComplete(state);
   const rows = state.players.map((player) => {
     let resultTipPoints = 0;
     let matchBonusPoints = 0;
@@ -346,7 +345,9 @@ export function computeStandings(state: AppState): Standing[] {
     };
   });
 
-  applyBonusResultAwardPreview(rows, tournamentComplete);
+  if (BONUS_RESULT_AWARD_BRIDGE_ENABLED) {
+    applyBonusResultAwardBridge(rows, isTournamentComplete(state));
+  }
 
   const roundWins = new Map<string, number>();
   for (const round of state.rounds) {
@@ -433,7 +434,7 @@ function bonusResultAwardForRank(rank: number) {
   return BONUS_TIPS_RESULT_AWARDS[rank - 1] ?? 0;
 }
 
-function applyBonusResultAwardPreview(rows: Standing[], tournamentComplete: boolean) {
+function applyBonusResultAwardBridge(rows: Standing[], tournamentComplete: boolean) {
   const bonusRows = rows
     .filter((row) => row.bonusTips > 0 && row.bonusPoints > 0)
     .sort((a, b) => {

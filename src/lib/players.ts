@@ -34,6 +34,14 @@ export const players: Player[] = [
     role: "player",
   },
   {
+    id: "geir-inge",
+    name: "Geir Inge",
+    shortName: "Geir Inge",
+    avatar: "GI",
+    color: "#db2777",
+    role: "player",
+  },
+  {
     id: "ruben",
     name: "Glenn Ruben",
     shortName: "Glenn Ruben",

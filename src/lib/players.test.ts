@@ -9,6 +9,7 @@ describe("players", () => {
       "Anders",
       "Danny",
       "Fredrik",
+      "Geir Inge",
       "Glenn Ruben",
       "Jørgen",
       "Ruben",
@@ -16,7 +17,7 @@ describe("players", () => {
       "Sverre",
       "Vegard",
     ]);
-    expect(players).toHaveLength(10);
+    expect(players).toHaveLength(11);
     expect(players.find((player) => player.id === "alf")?.role).toBe("admin");
   });
 });

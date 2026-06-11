@@ -10,7 +10,7 @@ import { requireSession } from "@/lib/auth";
 import { displayMatchup } from "@/lib/display";
 import { formatOsloDateTime } from "@/lib/format";
 import { isLivePotOpen } from "@/lib/live-pot";
-import { BONUS_TIPS_WINNER_AWARD, computeBonusTipStandings } from "@/lib/scoring";
+import { BONUS_TIPS_RESULT_AWARDS, computeBonusTipStandings } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
 
 export const metadata = {
@@ -24,6 +24,7 @@ export default async function LivePage() {
   const standings = computeBonusTipStandings(state);
   const avatars = getAvatarMap(state);
   const leader = standings.find((row) => row.tips > 0);
+  const resultAwardLabel = BONUS_TIPS_RESULT_AWARDS.map((award) => `${award}+`).join("/");
 
   return (
     <div className="space-y-6">
@@ -52,7 +53,7 @@ export default async function LivePage() {
         <Stat
           label="Leder bonustips"
           value={leader ? leader.player.shortName : "-"}
-          detail={leader ? `${leader.points} p · +${BONUS_TIPS_WINNER_AWARD} ved VM-slutt` : "Ingen bonustips ennå"}
+          detail={leader ? `${leader.points} p · topp 3 gir ${resultAwardLabel}` : "Ingen bonustips ennå"}
         />
       </div>
 

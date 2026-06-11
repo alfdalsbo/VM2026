@@ -406,6 +406,7 @@ export type Standing = {
   liveBonusPoints: number;
   tournamentBonusPoints: number;
   bonusWinnerAward: number;
+  bonusAwardPreview: number;
   bonusTips: number;
   tournamentBonusTips: number;
   liveTips: number;

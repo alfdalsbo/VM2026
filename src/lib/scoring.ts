@@ -2,10 +2,10 @@ import type { AppState, BroadcastInfo, MatchEvent, Prediction, PredictionOutcome
 import { footballCopy } from "@/lib/football-jargon";
 import { hasUnresolvedKnockoutTeams, matchupKeyForMatch } from "@/lib/knockout-placeholders";
 import { scoreLivePotTip } from "@/lib/live-pot";
-import { BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
+import { BONUS_TIPS_RESULT_AWARDS, BONUS_TIPS_WINNER_AWARD, SCORE_RULES } from "@/lib/scoring-rules";
 import { getTournamentBonusPrediction, scoreTournamentBonusPrediction } from "@/lib/tournament-bonus";
 
-export { BONUS_TIPS_WINNER_AWARD };
+export { BONUS_TIPS_RESULT_AWARDS, BONUS_TIPS_WINNER_AWARD };
 
 export type BonusTipsStanding = {
   rank: number;
@@ -332,6 +332,7 @@ export function computeStandings(state: AppState): Standing[] {
       liveBonusPoints,
       tournamentBonusPoints,
       bonusWinnerAward: 0,
+      bonusAwardPreview: 0,
       bonusTips,
       tournamentBonusTips,
       liveTips,
@@ -345,18 +346,7 @@ export function computeStandings(state: AppState): Standing[] {
     };
   });
 
-  if (tournamentComplete) {
-    const bonusRows = rows.filter((row) => row.bonusTips > 0);
-    const bestBonusScore = bonusRows.length ? Math.max(...bonusRows.map((row) => row.bonusPoints)) : null;
-    if (bestBonusScore !== null) {
-      rows
-        .filter((row) => row.bonusPoints === bestBonusScore && row.bonusTips > 0)
-        .forEach((row) => {
-          row.bonusWinnerAward = BONUS_TIPS_WINNER_AWARD;
-          row.totalPoints = row.resultTipPoints + row.bonusWinnerAward;
-        });
-    }
-  }
+  applyBonusResultAwardPreview(rows, tournamentComplete);
 
   const roundWins = new Map<string, number>();
   for (const round of state.rounds) {
@@ -437,6 +427,39 @@ export function computeBonusTipStandings(state: AppState): BonusTipsStanding[] {
   });
 
   return rows;
+}
+
+function bonusResultAwardForRank(rank: number) {
+  return BONUS_TIPS_RESULT_AWARDS[rank - 1] ?? 0;
+}
+
+function applyBonusResultAwardPreview(rows: Standing[], tournamentComplete: boolean) {
+  const bonusRows = rows
+    .filter((row) => row.bonusTips > 0)
+    .sort((a, b) => {
+      return (
+        b.bonusPoints - a.bonusPoints ||
+        b.matchBonusPoints - a.matchBonusPoints ||
+        b.liveBonusPoints - a.liveBonusPoints ||
+        b.tournamentBonusPoints - a.tournamentBonusPoints ||
+        b.liveExactYellows - a.liveExactYellows ||
+        b.liveRedCardHits - a.liveRedCardHits ||
+        a.player.shortName.localeCompare(b.player.shortName, "nb")
+      );
+    });
+  let previousPoints: number | null = null;
+  let previousRank = 0;
+
+  bonusRows.forEach((row, index) => {
+    if (row.bonusPoints !== previousPoints) previousRank = index + 1;
+    const award = bonusResultAwardForRank(previousRank);
+    row.bonusAwardPreview = award;
+    if (tournamentComplete) {
+      row.bonusWinnerAward = award;
+      row.totalPoints = row.resultTipPoints + row.bonusWinnerAward;
+    }
+    previousPoints = row.bonusPoints;
+  });
 }
 
 export function savePredictionInState(

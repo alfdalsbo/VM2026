@@ -3487,6 +3487,20 @@ th {
   min-width: 500px;
 }
 
+.result-points-cell {
+  align-items: baseline;
+  display: inline-flex;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.result-bonus-preview {
+  color: #15803d;
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
 .group-table-wrap {
   overflow-x: visible;
 }

@@ -4,6 +4,7 @@ import { SCORE_RULES } from "@/lib/scoring-rules";
 export function ScoringRulesPanel({ compact = false }: { compact?: boolean }) {
   const result = SCORE_RULES.resultTips;
   const bonus = SCORE_RULES.bonusTips;
+  const resultAwards = bonus.resultAwards.map((award) => `${award}+`).join("/");
 
   return (
     <Panel className="scoring-rules-panel">
@@ -33,7 +34,7 @@ export function ScoringRulesPanel({ compact = false }: { compact?: boolean }) {
             <li><strong>+{bonus.tournamentTopScorer}</strong><span>Toppscorer</span></li>
             <li><strong>+{bonus.tournamentAssistKing}</strong><span>Assistkonge</span></li>
           </ul>
-          {!compact ? <p>Bom gir 0. Bonustips har egen tabell, og vinneren får +{bonus.winnerAward} i resultattips ved VM-slutt.</p> : null}
+          {!compact ? <p>Bom gir 0. Bonustips har egen tabell. Topp 3 får {resultAwards} i resultattips ved VM-slutt.</p> : null}
         </section>
       </div>
     </Panel>

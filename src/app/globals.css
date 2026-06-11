@@ -5357,7 +5357,7 @@ th {
   }
 
   .tv-guide-table tr {
-    padding: 9px 0;
+    padding: 5px 0;
   }
 
   .tv-guide-table tr + tr {
@@ -5366,19 +5366,25 @@ th {
 
   .tv-guide-table td {
     border: none;
-    padding: 1px 0;
-    font-size: 0.82rem;
+    padding: 0;
   }
 
   .tv-guide-table td:first-child {
-    font-size: 0.92rem;
+    display: block;
+    font-size: 0.72rem;
     font-weight: 800;
-    margin-bottom: 3px;
+    line-height: 1.25;
   }
 
-  .tv-guide-table td[data-label]::before {
-    content: attr(data-label) ": ";
+  /* Tid/TV/Status vannrett på én linje, mye mindre font */
+  .tv-guide-table td[data-label] {
+    display: inline;
     color: var(--ink-muted);
-    font-weight: 700;
+    font-size: 0.6rem;
+    font-weight: 600;
+  }
+
+  .tv-guide-table td[data-label] ~ td[data-label]::before {
+    content: " · ";
   }
 }

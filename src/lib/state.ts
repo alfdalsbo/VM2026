@@ -360,7 +360,7 @@ async function readBlobStateWithEtag(): Promise<BlobStateRead | null> {
   const raw = await new Response(result.stream).text();
   return {
     state: mergeWithSeed(JSON.parse(raw) as AppState),
-    etag: result.blob.etag,
+    etag: normalizeBlobEtag(result.blob.etag),
   };
 }
 
@@ -399,6 +399,10 @@ function isBlobPreconditionFailure(error: unknown) {
     error instanceof BlobPreconditionFailedError ||
     (error instanceof Error && error.name === "BlobPreconditionFailedError")
   );
+}
+
+function normalizeBlobEtag(etag: string) {
+  return etag.startsWith("W/") ? etag.slice(2) : etag;
 }
 
 async function waitForBlobRetry(attempt: number) {

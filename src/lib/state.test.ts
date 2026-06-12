@@ -63,8 +63,8 @@ describe("mutateAppState", () => {
       const written = { state: null as AppState | null };
 
       blobMock.get
-        .mockResolvedValueOnce(blobResult(initial, "etag-1"))
-        .mockResolvedValueOnce(blobResult(concurrentState, "etag-2"));
+        .mockResolvedValueOnce(blobResult(initial, 'W/"etag-1"'))
+        .mockResolvedValueOnce(blobResult(concurrentState, 'W/"etag-2"'));
       blobMock.put
         .mockRejectedValueOnce(new blobMock.BlobPreconditionFailedError())
         .mockImplementationOnce(async (_pathname, body) => {
@@ -90,13 +90,13 @@ describe("mutateAppState", () => {
         1,
         "state/tippekjelleren-vm2026.json",
         expect.any(String),
-        expect.objectContaining({ ifMatch: "etag-1" }),
+        expect.objectContaining({ ifMatch: '"etag-1"' }),
       );
       expect(blobMock.put).toHaveBeenNthCalledWith(
         2,
         "state/tippekjelleren-vm2026.json",
         expect.any(String),
-        expect.objectContaining({ ifMatch: "etag-2" }),
+        expect.objectContaining({ ifMatch: '"etag-2"' }),
       );
       expect(next.predictions).toEqual(
         expect.arrayContaining([

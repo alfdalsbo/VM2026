@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { get, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
 import postgres from "postgres";
 
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
@@ -30,6 +30,8 @@ const stateFile = process.env.VERCEL
   : path.join(process.cwd(), ".data", "tippekjelleren-state.json");
 const stateId = "tippekjelleren-vm2026";
 const blobPath = "state/tippekjelleren-vm2026.json";
+const blobMutationAttempts = 6;
+const blobRetryBaseDelayMs = 25;
 
 let sqlClient: ReturnType<typeof postgres> | null = null;
 let tableReady = false;
@@ -346,21 +348,34 @@ function hasBlobStorage() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN || (process.env.VERCEL_OIDC_TOKEN && process.env.BLOB_STORE_ID));
 }
 
-async function readBlobState() {
+type BlobStateRead = {
+  state: AppState;
+  etag: string;
+};
+
+async function readBlobStateWithEtag(): Promise<BlobStateRead | null> {
   if (!hasBlobStorage()) return null;
   const result = await get(blobPath, { access: "private", useCache: false });
   if (!result || result.statusCode !== 200 || !result.stream) return null;
   const raw = await new Response(result.stream).text();
-  return mergeWithSeed(JSON.parse(raw) as AppState);
+  return {
+    state: mergeWithSeed(JSON.parse(raw) as AppState),
+    etag: result.blob.etag,
+  };
 }
 
-async function writeBlobState(state: AppState) {
+async function readBlobState() {
+  return (await readBlobStateWithEtag())?.state ?? null;
+}
+
+async function writeBlobState(state: AppState, ifMatch?: string) {
   if (!hasBlobStorage()) return false;
   await put(blobPath, `${JSON.stringify(state, null, 2)}\n`, {
     access: "private",
     allowOverwrite: true,
     cacheControlMaxAge: 60,
     contentType: "application/json",
+    ...(ifMatch ? { ifMatch } : {}),
   });
   return true;
 }
@@ -377,6 +392,18 @@ async function readFileState() {
 async function writeFileState(state: AppState) {
   await mkdir(path.dirname(stateFile), { recursive: true });
   await writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+function isBlobPreconditionFailure(error: unknown) {
+  return (
+    error instanceof BlobPreconditionFailedError ||
+    (error instanceof Error && error.name === "BlobPreconditionFailedError")
+  );
+}
+
+async function waitForBlobRetry(attempt: number) {
+  const delay = blobRetryBaseDelayMs * 2 ** attempt;
+  await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
 export async function getAppState() {
@@ -419,11 +446,27 @@ export async function mutateAppState(mutate: (state: AppState) => AppState): Pro
     });
   }
 
-  // Blob/file fallback (local dev / single writer): no DB lock available, so a
-  // plain read-modify-write. Concurrency isn't a concern on these backends.
-  const current = (await readBlobState()) ?? (await readFileState()) ?? initialState();
+  if (hasBlobStorage()) {
+    for (let attempt = 0; attempt < blobMutationAttempts; attempt += 1) {
+      const blob = await readBlobStateWithEtag();
+      const current = blob?.state ?? (await readFileState()) ?? initialState();
+      const next = mergeWithSeed(mutate(current));
+
+      try {
+        await writeBlobState(next, blob?.etag);
+        return next;
+      } catch (error) {
+        if (!isBlobPreconditionFailure(error) || attempt === blobMutationAttempts - 1) throw error;
+        await waitForBlobRetry(attempt);
+      }
+    }
+
+    throw new Error("Lagringen traff for mange samtidige oppdateringer. Prøv igjen om et øyeblikk.");
+  }
+
+  // Local file fallback: single-process development storage.
+  const current = (await readFileState()) ?? initialState();
   const next = mergeWithSeed(mutate(current));
-  if (await writeBlobState(next)) return next;
   await writeFileState(next);
   return next;
 }

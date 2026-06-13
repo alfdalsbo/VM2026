@@ -2,7 +2,7 @@ import { TeamLink } from "@/components/team-link";
 import { displayTeamName } from "@/lib/display";
 import { formatScore } from "@/lib/format";
 import type { MatchAnalysis } from "@/lib/match-analysis";
-import type { MatchEvent, MatchLineup, MatchStats, TeamSide, WorldCupMatch } from "@/lib/types";
+import type { MatchEvent, MatchLineup, MatchStats, MatchTechnicalReport, TeamSide, TechnicalReportMetric, WorldCupMatch } from "@/lib/types";
 
 export function PostMatchAnalysis({
   analysis,
@@ -17,7 +17,8 @@ export function PostMatchAnalysis({
   lineup: MatchLineup | null;
   events: MatchEvent[];
 }) {
-  const statusLabel = analysis.status === "tsg_enriched" ? "TSG-beriket" : "Foreløpig analyse";
+  const statusLabel =
+    analysis.status === "tsg_enriched" ? "TSG-beriket" : analysis.status === "fifa_report" ? "FIFA-rapport" : "Foreløpig analyse";
 
   return (
     <div className="post-match-analysis">
@@ -31,6 +32,8 @@ export function PostMatchAnalysis({
       </div>
 
       <TacticalSvgBoard analysis={analysis} match={match} lineup={lineup} events={events} />
+
+      <TechnicalReportModels report={analysis.technicalReport ?? null} match={match} />
 
       <div className="analysis-grid">
         <section>
@@ -86,10 +89,101 @@ export function PostMatchAnalysis({
             <a key={`${source.title}-${source.url}`} href={source.url} rel="noreferrer" target="_blank">
               {source.publisher ? `${source.publisher}: ` : ""}
               {source.title}
+              {source.accessedAt ? <span>{formatSourceTime(source.accessedAt)}</span> : null}
             </a>
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function TechnicalReportModels({ report, match }: { report: MatchTechnicalReport | null; match: WorldCupMatch }) {
+  if (!report || (!report.metrics.length && !report.phases.length)) return null;
+  return (
+    <div className="analysis-model-grid">
+      <section className="analysis-model">
+        <h3>xG og avslutninger</h3>
+        <TechnicalComparisonRow report={report} metricKey="expected_goals" />
+        <TechnicalComparisonRow report={report} metricKey="attempts_at_goal" />
+        <TechnicalComparisonRow report={report} metricKey="possession" />
+      </section>
+      <section className="analysis-model">
+        <h3>Faser i spill</h3>
+        <PhaseStack report={report} match={match} side="home" group="in_possession" />
+        <PhaseStack report={report} match={match} side="away" group="in_possession" />
+        <PhaseStack report={report} match={match} side="home" group="out_of_possession" />
+        <PhaseStack report={report} match={match} side="away" group="out_of_possession" />
+      </section>
+      <section className="analysis-model">
+        <h3>Brudd, press og fremdrift</h3>
+        <TechnicalComparisonRow report={report} metricKey="completed_line_breaks" />
+        <TechnicalComparisonRow report={report} metricKey="ball_progressions" />
+        <TechnicalComparisonRow report={report} metricKey="defensive_pressures" />
+        <TechnicalComparisonRow report={report} metricKey="forced_turnovers" />
+      </section>
+    </div>
+  );
+}
+
+function TechnicalComparisonRow({ report, metricKey }: { report: MatchTechnicalReport; metricKey: string }) {
+  const metric = metricFor(report, metricKey);
+  if (!metric) return null;
+  const home = metric.home ?? 0;
+  const away = metric.away ?? 0;
+  const total = home + away;
+  const homeWidth = total > 0 ? (home / total) * 100 : 50;
+  return (
+    <div className="analysis-model-row">
+      <span>{formatTechnicalMetric(metric, "home")}</span>
+      <div>
+        <strong>{metric.label}</strong>
+        <i>
+          <b style={{ width: `${homeWidth}%` }} />
+        </i>
+      </div>
+      <span>{formatTechnicalMetric(metric, "away")}</span>
+    </div>
+  );
+}
+
+function PhaseStack({
+  report,
+  match,
+  side,
+  group,
+}: {
+  report: MatchTechnicalReport;
+  match: WorldCupMatch;
+  side: TeamSide;
+  group: "in_possession" | "out_of_possession";
+}) {
+  const phases = report.phases.filter((phase) => phase.group === group && (side === "home" ? phase.home : phase.away) != null);
+  if (!phases.length) return null;
+  const total = phases.reduce((sum, phase) => sum + ((side === "home" ? phase.home : phase.away) ?? 0), 0) || 1;
+  const team = displayTeamName(side === "home" ? match.homeTeam : match.awayTeam);
+  const label = group === "in_possession" ? "med ball" : "uten ball";
+
+  return (
+    <div className="analysis-phase-row">
+      <span>
+        <strong>{team}</strong>
+        {label}
+      </span>
+      <div className="analysis-phase-stack" aria-label={`${team} ${label}`}>
+        {phases.map((phase, index) => {
+          const value = (side === "home" ? phase.home : phase.away) ?? 0;
+          return (
+            <i
+              key={`${side}-${group}-${phase.label}`}
+              className={`analysis-phase-segment analysis-phase-segment-${index % 6}`}
+              style={{ width: `${(value / total) * 100}%` }}
+              title={`${phaseLabel(phase.label)}: ${value} %`}
+            />
+          );
+        })}
+      </div>
+      <em>{phaseLabel(topPhaseLabel(phases, side))}</em>
     </div>
   );
 }
@@ -229,8 +323,58 @@ function StatsBars({ stats, match }: { stats: MatchStats | null; match: WorldCup
   );
 }
 
+function metricFor(report: MatchTechnicalReport, key: string) {
+  return report.metrics.find((metric) => metric.key === key) ?? null;
+}
+
+function formatTechnicalMetric(metric: TechnicalReportMetric, side: TeamSide) {
+  const suffix = metric.unit === "%" ? "%" : metric.unit ? ` ${metric.unit}` : "";
+  const value = side === "home" ? metric.home : metric.away;
+  const detail = side === "home" ? metric.homeDetail : metric.awayDetail;
+  const base = formatStat(value, suffix);
+  return detail == null ? base : `${base} (${formatStat(detail, suffix)})`;
+}
+
 function formatStat(value: number | null, suffix: string) {
   return value == null ? "-" : `${value}${suffix}`;
+}
+
+function topPhaseLabel(phases: MatchTechnicalReport["phases"], side: TeamSide) {
+  const top = [...phases].sort((a, b) => ((side === "home" ? b.home : b.away) ?? 0) - ((side === "home" ? a.home : a.away) ?? 0))[0];
+  return top?.label ?? "fase";
+}
+
+function phaseLabel(label: string) {
+  const labels: Record<string, string> = {
+    "Build Up Unopposed": "rolig oppbygging",
+    "Build Up Opposed": "oppbygging under press",
+    Progression: "progresjon",
+    "Final Third": "siste tredjedel",
+    "Long Ball": "lang ball",
+    "Attacking Transition": "angrepstransisjon",
+    "Counter Attack": "kontring",
+    "Set Piece": "dødball",
+    "High Press": "høyt press",
+    "Mid Press": "midtpress",
+    "Low Press": "lavt press",
+    "High Block": "høy blokk",
+    "Mid Block": "midtblokk",
+    "Low Block": "lav blokk",
+    Recovery: "gjenvinning",
+    "Defensive Transition": "defensiv overgang",
+    "Counter-press": "motpress",
+  };
+  return labels[label] ?? label.toLowerCase();
+}
+
+function formatSourceTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `Oppdatert ${date.toLocaleString("nb-NO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Oslo",
+  })}`;
 }
 
 function eventRadius(type: MatchEvent["type"]) {

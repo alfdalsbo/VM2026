@@ -245,6 +245,46 @@ export type MatchStats = {
   updatedAt: string | null;
 };
 
+export type TechnicalReportMetric = {
+  key: string;
+  label: string;
+  home: number | null;
+  away: number | null;
+  unit: string | null;
+  homeDetail?: number | null;
+  awayDetail?: number | null;
+};
+
+export type TechnicalReportPhase = {
+  group: "in_possession" | "out_of_possession";
+  label: string;
+  home: number | null;
+  away: number | null;
+};
+
+export type TechnicalReportPlayerHighlight = {
+  playerName: string;
+  teamSide: TeamSide | null;
+  label: string;
+  value: number | null;
+  secondaryValue?: number | null;
+  unit?: string | null;
+  detail?: string | null;
+};
+
+export type MatchTechnicalReport = {
+  matchId: string;
+  sourceUrl: string;
+  fetchedAt: string;
+  parsedAt: string | null;
+  parseStatus: "complete" | "partial" | "unavailable";
+  unavailableReason: string | null;
+  metrics: TechnicalReportMetric[];
+  phases: TechnicalReportPhase[];
+  playerHighlights: TechnicalReportPlayerHighlight[];
+  notes: string[];
+};
+
 export type WorldCupMatch = {
   id: string;
   matchNumber: number;
@@ -368,6 +408,7 @@ export type AppState = {
   lineups: MatchLineup[];
   matchStats: MatchStats[];
   matchEvents: MatchEvent[];
+  matchTechnicalReports: MatchTechnicalReport[];
   livePotTips: LivePotTip[];
   avatarSelections: AvatarSelection[];
   followedMatches: FollowedMatch[];

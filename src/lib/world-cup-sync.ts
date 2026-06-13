@@ -4,6 +4,7 @@ import { createTeamProfile, teamSlug } from "@/lib/teams";
 import { applyKnockoutResolversToState } from "@/lib/tournament";
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
 import { derivePlayerProfilesFromState, playerProfileIdFor } from "@/lib/player-profiles";
+import { syncFifaTechnicalReportsForState } from "@/lib/fifa-technical-reports";
 import { deriveTournamentBonusResult } from "@/lib/tournament-bonus";
 import type {
   AppState,
@@ -923,14 +924,23 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
       ...withPlayerProfiles,
       tournamentBonusResult: deriveTournamentBonusResult(withPlayerProfiles, syncedAt),
     };
+    const technicalSync = await syncFifaTechnicalReportsForState(withManualOverrides, {
+      fetcher: options.fetcher ?? fetch,
+      force: options.force,
+      syncedAt,
+    });
+    const reportPart = technicalSync.updatedReports
+      ? `, ${technicalSync.updatedReports} kamprapport${technicalSync.updatedReports === 1 ? "" : "er"}`
+      : "";
     const next = {
-      ...withManualOverrides,
+      ...technicalSync.state,
       sync: syncState({
         status: "success",
+        source: "FIFA public calendar API + FIFA Training Centre",
         lastStartedAt: startedAt,
         lastCompletedAt: syncedAt,
         updatedMatches,
-        message: `Oppdatert ${updatedMatches} kamp${updatedMatches === 1 ? "" : "er"} og ${teamSync.updatedTeams} lagprofil${teamSync.updatedTeams === 1 ? "" : "er"} fra FIFA.`,
+        message: `Oppdatert ${updatedMatches} kamp${updatedMatches === 1 ? "" : "er"}, ${teamSync.updatedTeams} lagprofil${teamSync.updatedTeams === 1 ? "" : "er"}${reportPart} fra offisielle FIFA-kilder.`,
       }),
     };
     // Keep the latest user-owned data: a tip/bonus/follow/avatar saved while
@@ -961,5 +971,14 @@ export function keepUserDataOnSync(synced: AppState, current: AppState): AppStat
     livePotTips: current.livePotTips,
     avatarSelections: current.avatarSelections,
     followedMatches: current.followedMatches,
+    matchTechnicalReports: mergeTechnicalReports(synced, current),
   };
+}
+
+function mergeTechnicalReports(synced: AppState, current: AppState) {
+  const byMatchId = new Map(current.matchTechnicalReports.map((report) => [report.matchId, report]));
+  for (const report of synced.matchTechnicalReports) {
+    byMatchId.set(report.matchId, report);
+  }
+  return [...byMatchId.values()].sort((a, b) => a.matchId.localeCompare(b.matchId));
 }

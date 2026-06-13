@@ -38,10 +38,11 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
   const score = scorePrediction(match, prediction, state);
   const lineup = state.lineups.find((item) => item.matchId === match.id) ?? null;
   const stats = state.matchStats.find((item) => item.matchId === match.id) ?? null;
+  const technicalReport = state.matchTechnicalReports.find((item) => item.matchId === match.id) ?? null;
   const events = state.matchEvents
     .filter((event) => event.matchId === match.id)
     .sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.id.localeCompare(b.id));
-  const postMatchAnalysis = getMatchAnalysisForMatch({ match, stats, lineup, events });
+  const postMatchAnalysis = getMatchAnalysisForMatch({ match, stats, lineup, events, technicalReport });
   const isLive = match.status === "live" || match.status === "halftime";
   const shareToken =
     match.result && prediction

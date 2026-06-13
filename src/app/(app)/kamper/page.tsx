@@ -1,4 +1,5 @@
 import { BonusAutofillButton } from "@/components/bonus-autofill-button";
+import { FinishedMatchesArchive } from "@/components/finished-matches-archive";
 import { MatchTipCard } from "@/components/match-tip-card";
 import { PredictionDeadlinePanel } from "@/components/prediction-deadline-panel";
 import { Panel } from "@/components/ui";
@@ -6,7 +7,9 @@ import { requireSession } from "@/lib/auth";
 import { BONUS_AUTOFILL_PREDICTED_OPEN } from "@/lib/bonus-autofill";
 import { formatOsloDate } from "@/lib/format";
 import { getPredictionDeadlineSummary } from "@/lib/prediction-insights";
+import { hasFinalResult } from "@/lib/scoring";
 import { getAppState } from "@/lib/state";
+import type { WorldCupMatch } from "@/lib/types";
 
 export const metadata = {
   title: "Kamper",
@@ -25,12 +28,9 @@ function osloDateKey(value: string) {
   return `${lookup.year}-${lookup.month}-${lookup.day}`;
 }
 
-export default async function MatchesPage() {
-  const [player, state] = await Promise.all([requireSession(), getAppState()]);
-  const deadlineSummary = getPredictionDeadlineSummary(state, player.id);
-
-  const buckets = new Map<string, { kickoff: string; matches: typeof state.matches }>();
-  for (const match of state.matches) {
+function groupMatchesByDate(matches: WorldCupMatch[], direction: "asc" | "desc" = "asc") {
+  const buckets = new Map<string, { kickoff: string; matches: WorldCupMatch[] }>();
+  for (const match of matches) {
     const key = osloDateKey(match.kickoffAt);
     const bucket = buckets.get(key);
     if (bucket) {
@@ -39,13 +39,50 @@ export default async function MatchesPage() {
       buckets.set(key, { kickoff: match.kickoffAt, matches: [match] });
     }
   }
-  const groupedByDate = [...buckets.entries()]
+
+  return [...buckets.entries()]
     .map(([key, value]) => ({
       key,
       kickoff: value.kickoff,
       matches: value.matches.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt)),
     }))
-    .sort((a, b) => a.key.localeCompare(b.key));
+    .sort((a, b) => (direction === "asc" ? a.key.localeCompare(b.key) : b.key.localeCompare(a.key)));
+}
+
+function MatchDayList({
+  bonusNext,
+  groupedMatches,
+  player,
+  state,
+}: {
+  bonusNext: string;
+  groupedMatches: ReturnType<typeof groupMatchesByDate>;
+  player: Awaited<ReturnType<typeof requireSession>>;
+  state: Awaited<ReturnType<typeof getAppState>>;
+}) {
+  return (
+    <div className="tip-day-list">
+      {groupedMatches.map(({ key, kickoff, matches }) => (
+        <section key={key} className="tip-day">
+          <h2 className="tip-day-heading">{formatOsloDate(kickoff)}</h2>
+          <div className="tip-day-matches">
+            {matches.map((match) => (
+              <MatchTipCard key={match.id} match={match} player={player} state={state} bonusNext={bonusNext} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+export default async function MatchesPage() {
+  const [player, state] = await Promise.all([requireSession(), getAppState()]);
+  const deadlineSummary = getPredictionDeadlineSummary(state, player.id);
+  const finishedMatches = state.matches.filter(hasFinalResult);
+  const activeMatches = state.matches.filter((match) => !hasFinalResult(match));
+  const groupedActiveMatches = groupMatchesByDate(activeMatches);
+  const groupedFinishedMatches = groupMatchesByDate(finishedMatches, "desc");
 
   return (
     <div className="space-y-6">
@@ -68,18 +105,17 @@ export default async function MatchesPage() {
 
       <PredictionDeadlinePanel summary={deadlineSummary} />
 
-      <div className="tip-day-list">
-        {groupedByDate.map(({ key, kickoff, matches }) => (
-          <section key={key} className="tip-day">
-            <h2 className="tip-day-heading">{formatOsloDate(kickoff)}</h2>
-            <div className="tip-day-matches">
-              {matches.map((match) => (
-                <MatchTipCard key={match.id} match={match} player={player} state={state} bonusNext="/kamper" />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+      {finishedMatches.length ? (
+        <FinishedMatchesArchive
+          dayCount={groupedFinishedMatches.length}
+          matchCount={finishedMatches.length}
+          matchIds={finishedMatches.map((match) => match.id)}
+        >
+          <MatchDayList bonusNext="/kamper" groupedMatches={groupedFinishedMatches} player={player} state={state} />
+        </FinishedMatchesArchive>
+      ) : null}
+
+      <MatchDayList bonusNext="/kamper" groupedMatches={groupedActiveMatches} player={player} state={state} />
     </div>
   );
 }

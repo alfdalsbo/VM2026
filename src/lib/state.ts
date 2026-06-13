@@ -15,6 +15,7 @@ import type {
   LineupPlayer,
   MatchLineup,
   MatchEvent,
+  MatchTechnicalReport,
   LivePotTip,
   PlayerProfile,
   Prediction,
@@ -60,7 +61,7 @@ export function emptyTournamentStats(): TournamentStats {
 
 export function initialState(): AppState {
   const state: AppState = {
-    version: 7,
+    version: 8,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
@@ -69,6 +70,7 @@ export function initialState(): AppState {
     lineups: [],
     matchStats: [],
     matchEvents: [],
+    matchTechnicalReports: [],
     livePotTips: [],
     avatarSelections: [],
     followedMatches: [],
@@ -196,6 +198,23 @@ function normalizeLivePotTips(tips: StoredLivePotTip[] = []): LivePotTip[] {
   });
 }
 
+function normalizeMatchTechnicalReports(reports: Partial<MatchTechnicalReport>[] = []): MatchTechnicalReport[] {
+  return reports
+    .map((report) => ({
+      matchId: String(report.matchId ?? ""),
+      sourceUrl: String(report.sourceUrl ?? ""),
+      fetchedAt: report.fetchedAt ?? new Date(0).toISOString(),
+      parsedAt: report.parsedAt ?? null,
+      parseStatus: report.parseStatus ?? "partial",
+      unavailableReason: report.unavailableReason ?? null,
+      metrics: report.metrics ?? [],
+      phases: report.phases ?? [],
+      playerHighlights: report.playerHighlights ?? [],
+      notes: report.notes ?? [],
+    }))
+    .filter((report) => report.matchId && report.sourceUrl);
+}
+
 type StoredLineupPlayer = Partial<LineupPlayer> & {
   id: string;
   name: string;
@@ -281,7 +300,7 @@ function mergeWithSeed(state: AppState): AppState {
 
   const merged: AppState = {
     ...state,
-    version: 7,
+    version: 8,
     players,
     rounds: worldCupRounds,
     matches,
@@ -290,6 +309,7 @@ function mergeWithSeed(state: AppState): AppState {
     lineups: normalizeLineups((state.lineups ?? []) as StoredLineup[], matches),
     matchStats: state.matchStats ?? [],
     matchEvents: (state.matchEvents ?? []) as MatchEvent[],
+    matchTechnicalReports: normalizeMatchTechnicalReports(state.matchTechnicalReports ?? []),
     livePotTips: normalizeLivePotTips((state.livePotTips ?? []) as StoredLivePotTip[]),
     avatarSelections: state.avatarSelections ?? [],
     followedMatches: state.followedMatches ?? [],

@@ -17,6 +17,10 @@ vi.mock("@/lib/state", async (importOriginal) => {
   };
 });
 
+vi.mock("@/components/live-auto-refresh", () => ({
+  LiveAutoRefresh: () => null,
+}));
+
 function liveTip(overrides: Partial<LivePotTip> = {}): LivePotTip {
   return {
     playerId: "alf",

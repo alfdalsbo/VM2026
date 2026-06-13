@@ -57,7 +57,7 @@ export async function loginAction(formData: FormData) {
   const passcode = field(formData, "passcode");
   const next = safeNext(field(formData, "next"));
 
-  if (!getPlayer(playerId) || !isCorrectPasscode(passcode)) {
+  if (!getPlayer(playerId) || !isCorrectPasscode(playerId, passcode)) {
     redirect(`/login?error=avvist&next=${encodeURIComponent(next)}`);
   }
 

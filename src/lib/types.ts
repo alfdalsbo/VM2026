@@ -462,6 +462,7 @@ export type AppState = {
 export type Session = {
   playerId: string;
   issuedAt: number;
+  version: number;
 };
 
 export type ScoreBreakdown = {

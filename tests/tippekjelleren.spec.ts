@@ -17,7 +17,7 @@ test("user can log in and tip from the match-first dashboard", async ({ page }, 
     "Vegard",
   ]);
   await page.getByLabel("Spiller").selectOption(playerId);
-  await page.getByLabel("Felles kode").fill("Norge");
+  await page.getByLabel("Privat kode").fill(playerId === "alf" ? "Norgevinner" : "Norge");
   await page.getByRole("button", { name: "Logg inn" }).click();
 
   await expect(page.getByRole("heading", { name: /Dagens kamper|Neste kampdag/ })).toBeVisible({ timeout: 20_000 });

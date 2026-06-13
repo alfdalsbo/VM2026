@@ -9,6 +9,11 @@ import { getPlayer, isAdminPlayer, players } from "@/lib/players";
 import type { Session } from "@/lib/types";
 
 const cookieName = "tippekjelleren_session";
+const currentSessionVersion = 2;
+const defaultPasscode = "Norge";
+const playerPasscodes: Record<string, string> = {
+  alf: "Norgevinner",
+};
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET || process.env.SESSION_SECRET || "local-vm2026-secret-change-before-vercel";
@@ -35,16 +40,22 @@ function decodeSession(value: string): Session | null {
   const expectedBuffer = Buffer.from(expected);
   if (signatureBuffer.length !== expectedBuffer.length || !timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
   try {
-    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Session;
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<Session>;
+    if (session.version !== currentSessionVersion) return null;
+    if (typeof session.playerId !== "string" || typeof session.issuedAt !== "number") return null;
     if (!getPlayer(session.playerId)) return null;
-    return session;
+    return {
+      playerId: session.playerId,
+      issuedAt: session.issuedAt,
+      version: currentSessionVersion,
+    };
   } catch {
     return null;
   }
 }
 
-export function isCorrectPasscode(passcode: string) {
-  const configured = process.env.TIPPEKJELLEREN_PASSCODE || "Norge";
+export function isCorrectPasscode(playerId: string, passcode: string) {
+  const configured = playerPasscodes[playerId] ?? process.env.TIPPEKJELLEREN_PASSCODE ?? defaultPasscode;
   if (process.env.VERCEL && !process.env.TIPPEKJELLEREN_PASSCODE) {
     throw new Error("TIPPEKJELLEREN_PASSCODE must be set on Vercel.");
   }
@@ -55,7 +66,7 @@ export async function createSession(playerId: string) {
   const player = getPlayer(playerId);
   if (!player) throw new Error("Ukjent spiller.");
   const cookieStore = await cookies();
-  cookieStore.set(cookieName, encodeSession({ playerId, issuedAt: Date.now() }), {
+  cookieStore.set(cookieName, encodeSession({ playerId, issuedAt: Date.now(), version: currentSessionVersion }), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

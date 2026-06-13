@@ -26,7 +26,7 @@ export default async function LoginPage({
             <p className="eyebrow">Tippekjelleren · VM 2026</p>
             <h1 className="mt-4 text-5xl font-black leading-none tracking-[0] sm:text-7xl">Privat VM-domstol for gjengen.</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-white/82">
-              Velg spiller, skriv felles kode og gjør deg klar til å overvurdere både form, xG og egen dømmekraft.
+              Velg spiller, skriv privat kode og gjør deg klar til å overvurdere både form, xG og egen dømmekraft.
             </p>
           </div>
         </section>
@@ -56,7 +56,7 @@ export default async function LoginPage({
                 </select>
               </label>
               <label>
-                <span>Felles kode</span>
+                <span>Privat kode</span>
                 <input name="passcode" type="password" autoComplete="current-password" placeholder="Privat kode" required />
               </label>
               <Notice message={rejected ? "Adgang nektet. Enten feil kode, eller så prøvde tabellen å beskytte seg." : undefined} tone="error" />
@@ -66,7 +66,7 @@ export default async function LoginPage({
             </form>
 
             <p className="lead mt-6 text-sm">
-              Bruk den private koden for gjengen. Lokal utviklingskode står i README, men produksjon bruker egen Vercel-kode.
+              Bruk privat kode for riktig spiller. Lokal utviklingskode står i README, men produksjon bruker egen Vercel-kode.
             </p>
           </div>
         </section>

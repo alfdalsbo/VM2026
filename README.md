@@ -51,10 +51,14 @@ ADMIN_PLAYER_IDS=alf
 BLOB_READ_WRITE_TOKEN=vercel-blob-token
 CRON_SECRET=lang-tilfeldig-cron-hemmelighet
 DATABASE_URL=postgres://...
+API_FOOTBALL_KEY=
+API_FOOTBALL_SEASON=2026
 BONUS_ODDS_URL=https://example.com/tippekjelleren-bonus-odds.json
 ```
 
 `DATABASE_URL` kan peke på Supabase/Postgres og får førsteprioritet. Uten `DATABASE_URL` bruker appen Vercel Blob når `BLOB_READ_WRITE_TOKEN` finnes. Hvis ingen varig lagring er konfigurert, faller den tilbake til lokal fil under `.data/`, som bare er egnet for lokal utvikling.
+
+`API_FOOTBALL_KEY` er valgfri og brukes kun server-side som gratis fallback for raskere kampstatus, lagoppstillinger, hendelser og enkel statistikk når FIFA henger etter. Appen bruker ikke odds- eller predictions-endepunktene fra API-Football. Gratisbudsjettet styres internt mot 100 kall per UTC-dag.
 
 `BONUS_ODDS_URL` er valgfri og brukes kun server-side til autofyll av kampbonus. Feeden skal være provider-nøytral JSON, indeksert på appens kamp-ID-er:
 
@@ -94,9 +98,9 @@ Playwright:
 npm run test:e2e
 ```
 
-## GitHub-sync to ganger daglig
+## GitHub-sync hvert kvarter i VM-månedene
 
-Workflowen `.github/workflows/sync-world-cup.yml` kaller produksjons-endepunktet kl. 06:00 og 18:00 UTC i juni og juli 2026. For at den skal virke må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`.
+Workflowen `.github/workflows/sync-world-cup.yml` kaller produksjons-endepunktet 03, 18, 33 og 48 minutter over hver time i juni og juli 2026. For at den skal virke må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`. Vercel Cron ligger samtidig som daglig sikkerhetssync, fordi Hobby-planen bare støtter gratis cron én gang i døgnet.
 
 ```bash
 gh auth login

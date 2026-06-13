@@ -30,7 +30,7 @@ export type MatchStatus = "scheduled" | "live" | "halftime" | "finished" | "post
 
 export type PredictionOutcome = "home" | "draw" | "away";
 
-export type ResultSource = "manual" | "fifa";
+export type ResultSource = "manual" | "fifa" | "api_football";
 
 export type TeamSide = "home" | "away";
 
@@ -365,6 +365,44 @@ export type SyncState = {
   message: string | null;
 };
 
+export type ApiFootballRequestBucket = "live_pregame" | "post_match" | "reserve";
+
+export type ApiFootballEndpointKind = "fixture" | "events" | "lineups" | "statistics";
+
+export type ApiFootballFixtureLink = {
+  matchId: string;
+  fixtureId: number;
+  leagueId: number;
+  season: number;
+  homeTeam: string;
+  awayTeam: string;
+  kickoffAt: string | null;
+  matchedAt: string;
+  updatedAt: string;
+  lastFetchedAt: Partial<Record<ApiFootballEndpointKind, string>>;
+};
+
+export type ApiFootballUsage = {
+  date: string;
+  requests: number;
+  livePregameRequests: number;
+  postMatchRequests: number;
+  reserveRequests: number;
+  lastRequestAt: string | null;
+  skippedReason: string | null;
+};
+
+export type ApiFootballSyncState = {
+  enabled: boolean;
+  leagueId: number | null;
+  season: number;
+  lastDiscoveryAt: string | null;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+  fixtureLinks: ApiFootballFixtureLink[];
+  usage: ApiFootballUsage;
+};
+
 export type PlayerTournamentStat = {
   playerProfileId?: string | null;
   playerName: string;
@@ -409,6 +447,7 @@ export type AppState = {
   matchStats: MatchStats[];
   matchEvents: MatchEvent[];
   matchTechnicalReports: MatchTechnicalReport[];
+  apiFootball: ApiFootballSyncState;
   livePotTips: LivePotTip[];
   avatarSelections: AvatarSelection[];
   followedMatches: FollowedMatch[];

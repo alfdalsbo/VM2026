@@ -128,6 +128,7 @@ const events: MatchEvent[] = [
 describe("match analysis data", () => {
   it("validates stored analyses and rejects unknown statuses", () => {
     expect(parseMatchAnalyses([sampleAnalysis()])).toHaveLength(1);
+    expect(parseMatchAnalyses([sampleAnalysis({ status: "external_fallback" })])).toHaveLength(1);
     expect(parseMatchAnalyses([sampleAnalysis({ status: "fifa_report" })])).toHaveLength(1);
     expect(() => parseMatchAnalyses([{ ...sampleAnalysis(), status: "paid_feed" }])).toThrow();
   });
@@ -188,6 +189,38 @@ describe("match analysis data", () => {
     expect(analysis?.summary).toContain("xG");
     expect(analysis?.sources[0].publisher).toBe("FIFA Training Centre");
   });
+
+  it("uses API-Football as a richer provisional analysis before the FIFA report arrives", () => {
+    const analysis = getMatchAnalysisForMatch({
+      match: finishedMatch(),
+      stats: { ...stats, source: "API-Football foreløpig", updatedAt: "2026-06-12T06:00:00Z" },
+      lineup: null,
+      events: [{ ...events[0], source: "api_football", updatedAt: "2026-06-12T06:01:00Z" }],
+      storedAnalyses: [],
+      now: new Date("2026-06-12T09:00:00Z"),
+    });
+
+    expect(analysis).toMatchObject({
+      matchId: "m001",
+      status: "external_fallback",
+    });
+    expect(analysis?.summary).toContain("API-Football foreløpig");
+    expect(analysis?.sources[0].publisher).toBe("API-Football");
+  });
+
+  it("still prefers the FIFA technical report over API-Football fallback data", () => {
+    const analysis = getMatchAnalysisForMatch({
+      match: finishedMatch(),
+      stats: { ...stats, source: "API-Football foreløpig" },
+      lineup: null,
+      events: [{ ...events[0], source: "api_football" }],
+      technicalReport: sampleTechnicalReport(),
+      storedAnalyses: [],
+      now: new Date("2026-06-12T09:00:00Z"),
+    });
+
+    expect(analysis?.status).toBe("fifa_report");
+  });
 });
 
 describe("PostMatchAnalysis", () => {
@@ -232,5 +265,28 @@ describe("PostMatchAnalysis", () => {
     expect(html).toContain("xG og avslutninger");
     expect(html).toContain("Faser i spill");
     expect(html).toContain("Fullførte line breaks");
+  });
+
+  it("renders API-Football fallback as a distinct provisional source", () => {
+    const analysis = getMatchAnalysisForMatch({
+      match: finishedMatch(),
+      stats: { ...stats, source: "API-Football foreløpig" },
+      lineup: null,
+      events: [{ ...events[0], source: "api_football" }],
+      storedAnalyses: [],
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(PostMatchAnalysis, {
+        analysis: analysis!,
+        match: finishedMatch(),
+        stats,
+        lineup: null,
+        events,
+      }),
+    );
+
+    expect(html).toContain("API-Football foreløpig");
+    expect(html).toContain("Fixtures, events, lineups and statistics");
   });
 });

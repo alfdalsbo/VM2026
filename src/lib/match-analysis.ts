@@ -1,12 +1,13 @@
 import rawMatchAnalyses from "@/data/match-analyses.json";
 import { displayTeamName } from "@/lib/display";
+import { apiFootballDocsUrl, apiFootballSourceName } from "@/lib/api-football-sync";
 import { fifaTrainingCentreReportHubUrl } from "@/lib/fifa-technical-reports";
 import { formatScore } from "@/lib/format";
 import type { MatchEvent, MatchLineup, MatchStats, MatchTechnicalReport, TeamSide, TechnicalReportMetric, WorldCupMatch } from "@/lib/types";
 import { fifaScheduleSource } from "@/lib/world-cup-2026";
 import { z } from "zod";
 
-const analysisStatusSchema = z.enum(["preliminary", "fifa_report", "tsg_enriched"]);
+const analysisStatusSchema = z.enum(["preliminary", "external_fallback", "fifa_report", "tsg_enriched"]);
 
 const pitchPointSchema = z.object({
   x: z.number().min(0).max(100),
@@ -104,6 +105,9 @@ export function getMatchAnalysisForMatch({
   if (stored?.status === "tsg_enriched") return stored;
   if (technicalReport && technicalReport.parseStatus !== "unavailable" && (technicalReport.metrics.length || technicalReport.phases.length)) {
     return buildFifaReportMatchAnalysis({ match, stats, lineup, events, technicalReport, now });
+  }
+  if (hasExternalFallbackData(stats, lineup, events)) {
+    return buildExternalFallbackMatchAnalysis({ match, stats, lineup, events, now });
   }
   if (stored) return stored;
   return buildPreliminaryMatchAnalysis({ match, stats, lineup, events, now });
@@ -441,6 +445,70 @@ function buildPreliminaryMatchAnalysis({
   };
 }
 
+function buildExternalFallbackMatchAnalysis({
+  match,
+  stats,
+  lineup,
+  events,
+  now,
+}: Required<Pick<MatchAnalysisContext, "match" | "events" | "now">> & {
+  stats: MatchStats | null;
+  lineup: MatchLineup | null;
+}): MatchAnalysis {
+  const home = displayTeamName(match.homeTeam);
+  const away = displayTeamName(match.awayTeam);
+  const result = formatScore(match.result?.homeGoals, match.result?.awayGoals);
+  const goals = goalEvents(events);
+  const base = buildPreliminaryMatchAnalysis({ match, stats, lineup, events, now });
+  const accessedAt = latestSourceTimestamp(stats, lineup, events) ?? now.toISOString();
+
+  return {
+    ...base,
+    status: "external_fallback",
+    updatedAt: accessedAt,
+    summary: [
+      `${apiFootballSourceName} fyller kampbildet mens FIFA-rapporten ventes: ${home} - ${away} endte ${result}.`,
+      summaryFromStats(stats, home, away),
+      goals.length
+        ? `Hendelsesloggen gir foreløpige bruddpunkt: ${goals.slice(0, 3).map(formatEventNote).join("; ")}.`
+        : "Når FIFA Training Centre publiserer rapporten, erstattes dette av full teknisk etterrapport.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    tacticalThemes: [
+      ...tacticalThemes(stats, lineup, events, home, away).filter((theme) => !theme.includes("Gratisdata gir foreløpig")),
+      "Kilden er raskere enn FIFA calendar API på enkelte kamper, men behandles som midlertidig fasit.",
+    ],
+    graphicsNotes: {
+      ...base.graphicsNotes,
+      notes: [
+        lineup?.formation.home || lineup?.formation.away
+          ? `Tavlen bruker ${apiFootballSourceName} for ${lineup?.formation.home ?? "-"} mot ${lineup?.formation.away ?? "-"}.`
+          : "Tavlen bruker resultat og hendelser til formasjonen er publisert.",
+        stats ? "Statslinjene er hentet fra API-Football fallback og erstattes av FIFA når offisiell data kommer." : "Statslinjene fylles når gratisdataene leverer kampen.",
+      ],
+    },
+    sources: [
+      {
+        title: "Fixtures, events, lineups and statistics",
+        url: apiFootballDocsUrl,
+        publisher: "API-Football",
+        accessedAt,
+      },
+      {
+        title: "FIFA public calendar API",
+        url: fifaScheduleSource,
+        publisher: "FIFA",
+      },
+      {
+        title: "FIFA Training Centre Match Report Hub",
+        url: fifaTrainingCentreReportHubUrl,
+        publisher: "FIFA",
+      },
+    ],
+  };
+}
+
 function winnerSide(match: WorldCupMatch): TeamSide | "draw" | null {
   if (!match.result) return null;
   if (match.result.homeGoals > match.result.awayGoals) return "home";
@@ -591,6 +659,23 @@ function graphicsNotes(match: WorldCupMatch, stats: MatchStats | null, lineup: M
 
 function goalEvents(events: MatchEvent[]) {
   return events.filter((event) => event.type === "goal" || event.type === "own_goal" || event.type === "penalty_goal");
+}
+
+function hasExternalFallbackData(stats: MatchStats | null, lineup: MatchLineup | null, events: MatchEvent[]) {
+  return isApiFootballSource(stats?.source) || isApiFootballSource(lineup?.source) || events.some((event) => event.source === "api_football");
+}
+
+function latestSourceTimestamp(stats: MatchStats | null, lineup: MatchLineup | null, events: MatchEvent[]) {
+  const timestamps = [
+    isApiFootballSource(stats?.source) ? stats?.updatedAt : null,
+    isApiFootballSource(lineup?.source) ? lineup?.updatedAt : null,
+    ...events.filter((event) => event.source === "api_football").map((event) => event.updatedAt),
+  ].filter((value): value is string => Boolean(value));
+  return timestamps.sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null;
+}
+
+function isApiFootballSource(source: string | null | undefined) {
+  return (source ?? "").toLowerCase().includes("api-football");
 }
 
 function cardEvents(events: MatchEvent[]) {

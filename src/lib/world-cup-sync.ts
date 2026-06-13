@@ -5,6 +5,7 @@ import { applyKnockoutResolversToState } from "@/lib/tournament";
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
 import { derivePlayerProfilesFromState, playerProfileIdFor } from "@/lib/player-profiles";
 import { syncFifaTechnicalReportsForState } from "@/lib/fifa-technical-reports";
+import { normalizeApiFootballSyncState, syncApiFootballForState } from "@/lib/api-football-sync";
 import { deriveTournamentBonusResult } from "@/lib/tournament-bonus";
 import type {
   AppState,
@@ -803,15 +804,22 @@ export function applyFifaMatchesToState(
     const fifaResult = mapFifaResult(fifaMatch, options.syncedAt);
     const fifaStats = mapFifaStats(match.id, fifaMatch, options.syncedAt);
     if (fifaStats) statsByMatchId.set(match.id, fifaStats);
-    for (const event of mapFifaEvents(match.id, fifaMatch, options.syncedAt)) {
+    const fifaEvents = mapFifaEvents(match.id, fifaMatch, options.syncedAt);
+    if (fifaEvents.length) {
+      for (const [eventId, event] of eventsById) {
+        if (event.matchId === match.id && event.source === "api_football") eventsById.delete(eventId);
+      }
+    }
+    for (const event of fifaEvents) {
       eventsById.set(event.id, event);
     }
     const fifaLineup = mapFifaLineup(match.id, fifaMatch, options.syncedAt);
     if (fifaLineup) {
       const existingLineup = lineupsByMatchId.get(match.id);
+      const preserveExistingPlayers = existingLineup?.players.length && !isApiFootballSyncSource(existingLineup.source);
       lineupsByMatchId.set(match.id, {
         ...fifaLineup,
-        players: existingLineup?.players.length ? existingLineup.players : fifaLineup.players,
+        players: preserveExistingPlayers ? existingLineup.players : fifaLineup.players,
       });
     }
     const hasManualResult = match.result?.source === "manual" || (match.result && !match.result.source);
@@ -924,7 +932,13 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
       ...withPlayerProfiles,
       tournamentBonusResult: deriveTournamentBonusResult(withPlayerProfiles, syncedAt),
     };
-    const technicalSync = await syncFifaTechnicalReportsForState(withManualOverrides, {
+    const apiFootballSync = await syncApiFootballForState(withManualOverrides, {
+      fetcher: options.fetcher ?? fetch,
+      force: options.force,
+      now,
+      syncedAt,
+    });
+    const technicalSync = await syncFifaTechnicalReportsForState(apiFootballSync.state, {
       fetcher: options.fetcher ?? fetch,
       force: options.force,
       syncedAt,
@@ -936,11 +950,11 @@ export async function syncWorldCupData(options: SyncOptions = {}) {
       ...technicalSync.state,
       sync: syncState({
         status: "success",
-        source: "FIFA public calendar API + FIFA Training Centre",
+        source: "FIFA public calendar API + FIFA Training Centre + API-Football fallback",
         lastStartedAt: startedAt,
         lastCompletedAt: syncedAt,
-        updatedMatches,
-        message: `Oppdatert ${updatedMatches} kamp${updatedMatches === 1 ? "" : "er"}, ${teamSync.updatedTeams} lagprofil${teamSync.updatedTeams === 1 ? "" : "er"}${reportPart} fra offisielle FIFA-kilder.`,
+        updatedMatches: updatedMatches + apiFootballSync.updatedMatches,
+        message: `Oppdatert ${updatedMatches + apiFootballSync.updatedMatches} kamp${updatedMatches + apiFootballSync.updatedMatches === 1 ? "" : "er"}, ${teamSync.updatedTeams} lagprofil${teamSync.updatedTeams === 1 ? "" : "er"}${reportPart}${apiFootballMessagePart(apiFootballSync.requestsUsed)}.`,
       }),
     };
     // Keep the latest user-owned data: a tip/bonus/follow/avatar saved while
@@ -972,6 +986,7 @@ export function keepUserDataOnSync(synced: AppState, current: AppState): AppStat
     avatarSelections: current.avatarSelections,
     followedMatches: current.followedMatches,
     matchTechnicalReports: mergeTechnicalReports(synced, current),
+    apiFootball: mergeApiFootballSync(synced, current),
   };
 }
 
@@ -981,4 +996,47 @@ function mergeTechnicalReports(synced: AppState, current: AppState) {
     byMatchId.set(report.matchId, report);
   }
   return [...byMatchId.values()].sort((a, b) => a.matchId.localeCompare(b.matchId));
+}
+
+function apiFootballMessagePart(requestsUsed: number) {
+  if (requestsUsed <= 0) return " fra offisielle FIFA-kilder";
+  return ` fra offisielle FIFA-kilder, med ${requestsUsed} gratis API-Football-kall som fallback`;
+}
+
+function isApiFootballSyncSource(source: string | null | undefined) {
+  return (source ?? "").toLowerCase().includes("api-football");
+}
+
+function mergeApiFootballSync(synced: AppState, current: AppState) {
+  const syncedSync = normalizeApiFootballSyncState(synced.apiFootball);
+  const currentSync = normalizeApiFootballSyncState(current.apiFootball);
+  const byMatchId = new Map(currentSync.fixtureLinks.map((link) => [link.matchId, link]));
+  for (const link of syncedSync.fixtureLinks) byMatchId.set(link.matchId, link);
+  return {
+    ...syncedSync,
+    enabled: syncedSync.enabled || currentSync.enabled,
+    leagueId: syncedSync.leagueId ?? currentSync.leagueId,
+    fixtureLinks: [...byMatchId.values()].sort((a, b) => a.matchId.localeCompare(b.matchId)),
+    usage: mergeApiFootballUsage(syncedSync.usage, currentSync.usage),
+    lastError: syncedSync.lastError ?? currentSync.lastError,
+  };
+}
+
+function mergeApiFootballUsage(synced: ReturnType<typeof normalizeApiFootballSyncState>["usage"], current: ReturnType<typeof normalizeApiFootballSyncState>["usage"]) {
+  if (synced.date !== current.date) return synced.date > current.date ? synced : current;
+  return {
+    date: synced.date,
+    requests: Math.max(synced.requests, current.requests),
+    livePregameRequests: Math.max(synced.livePregameRequests, current.livePregameRequests),
+    postMatchRequests: Math.max(synced.postMatchRequests, current.postMatchRequests),
+    reserveRequests: Math.max(synced.reserveRequests, current.reserveRequests),
+    lastRequestAt: latestIso(synced.lastRequestAt, current.lastRequestAt),
+    skippedReason: synced.skippedReason ?? current.skippedReason,
+  };
+}
+
+function latestIso(a: string | null, b: string | null) {
+  if (!a) return b;
+  if (!b) return a;
+  return Date.parse(a) >= Date.parse(b) ? a : b;
 }

@@ -4,6 +4,7 @@ import path from "node:path";
 import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
 import postgres from "postgres";
 
+import { emptyApiFootballSyncState, normalizeApiFootballSyncState } from "@/lib/api-football-sync";
 import { applyManualWorldCupOverrides } from "@/lib/manual-world-cup-overrides";
 import { derivePlayerProfilesFromState } from "@/lib/player-profiles";
 import { players } from "@/lib/players";
@@ -61,7 +62,7 @@ export function emptyTournamentStats(): TournamentStats {
 
 export function initialState(): AppState {
   const state: AppState = {
-    version: 8,
+    version: 9,
     players,
     rounds: worldCupRounds,
     matches: worldCupMatches,
@@ -71,6 +72,7 @@ export function initialState(): AppState {
     matchStats: [],
     matchEvents: [],
     matchTechnicalReports: [],
+    apiFootball: emptyApiFootballSyncState(),
     livePotTips: [],
     avatarSelections: [],
     followedMatches: [],
@@ -300,7 +302,7 @@ function mergeWithSeed(state: AppState): AppState {
 
   const merged: AppState = {
     ...state,
-    version: 8,
+    version: 9,
     players,
     rounds: worldCupRounds,
     matches,
@@ -310,6 +312,7 @@ function mergeWithSeed(state: AppState): AppState {
     matchStats: state.matchStats ?? [],
     matchEvents: (state.matchEvents ?? []) as MatchEvent[],
     matchTechnicalReports: normalizeMatchTechnicalReports(state.matchTechnicalReports ?? []),
+    apiFootball: normalizeApiFootballSyncState(state.apiFootball),
     livePotTips: normalizeLivePotTips((state.livePotTips ?? []) as StoredLivePotTip[]),
     avatarSelections: state.avatarSelections ?? [],
     followedMatches: state.followedMatches ?? [],

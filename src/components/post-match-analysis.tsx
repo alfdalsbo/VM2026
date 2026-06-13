@@ -18,7 +18,13 @@ export function PostMatchAnalysis({
   events: MatchEvent[];
 }) {
   const statusLabel =
-    analysis.status === "tsg_enriched" ? "TSG-beriket" : analysis.status === "fifa_report" ? "FIFA-rapport" : "Foreløpig analyse";
+    analysis.status === "tsg_enriched"
+      ? "TSG-beriket"
+      : analysis.status === "fifa_report"
+        ? "FIFA-rapport"
+        : analysis.status === "external_fallback"
+          ? "API-Football foreløpig"
+          : "Foreløpig analyse";
 
   return (
     <div className="post-match-analysis">

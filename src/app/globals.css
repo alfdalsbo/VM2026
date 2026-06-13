@@ -1689,6 +1689,11 @@ select {
   color: #7a4d0a;
 }
 
+.analysis-status-external_fallback {
+  background: rgba(12, 103, 133, 0.13);
+  color: #0b647d;
+}
+
 .analysis-status-tsg_enriched {
   background: rgba(15, 47, 74, 0.12);
   color: var(--blue);

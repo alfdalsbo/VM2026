@@ -1024,6 +1024,7 @@ function mergeApiFootballSync(synced: AppState, current: AppState) {
 
 function mergeApiFootballUsage(synced: ReturnType<typeof normalizeApiFootballSyncState>["usage"], current: ReturnType<typeof normalizeApiFootballSyncState>["usage"]) {
   if (synced.date !== current.date) return synced.date > current.date ? synced : current;
+  const syncedIsNewer = !current.lastRequestAt || (synced.lastRequestAt && Date.parse(synced.lastRequestAt) >= Date.parse(current.lastRequestAt));
   return {
     date: synced.date,
     requests: Math.max(synced.requests, current.requests),
@@ -1031,7 +1032,7 @@ function mergeApiFootballUsage(synced: ReturnType<typeof normalizeApiFootballSyn
     postMatchRequests: Math.max(synced.postMatchRequests, current.postMatchRequests),
     reserveRequests: Math.max(synced.reserveRequests, current.reserveRequests),
     lastRequestAt: latestIso(synced.lastRequestAt, current.lastRequestAt),
-    skippedReason: synced.skippedReason ?? current.skippedReason,
+    skippedReason: syncedIsNewer ? synced.skippedReason : current.skippedReason,
   };
 }
 

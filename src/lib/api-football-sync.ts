@@ -30,6 +30,7 @@ const discoveryReserve = 10;
 const maxRequestsPerRun = 8;
 const maxForcedRequestsPerRun = 10;
 const fixtureIndexRefreshMs = 12 * 60 * 60 * 1000;
+const seasonAccessRetryMs = 24 * 60 * 60 * 1000;
 const oneHourMs = 60 * 60 * 1000;
 const fifteenMinutesMs = 15 * 60 * 1000;
 const thirtyMinutesMs = 30 * 60 * 1000;
@@ -610,6 +611,13 @@ async function ensureApiFootballFixtureLinks(
 ) {
   const sync = normalizeApiFootballSyncState(state.apiFootball);
   if (!sync.leagueId) return { state };
+  if (
+    !options.force &&
+    isKnownSeasonAccessError(sync.lastError) &&
+    !isDue(sync.lastSyncedAt ?? sync.lastDiscoveryAt, options.now, seasonAccessRetryMs)
+  ) {
+    return { state };
+  }
   const newestLink = sync.fixtureLinks.reduce((newest, link) => Math.max(newest, Date.parse(link.updatedAt) || 0), 0);
   const shouldRefresh = options.force || sync.fixtureLinks.length === 0 || options.now.getTime() - newestLink >= fixtureIndexRefreshMs;
   if (!shouldRefresh) return { state };
@@ -1101,6 +1109,10 @@ function describeApiFootballErrors(errors: unknown) {
     return entries.join("; ") || "ukjent feil";
   }
   return String(errors);
+}
+
+function isKnownSeasonAccessError(error: string | null | undefined) {
+  return /free plans do not have access to this season/i.test(error ?? "");
 }
 
 function setApiFootballSkipped(state: AppState, reason: string): AppState {

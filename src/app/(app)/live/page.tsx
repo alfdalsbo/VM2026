@@ -86,7 +86,6 @@ export default async function LivePage() {
                 <th>Kampbonus</th>
                 <th>Kort</th>
                 <th>Turnering</th>
-                <th>Tips</th>
                 <th>Gule kort</th>
                 <th>Røde kort</th>
               </tr>
@@ -105,7 +104,6 @@ export default async function LivePage() {
                   <td>{standing.matchBonusPoints}</td>
                   <td>{standing.liveBonusPoints}</td>
                   <td>{standing.tournamentBonusPoints}</td>
-                  <td>{standing.tips}</td>
                   <td>{standing.exactYellows}</td>
                   <td>{standing.redCardHits}</td>
                 </tr>

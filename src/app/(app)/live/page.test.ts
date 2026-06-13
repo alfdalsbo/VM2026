@@ -2,16 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import LivePage from "@/app/(app)/live/page";
-import { players } from "@/lib/players";
 import { initialState } from "@/lib/state";
-import type { AppState, LivePotTip } from "@/lib/types";
+import type { AppState, Player } from "@/lib/types";
 
 const stateFixture = vi.hoisted(() => ({
   current: null as unknown as AppState,
-}));
-
-vi.mock("@/lib/auth", () => ({
-  requireSession: vi.fn(async () => players[0]),
+  player: null as unknown as Player,
 }));
 
 vi.mock("@/lib/state", async (importOriginal) => {
@@ -22,29 +18,19 @@ vi.mock("@/lib/state", async (importOriginal) => {
   };
 });
 
-function liveTip(overrides: Partial<LivePotTip> = {}): LivePotTip {
-  return {
-    playerId: "alf",
-    matchId: "m001",
-    yellowCardsTotal: 0,
-    redCardsTotal: 0,
-    updatedAt: "2026-06-11T19:20:00Z",
-    ...overrides,
-  };
-}
+vi.mock("@/lib/auth", () => ({
+  requireSession: vi.fn(async () => stateFixture.player),
+}));
 
 describe("LivePage", () => {
-  it("shows the bonus table without result-award columns or copy", async () => {
-    stateFixture.current = {
-      ...initialState(),
-      livePotTips: [liveTip()],
-    };
+  it("keeps the bonus table free of the noisy tips counter", async () => {
+    const state = initialState();
+    stateFixture.current = state;
+    stateFixture.player = state.players[0];
 
     const html = renderToStaticMarkup(await LivePage());
 
+    expect(html).not.toContain("<th>Tips</th>");
     expect(html).toContain("Bonustips-tabell");
-    expect(html).toContain("Bonustips har egen tabell og påvirker ikke resultattips-tabellen.");
-    expect(html).not.toContain("<th>Premie</th>");
-    expect(html).not.toContain("topp 3 gir");
   });
 });

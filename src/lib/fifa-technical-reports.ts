@@ -133,6 +133,7 @@ export function discoverFifaTechnicalReportLinks(html: string): FifaTechnicalRep
 }
 
 export async function extractFifaPdfText(data: Uint8Array): Promise<string> {
+  ensurePdfJsNodePolyfills();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loadingTask = pdfjs.getDocument({
     data,
@@ -154,6 +155,111 @@ export async function extractFifaPdfText(data: Uint8Array): Promise<string> {
   }
   await loadingTask.destroy();
   return pages.join("\n");
+}
+
+type DomMatrixLike = {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
+  multiplySelf(other: DomMatrixLike): DomMatrixLike;
+  preMultiplySelf(other: DomMatrixLike): DomMatrixLike;
+  invertSelf(): DomMatrixLike;
+  translate(x?: number, y?: number): DomMatrixLike;
+  scale(scaleX?: number, scaleY?: number): DomMatrixLike;
+};
+
+function ensurePdfJsNodePolyfills() {
+  const global = globalThis as unknown as { DOMMatrix?: new (init?: number[] | DomMatrixLike) => DomMatrixLike };
+  if (global.DOMMatrix) return;
+
+  global.DOMMatrix = class NodeDomMatrix implements DomMatrixLike {
+    a = 1;
+    b = 0;
+    c = 0;
+    d = 1;
+    e = 0;
+    f = 0;
+
+    constructor(init?: number[] | DomMatrixLike) {
+      if (Array.isArray(init)) {
+        [this.a, this.b, this.c, this.d, this.e, this.f] = [init[0] ?? 1, init[1] ?? 0, init[2] ?? 0, init[3] ?? 1, init[4] ?? 0, init[5] ?? 0];
+      } else if (init) {
+        this.a = init.a;
+        this.b = init.b;
+        this.c = init.c;
+        this.d = init.d;
+        this.e = init.e;
+        this.f = init.f;
+      }
+    }
+
+    multiplySelf(other: DomMatrixLike) {
+      const a = this.a * other.a + this.c * other.b;
+      const b = this.b * other.a + this.d * other.b;
+      const c = this.a * other.c + this.c * other.d;
+      const d = this.b * other.c + this.d * other.d;
+      const e = this.a * other.e + this.c * other.f + this.e;
+      const f = this.b * other.e + this.d * other.f + this.f;
+      this.a = a;
+      this.b = b;
+      this.c = c;
+      this.d = d;
+      this.e = e;
+      this.f = f;
+      return this;
+    }
+
+    preMultiplySelf(other: DomMatrixLike) {
+      return this.setFrom(new NodeDomMatrix(other).multiplySelf(this));
+    }
+
+    invertSelf() {
+      const determinant = this.a * this.d - this.b * this.c;
+      if (!determinant) {
+        this.a = Number.NaN;
+        this.b = Number.NaN;
+        this.c = Number.NaN;
+        this.d = Number.NaN;
+        this.e = Number.NaN;
+        this.f = Number.NaN;
+        return this;
+      }
+      const a = this.d / determinant;
+      const b = -this.b / determinant;
+      const c = -this.c / determinant;
+      const d = this.a / determinant;
+      const e = (this.c * this.f - this.d * this.e) / determinant;
+      const f = (this.b * this.e - this.a * this.f) / determinant;
+      this.a = a;
+      this.b = b;
+      this.c = c;
+      this.d = d;
+      this.e = e;
+      this.f = f;
+      return this;
+    }
+
+    translate(x = 0, y = 0) {
+      return this.multiplySelf(new NodeDomMatrix([1, 0, 0, 1, x, y]));
+    }
+
+    scale(scaleX = 1, scaleY = scaleX) {
+      return this.multiplySelf(new NodeDomMatrix([scaleX, 0, 0, scaleY, 0, 0]));
+    }
+
+    private setFrom(other: DomMatrixLike) {
+      this.a = other.a;
+      this.b = other.b;
+      this.c = other.c;
+      this.d = other.d;
+      this.e = other.e;
+      this.f = other.f;
+      return this;
+    }
+  };
 }
 
 export function parseFifaTechnicalReportText({

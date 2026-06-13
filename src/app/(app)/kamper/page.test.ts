@@ -1,6 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MatchesPage from "@/app/(app)/kamper/page";
 import { players } from "@/lib/players";
@@ -10,6 +10,7 @@ import type { AppState, MatchResult, WorldCupMatch } from "@/lib/types";
 const stateFixture = vi.hoisted(() => ({
   current: null as unknown as AppState,
 }));
+const now = new Date("2026-06-13T12:00:00Z");
 
 vi.mock("@/components/bonus-autofill-button", () => ({
   BonusAutofillButton: ({ label }: { label?: string }) => React.createElement("button", null, label ?? "Autofyll"),
@@ -49,6 +50,10 @@ function result(overrides: Partial<MatchResult> = {}): MatchResult {
   };
 }
 
+function kickoff(hoursFromNow: number) {
+  return new Date(now.getTime() + hoursFromNow * 60 * 60 * 1000).toISOString();
+}
+
 function stateWithFinishedArchive(): AppState {
   const base = initialState();
   return {
@@ -57,6 +62,7 @@ function stateWithFinishedArchive(): AppState {
       if (match.id === "m001") {
         return {
           ...match,
+          kickoffAt: kickoff(-4),
           result: result(),
           status: "finished" as const,
         };
@@ -64,10 +70,33 @@ function stateWithFinishedArchive(): AppState {
       if (match.id === "m002") {
         return {
           ...match,
+          kickoffAt: kickoff(-4),
           minute: 54,
           result: result({ homeGoals: 0, awayGoals: 1 }),
           status: "live" as const,
         };
+      }
+      return { ...match, kickoffAt: kickoff(1) };
+    }),
+  };
+}
+
+function stateWithTimedArchive(): AppState {
+  const base = initialState();
+  return {
+    ...base,
+    matches: base.matches.slice(0, 4).map((match) => {
+      if (match.id === "m001") {
+        return { ...match, kickoffAt: kickoff(-4), result: null, status: "scheduled" as const };
+      }
+      if (match.id === "m002") {
+        return { ...match, kickoffAt: kickoff(-2), result: null, status: "scheduled" as const };
+      }
+      if (match.id === "m003") {
+        return { ...match, kickoffAt: kickoff(-4), result: null, status: "live" as const };
+      }
+      if (match.id === "m004") {
+        return { ...match, kickoffAt: kickoff(-4), result: null, status: "halftime" as const };
       }
       return match;
     }),
@@ -75,6 +104,15 @@ function stateWithFinishedArchive(): AppState {
 }
 
 describe("MatchesPage", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("summarizes finished matches in a closed archive and keeps live/upcoming matches visible", async () => {
     stateFixture.current = stateWithFinishedArchive();
 
@@ -86,5 +124,17 @@ describe("MatchesPage", () => {
     expect(html).not.toContain("id=\"m001\"");
     expect(html).toContain("id=\"m002\"");
     expect(html).toContain("id=\"m003\"");
+  });
+
+  it("archives non-live matches three hours after kickoff but keeps live and halftime matches visible", async () => {
+    stateFixture.current = stateWithTimedArchive();
+
+    const html = renderToStaticMarkup(await MatchesPage());
+
+    expect(html).toContain("1 ferdigspilt kamp");
+    expect(html).not.toContain("id=\"m001\"");
+    expect(html).toContain("id=\"m002\"");
+    expect(html).toContain("id=\"m003\"");
+    expect(html).toContain("id=\"m004\"");
   });
 });

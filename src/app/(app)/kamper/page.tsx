@@ -21,6 +21,7 @@ const osloKeyFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Oslo",
   year: "numeric",
 });
+const archiveAfterKickoffMs = 3 * 60 * 60 * 1000;
 
 function osloDateKey(value: string) {
   const parts = osloKeyFormatter.formatToParts(new Date(value));
@@ -47,6 +48,13 @@ function groupMatchesByDate(matches: WorldCupMatch[], direction: "asc" | "desc" 
       matches: value.matches.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt)),
     }))
     .sort((a, b) => (direction === "asc" ? a.key.localeCompare(b.key) : b.key.localeCompare(a.key)));
+}
+
+function isArchivedMatch(match: WorldCupMatch, now: Date) {
+  if (hasFinalResult(match)) return true;
+  if (match.status === "live" || match.status === "halftime") return false;
+  const kickoff = Date.parse(match.kickoffAt);
+  return Number.isFinite(kickoff) && kickoff + archiveAfterKickoffMs <= now.getTime();
 }
 
 function MatchDayList({
@@ -79,8 +87,9 @@ function MatchDayList({
 export default async function MatchesPage() {
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
   const deadlineSummary = getPredictionDeadlineSummary(state, player.id);
-  const finishedMatches = state.matches.filter(hasFinalResult);
-  const activeMatches = state.matches.filter((match) => !hasFinalResult(match));
+  const now = new Date();
+  const finishedMatches = state.matches.filter((match) => isArchivedMatch(match, now));
+  const activeMatches = state.matches.filter((match) => !isArchivedMatch(match, now));
   const groupedActiveMatches = groupMatchesByDate(activeMatches);
   const groupedFinishedMatches = groupMatchesByDate(finishedMatches, "desc");
 

@@ -469,7 +469,7 @@ export async function autofillBonusTipsInState({
         awayRedCardsTotal: autofill.awayRedCardsTotal,
         updatedAt: new Date().toISOString(),
       };
-      next = saveLivePotTipInState(next, tip);
+      next = saveLivePotTipInState(next, tip, now);
       if (!existingCardTip || replaceExisting) cardTipsFilled += 1;
       touched = true;
     }

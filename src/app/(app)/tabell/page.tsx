@@ -57,7 +57,6 @@ export default async function TablePage() {
                 <th>Spiller</th>
                 <th>Resultattips</th>
                 <th>Sum</th>
-                <th>Tips</th>
                 <th>Eksakte</th>
                 <th>Utfall</th>
                 <th>Rundeseire</th>
@@ -79,7 +78,6 @@ export default async function TablePage() {
                     </span>
                   </td>
                   <td className="font-black">{standing.totalPoints}</td>
-                  <td>{standing.predictions}</td>
                   <td>{standing.exactResults}</td>
                   <td>{standing.outcomeHits}</td>
                   <td>{standing.roundsWon}</td>

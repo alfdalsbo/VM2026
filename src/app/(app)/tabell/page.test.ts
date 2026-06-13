@@ -62,6 +62,7 @@ describe("TablePage", () => {
     expect(html).not.toContain("Bonuspremie");
     expect(html).not.toContain("result-bonus-preview");
     expect(html).not.toContain("10+");
+    expect(html).not.toContain("<th>Tips</th>");
     expect(html).toContain("Bonustips føres i sin egen tabell.");
   });
 });

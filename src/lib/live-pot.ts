@@ -230,11 +230,11 @@ export function computeLivePotStandings(state: AppState): LivePotStanding[] {
   return rows;
 }
 
-export function saveLivePotTipInState(state: AppState, tip: LivePotTip): AppState {
+export function saveLivePotTipInState(state: AppState, tip: LivePotTip, now = new Date()): AppState {
   const match = state.matches.find((item) => item.id === tip.matchId);
   if (!match) throw new Error("Kampen finnes ikke.");
   if (hasUnresolvedKnockoutTeams(match)) throw new Error(footballCopy.knockoutPending);
-  if (!isLivePotOpen(match)) throw new Error("Bonustips låses ved kampstart.");
+  if (!isLivePotOpen(match, now)) throw new Error("Bonustips låses ved kampstart.");
   const hasAnyDistribution =
     tip.homeYellowCardsTotal !== undefined ||
     tip.awayYellowCardsTotal !== undefined ||

@@ -49,8 +49,9 @@ function withMatchStatus(status: AppState["matches"][number]["status"], events: 
 
 describe("live pot", () => {
   it("accepts tips before kickoff and locks them after kickoff", () => {
+    const now = new Date("2026-06-01T10:00:00Z");
     const scheduled = initialState();
-    const updated = saveLivePotTipInState(scheduled, tip({ yellowCardsTotal: 3 }));
+    const updated = saveLivePotTipInState(scheduled, tip({ yellowCardsTotal: 3 }), now);
     expect(updated.livePotTips).toHaveLength(1);
     expect(updated.livePotTips[0]).toMatchObject({ yellowCardsTotal: 3 });
 
@@ -60,10 +61,11 @@ describe("live pot", () => {
         match.id === "m001" ? { ...match, kickoffAt: "2026-05-31T19:00:00Z" } : match,
       ),
     };
-    expect(() => saveLivePotTipInState(locked, tip())).toThrow("Bonustips låses ved kampstart.");
+    expect(() => saveLivePotTipInState(locked, tip(), now)).toThrow("Bonustips låses ved kampstart.");
   });
 
   it("stores team card distribution and keeps legacy totals in sync", () => {
+    const now = new Date("2026-06-01T10:00:00Z");
     const scheduled = initialState();
     const updated = saveLivePotTipInState(
       scheduled,
@@ -75,6 +77,7 @@ describe("live pot", () => {
         homeRedCardsTotal: 0,
         awayRedCardsTotal: 1,
       }),
+      now,
     );
 
     expect(updated.livePotTips[0]).toMatchObject({

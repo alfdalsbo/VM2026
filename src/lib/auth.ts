@@ -5,15 +5,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { getPlayerPasscodeUpdatedAt, isCorrectPlayerPasscode } from "@/lib/passcodes";
 import { getPlayer, isAdminPlayer, players } from "@/lib/players";
 import type { Session } from "@/lib/types";
 
 const cookieName = "tippekjelleren_session";
 const currentSessionVersion = 2;
-const defaultPasscode = "Norge";
-const playerPasscodes: Record<string, string> = {
-  alf: "Norgevinner",
-};
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET || process.env.SESSION_SECRET || "local-vm2026-secret-change-before-vercel";
@@ -54,19 +51,15 @@ function decodeSession(value: string): Session | null {
   }
 }
 
-export function isCorrectPasscode(playerId: string, passcode: string) {
-  const configured = playerPasscodes[playerId] ?? process.env.TIPPEKJELLEREN_PASSCODE ?? defaultPasscode;
-  if (process.env.VERCEL && !process.env.TIPPEKJELLEREN_PASSCODE) {
-    throw new Error("TIPPEKJELLEREN_PASSCODE must be set on Vercel.");
-  }
-  return passcode === configured;
+export async function isCorrectPasscode(playerId: string, passcode: string) {
+  return isCorrectPlayerPasscode(playerId, passcode);
 }
 
-export async function createSession(playerId: string) {
+export async function createSession(playerId: string, issuedAt = Date.now()) {
   const player = getPlayer(playerId);
   if (!player) throw new Error("Ukjent spiller.");
   const cookieStore = await cookies();
-  cookieStore.set(cookieName, encodeSession({ playerId, issuedAt: Date.now(), version: currentSessionVersion }), {
+  cookieStore.set(cookieName, encodeSession({ playerId, issuedAt, version: currentSessionVersion }), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -88,7 +81,11 @@ export async function getSession() {
 
 export async function getCurrentPlayer() {
   const session = await getSession();
-  return session ? getPlayer(session.playerId) : null;
+  if (!session) return null;
+  const passcodeUpdatedAt = await getPlayerPasscodeUpdatedAt(session.playerId);
+  const changedAt = passcodeUpdatedAt ? Date.parse(passcodeUpdatedAt) : NaN;
+  if (Number.isFinite(changedAt) && session.issuedAt < changedAt) return null;
+  return getPlayer(session.playerId);
 }
 
 export async function requireSession() {

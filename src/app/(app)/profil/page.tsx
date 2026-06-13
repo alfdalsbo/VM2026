@@ -1,8 +1,9 @@
 import { Medal, Star, Target } from "lucide-react";
 
+import { changePasscodeAction } from "@/app/actions";
 import { AvatarEditor } from "@/components/avatar-editor";
 import { MatchupLinks } from "@/components/team-link";
-import { Panel, Stat } from "@/components/ui";
+import { Notice, Panel, Stat } from "@/components/ui";
 import { getAvatarDisplay, getAvatarOptions } from "@/lib/avatars";
 import { requireSession } from "@/lib/auth";
 import { formatOsloDateTime, formatScore } from "@/lib/format";
@@ -14,7 +15,19 @@ export const metadata = {
   title: "Profil",
 };
 
-export default async function ProfilePage() {
+const passwordErrors: Record<string, string> = {
+  "passord-kort": "Bruk minst fire tegn, så slipper vi de aller slappeste garderobedørene.",
+  "passord-lagring": "Passordet ble ikke lagret. Prøv igjen om litt.",
+  "passord-match": "Kodene er ikke like.",
+  "passord-tom": "Skriv inn en ny kode først.",
+};
+
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string; status?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
   const [player, state] = await Promise.all([requireSession(), getAppState()]);
   const avatarOptions = getAvatarOptions();
   const avatarDisplay = getAvatarDisplay(state, player.id);
@@ -47,6 +60,9 @@ export default async function ProfilePage() {
     ...badge,
     icon: iconByBadge[badge.id],
   }));
+  const passwordNotice =
+    params.status === "passord" ? "Passordet er oppdatert. Gamle innlogginger på din bruker må logge inn på nytt." : undefined;
+  const passwordError = params.error ? passwordErrors[params.error] : undefined;
 
   return (
     <div className="space-y-6">
@@ -60,6 +76,33 @@ export default async function ProfilePage() {
               Trykk på sirkelen for å velge og plassere din egen avatar.
             </p>
           </div>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="profile-password-panel">
+          <div>
+            <p className="eyebrow">Privat kode</p>
+            <h2 className="section-title mt-2">Bytt passord</h2>
+            <p className="lead mt-3 max-w-3xl">
+              Når du lagrer ny kode, blir gamle innlogginger på din spiller kastet ut neste gang de laster siden.
+            </p>
+          </div>
+          <form action={changePasscodeAction} className="profile-password-form">
+            <label>
+              <span>Ny kode</span>
+              <input name="newPasscode" type="password" autoComplete="new-password" minLength={4} required />
+            </label>
+            <label>
+              <span>Gjenta kode</span>
+              <input name="confirmPasscode" type="password" autoComplete="new-password" minLength={4} required />
+            </label>
+            <Notice message={passwordNotice} />
+            <Notice message={passwordError} tone="error" />
+            <button className="btn-primary" type="submit">
+              Lagre nytt passord
+            </button>
+          </form>
         </div>
       </Panel>
 

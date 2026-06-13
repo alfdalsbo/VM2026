@@ -17,6 +17,7 @@ import { toggleFollowedMatchInState } from "@/lib/followed-matches";
 import { clampScore } from "@/lib/format";
 import { LIVE_POT_MAX_RED_CARDS, LIVE_POT_MAX_YELLOW_CARDS, saveLivePotTipInState } from "@/lib/live-pot";
 import { sanitizeGoalBonusSlots } from "@/lib/match-bonus-slots";
+import { setPlayerPasscode } from "@/lib/passcodes";
 import { getPlayer } from "@/lib/players";
 import {
   getPrediction,
@@ -57,12 +58,32 @@ export async function loginAction(formData: FormData) {
   const passcode = field(formData, "passcode");
   const next = safeNext(field(formData, "next"));
 
-  if (!getPlayer(playerId) || !isCorrectPasscode(playerId, passcode)) {
+  if (!getPlayer(playerId) || !(await isCorrectPasscode(playerId, passcode))) {
     redirect(`/login?error=avvist&next=${encodeURIComponent(next)}`);
   }
 
   await createSession(playerId);
   redirect(next);
+}
+
+export async function changePasscodeAction(formData: FormData) {
+  const player = await requireSession();
+  const newPasscode = field(formData, "newPasscode");
+  const confirmPasscode = field(formData, "confirmPasscode");
+
+  if (!newPasscode) redirect("/profil?error=passord-tom");
+  if (newPasscode.length < 4) redirect("/profil?error=passord-kort");
+  if (newPasscode !== confirmPasscode) redirect("/profil?error=passord-match");
+
+  try {
+    await setPlayerPasscode(player.id, newPasscode);
+  } catch {
+    redirect("/profil?error=passord-lagring");
+  }
+
+  await createSession(player.id);
+  revalidatePath("/profil");
+  redirect("/profil?status=passord");
 }
 
 export async function logoutAction() {

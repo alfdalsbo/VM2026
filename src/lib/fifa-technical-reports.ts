@@ -135,6 +135,7 @@ export function discoverFifaTechnicalReportLinks(html: string): FifaTechnicalRep
 export async function extractFifaPdfText(data: Uint8Array): Promise<string> {
   ensurePdfJsNodePolyfills();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  await ensurePdfJsWorker();
   const loadingTask = pdfjs.getDocument({
     data,
     disableWorker: true,
@@ -155,6 +156,16 @@ export async function extractFifaPdfText(data: Uint8Array): Promise<string> {
   }
   await loadingTask.destroy();
   return pages.join("\n");
+}
+
+async function ensurePdfJsWorker() {
+  const global = globalThis as unknown as { pdfjsWorker?: { WorkerMessageHandler?: unknown } };
+  if (global.pdfjsWorker?.WorkerMessageHandler) return;
+  const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+  global.pdfjsWorker = {
+    ...(global.pdfjsWorker ?? {}),
+    WorkerMessageHandler: worker.WorkerMessageHandler,
+  };
 }
 
 type DomMatrixLike = {

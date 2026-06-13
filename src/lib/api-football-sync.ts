@@ -292,7 +292,7 @@ export async function syncApiFootballForState(state: AppState, options: SyncApiF
   const key = options.key ?? configuredKey();
   const fetcher = options.fetcher ?? fetch;
   const sync = normalizeApiFootballSyncState(state.apiFootball);
-  const usage = usageForToday(sync.usage, now);
+  const usage: ApiFootballUsage = { ...usageForToday(sync.usage, now), skippedReason: null };
   const requestsBefore = usage.requests;
   let nextState: AppState = {
     ...state,
@@ -331,13 +331,13 @@ export async function syncApiFootballForState(state: AppState, options: SyncApiF
         cache: "no-store",
         headers: { "x-apisports-key": key },
       });
-      if (!response.ok) {
-        lastError = `API-Football svarte ${response.status} for ${path}`;
+      const envelope = await readApiFootballEnvelope<T>(response);
+      if (hasApiErrors(envelope.errors)) {
+        lastError = `API-Football meldte feil for ${path}: ${describeApiFootballErrors(envelope.errors)}`;
         return null;
       }
-      const envelope = (await response.json()) as ApiFootballEnvelope<T>;
-      if (hasApiErrors(envelope.errors)) {
-        lastError = `API-Football meldte feil for ${path}`;
+      if (!response.ok) {
+        lastError = `API-Football svarte ${response.status} for ${path}`;
         return null;
       }
       return envelope.response ?? null;
@@ -1080,6 +1080,27 @@ function hasApiErrors(errors: unknown) {
   if (Array.isArray(errors)) return errors.length > 0;
   if (typeof errors === "object") return Object.keys(errors).length > 0;
   return Boolean(errors);
+}
+
+async function readApiFootballEnvelope<T>(response: Response): Promise<ApiFootballEnvelope<T>> {
+  try {
+    return (await response.json()) as ApiFootballEnvelope<T>;
+  } catch {
+    return {};
+  }
+}
+
+function describeApiFootballErrors(errors: unknown) {
+  if (!errors) return "ukjent feil";
+  if (typeof errors === "string") return errors;
+  if (Array.isArray(errors)) return errors.map(String).filter(Boolean).join("; ") || "ukjent feil";
+  if (typeof errors === "object") {
+    const entries = Object.entries(errors as Record<string, unknown>)
+      .map(([key, value]) => `${key}: ${String(value)}`)
+      .filter(Boolean);
+    return entries.join("; ") || "ukjent feil";
+  }
+  return String(errors);
 }
 
 function setApiFootballSkipped(state: AppState, reason: string): AppState {

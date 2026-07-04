@@ -67,6 +67,34 @@ describe("world cup sync", () => {
     expect(forcedSync.state.matches.find((match) => match.id === "m001")?.result?.homeGoals).toBe(2);
   });
 
+  it("replaces stale concrete teams in knockout slots when FIFA has the resolved fixture", () => {
+    const staleState = {
+      ...initialState(),
+      matches: initialState().matches.map((match) =>
+        match.id === "m092" ? { ...match, homeTeam: "Mexico", awayTeam: "Congo DR" } : match,
+      ),
+    };
+
+    const synced = applyFifaMatchesToState(
+      staleState,
+      [
+        {
+          IdMatch: "400021531",
+          MatchNumber: 92,
+          MatchStatus: 1,
+          Home: { IdTeam: "43911", TeamName: [{ Locale: "en-GB", Description: "Mexico" }] },
+          Away: { IdTeam: "43942", TeamName: [{ Locale: "en-GB", Description: "England" }] },
+        },
+      ],
+      { syncedAt: "2026-07-04T12:00:00Z" },
+    );
+
+    expect(synced.state.matches.find((match) => match.id === "m092")).toMatchObject({
+      homeTeam: "Mexico",
+      awayTeam: "England",
+    });
+  });
+
   it("stores FIFA match facts and formations when they are available", () => {
     const synced = applyFifaMatchesToState(
       initialState(),

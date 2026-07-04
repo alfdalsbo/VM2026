@@ -778,10 +778,15 @@ function buildTournamentStatsFromTeamProfiles(current: TournamentStats, teamProf
   };
 }
 
+function isResolvedFifaTeamName(next: string | null) {
+  if (!next || isKnockoutPlaceholder(next)) return false;
+  return !/^(winner|runner-up|runner up|loser|tbd|to be confirmed|to be determined)\b/i.test(next.trim());
+}
+
 function shouldUpdateTeamName(current: string, next: string | null, stage: WorldCupMatch["stage"]) {
   if (!next || next === current) return false;
   if (stage === "group") return false;
-  return isKnockoutPlaceholder(current);
+  return isResolvedFifaTeamName(next);
 }
 
 export function applyFifaMatchesToState(
@@ -824,8 +829,10 @@ export function applyFifaMatchesToState(
     }
     const hasManualResult = match.result?.source === "manual" || (match.result && !match.result.source);
     const result = hasManualResult && !options.force ? match.result : fifaResult;
-    const homeTeam = shouldUpdateTeamName(match.homeTeam, teamName(fifaMatch.Home), match.stage) ? teamName(fifaMatch.Home)! : match.homeTeam;
-    const awayTeam = shouldUpdateTeamName(match.awayTeam, teamName(fifaMatch.Away), match.stage) ? teamName(fifaMatch.Away)! : match.awayTeam;
+    const fifaHomeTeam = teamName(fifaMatch.Home);
+    const fifaAwayTeam = teamName(fifaMatch.Away);
+    const homeTeam = shouldUpdateTeamName(match.homeTeam, fifaHomeTeam, match.stage) ? fifaHomeTeam! : match.homeTeam;
+    const awayTeam = shouldUpdateTeamName(match.awayTeam, fifaAwayTeam, match.stage) ? fifaAwayTeam! : match.awayTeam;
     const next = {
       ...match,
       fifaMatchId: match.fifaMatchId ?? fifaMatch.IdMatch ?? null,

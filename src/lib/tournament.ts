@@ -161,16 +161,7 @@ export function computeKnockoutBracket(state: AppState): KnockoutMatch[] {
   return state.matches
     .filter((match) => match.stage !== "group")
     .map((match) => {
-      const winner =
-        match.result && match.result.homeGoals !== match.result.awayGoals
-          ? match.result.homeGoals > match.result.awayGoals
-            ? match.homeTeam
-            : match.awayTeam
-          : match.result?.advancingTeam === "home"
-            ? match.homeTeam
-            : match.result?.advancingTeam === "away"
-              ? match.awayTeam
-              : null;
+      const winner = matchWinner(match);
       return { stage: match.stage, stageLabel: match.stageLabel, match, winner };
     });
 }
@@ -309,16 +300,17 @@ function buildBracketOrder() {
 }
 
 function matchWinner(match: WorldCupMatch) {
-  if (!match.result) return null;
-  if (match.result.homeGoals > match.result.awayGoals) return match.homeTeam;
-  if (match.result.awayGoals > match.result.homeGoals) return match.awayTeam;
-  if (match.result.advancingTeam === "home") return match.homeTeam;
-  if (match.result.advancingTeam === "away") return match.awayTeam;
+  if (!hasFinalResult(match)) return null;
+  const result = match.result;
+  if (!result) return null;
+  if (result.homeGoals > result.awayGoals) return match.homeTeam;
+  if (result.awayGoals > result.homeGoals) return match.awayTeam;
+  if (result.advancingTeam === "home") return match.homeTeam;
+  if (result.advancingTeam === "away") return match.awayTeam;
   return null;
 }
 
 function matchRunnerUp(match: WorldCupMatch) {
-  if (!match.result) return null;
   const winner = matchWinner(match);
   if (!winner) return null;
   return winner === match.homeTeam ? match.awayTeam : match.homeTeam;
@@ -344,9 +336,9 @@ export function resolveKnockoutPlaceholder(placeholder: string, state: AppState)
   return null;
 }
 
-function shouldApplyResolvedTeam(current: string, seedPlaceholder: string, force?: boolean) {
+function shouldApplyResolvedTeam(current: string, seedPlaceholder: string, resolved: string, force?: boolean) {
   if (force) return true;
-  return current === seedPlaceholder || isKnockoutPlaceholder(current);
+  return current === seedPlaceholder || isKnockoutPlaceholder(current) || (isKnockoutPlaceholder(seedPlaceholder) && current !== resolved);
 }
 
 export function applyKnockoutResolversToState(
@@ -364,9 +356,13 @@ export function applyKnockoutResolversToState(
     const resolvedHome = resolveKnockoutPlaceholder(seed.homeTeam, state);
     const resolvedAway = resolveKnockoutPlaceholder(seed.awayTeam, state);
     const homeTeam =
-      resolvedHome && shouldApplyResolvedTeam(match.homeTeam, seed.homeTeam, options.force) ? resolvedHome : match.homeTeam;
+      resolvedHome && shouldApplyResolvedTeam(match.homeTeam, seed.homeTeam, resolvedHome, options.force)
+        ? resolvedHome
+        : match.homeTeam;
     const awayTeam =
-      resolvedAway && shouldApplyResolvedTeam(match.awayTeam, seed.awayTeam, options.force) ? resolvedAway : match.awayTeam;
+      resolvedAway && shouldApplyResolvedTeam(match.awayTeam, seed.awayTeam, resolvedAway, options.force)
+        ? resolvedAway
+        : match.awayTeam;
 
     if (homeTeam === match.homeTeam && awayTeam === match.awayTeam) return match;
     updatedMatches += 1;

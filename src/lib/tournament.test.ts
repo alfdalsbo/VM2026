@@ -83,4 +83,44 @@ describe("tournament helpers", () => {
     expect(resolved.state.matches.find((match) => match.id === "m089")?.homeTeam).toBe("Germany");
     expect(resolved.state.matches.find((match) => match.id === "m103")?.homeTeam).toBe("Brazil");
   });
+
+  it("repairs stale concrete teams in later knockout placeholders", () => {
+    let state = initialState();
+    state = upsertMatchResultInState(state, "m080", result(2, 1), "England", "Congo DR");
+    state = {
+      ...state,
+      matches: state.matches.map((match) =>
+        match.id === "m092" ? { ...match, homeTeam: "Mexico", awayTeam: "Congo DR" } : match,
+      ),
+    };
+
+    const resolved = applyKnockoutResolversToState(state, { syncedAt: "2026-07-04T12:00:00Z" });
+
+    expect(resolved.state.matches.find((match) => match.id === "m092")?.awayTeam).toBe("England");
+  });
+
+  it("does not advance live knockout scores into later rounds", () => {
+    const state = {
+      ...initialState(),
+      matches: initialState().matches.map((match) =>
+        match.id === "m080"
+          ? {
+              ...match,
+              homeTeam: "England",
+              awayTeam: "Congo DR",
+              status: "live" as const,
+              result: {
+                ...result(0, 1),
+                source: "fifa" as const,
+                updatedBy: "sync:fifa",
+              },
+            }
+          : match,
+      ),
+    };
+
+    const resolved = applyKnockoutResolversToState(state, { syncedAt: "2026-07-01T16:45:00Z" });
+
+    expect(resolved.state.matches.find((match) => match.id === "m092")?.awayTeam).toBe("W80");
+  });
 });

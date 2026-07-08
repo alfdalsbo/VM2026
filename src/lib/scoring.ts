@@ -59,6 +59,25 @@ function predictionFinalScore(prediction: Prediction) {
   };
 }
 
+function hasResolvedScoringOutcome(match: WorldCupMatch) {
+  if (!isKnockoutMatch(match) || !match.result) return true;
+  return match.result.homeGoals !== match.result.awayGoals || Boolean(match.result.advancingTeam);
+}
+
+function emptyScoreBreakdown(): ScoreBreakdown {
+  return {
+    outcome: 0,
+    goalDifference: 0,
+    exactResult: 0,
+    scorer: 0,
+    assist: 0,
+    base: 0,
+    bonus: 0,
+    total: 0,
+    grandTotal: 0,
+  };
+}
+
 export function describePrediction(prediction: Prediction | null | undefined) {
   if (!prediction) return "0-0";
   const base = `${prediction.homeGoals}-${prediction.awayGoals}`;
@@ -139,26 +158,25 @@ export function scorePrediction(
   state?: AppState,
 ): ScoreBreakdown {
   if (!match.result) {
-    return {
-      outcome: 0,
-      goalDifference: 0,
-      exactResult: 0,
-      scorer: 0,
-      assist: 0,
-      base: 0,
-      bonus: 0,
-      total: 0,
-      grandTotal: 0,
-    };
+    return emptyScoreBreakdown();
+  }
+
+  if (!hasResolvedScoringOutcome(match)) {
+    return emptyScoreBreakdown();
   }
 
   const scoreablePrediction = isPredictionForCurrentMatchup(match, prediction) ? prediction : null;
+  if (!scoreablePrediction && isKnockoutMatch(match)) {
+    return emptyScoreBreakdown();
+  }
+
   const tip = scoreablePrediction ?? defaultPrediction("", match.id);
   const finalPrediction = predictionFinalScore(tip);
-  const outcomePoints = actualOutcome(match) === predictionOutcome(tip) ? SCORE_RULES.resultTips.outcome : 0;
+  const hasCorrectOutcome = actualOutcome(match) === predictionOutcome(tip);
+  const outcomePoints = hasCorrectOutcome ? SCORE_RULES.resultTips.outcome : 0;
   const diffPoints = 0;
   const exactPoints =
-    match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals
+    hasCorrectOutcome && match.result.homeGoals === finalPrediction.homeGoals && match.result.awayGoals === finalPrediction.awayGoals
       ? SCORE_RULES.resultTips.exactResult
       : 0;
   const scorerPoints = state && scoreablePrediction ? scoreScorer(match, scoreablePrediction, state) : 0;

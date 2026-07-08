@@ -94,8 +94,70 @@ describe("scorePrediction", () => {
       updatedBy: "alf",
     }, "Germany", "Norway").matches.find((item) => item.id === "m073");
 
-    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, matchupKey: knockoutMatchupKey, knockoutResolution: { method: "penalties", winner: "away" } })).outcome).toBe(1);
-    expect(scorePrediction(match!, prediction("m073", { homeGoals: 1, awayGoals: 1, matchupKey: knockoutMatchupKey, knockoutResolution: { method: "penalties", winner: "home" } })).outcome).toBe(0);
+    const correctWinner = scorePrediction(
+      match!,
+      prediction("m073", {
+        homeGoals: 1,
+        awayGoals: 1,
+        matchupKey: knockoutMatchupKey,
+        knockoutResolution: { method: "penalties", winner: "away" },
+      }),
+    );
+    const wrongWinner = scorePrediction(
+      match!,
+      prediction("m073", {
+        homeGoals: 1,
+        awayGoals: 1,
+        matchupKey: knockoutMatchupKey,
+        knockoutResolution: { method: "penalties", winner: "home" },
+      }),
+    );
+
+    expect(correctWinner.outcome).toBe(1);
+    expect(correctWinner.exactResult).toBe(2);
+    expect(wrongWinner.outcome).toBe(0);
+    expect(wrongWinner.exactResult).toBe(0);
+  });
+
+  it("does not score untouched knockout 0-0 defaults when penalties decide the winner", () => {
+    const state = resolvedKnockoutState();
+    const match = upsertMatchResultInState(state, "m073", {
+      homeGoals: 0,
+      awayGoals: 0,
+      decidedByPenalties: true,
+      advancingTeam: "home",
+      updatedAt: "2026-06-28T21:00:00Z",
+      updatedBy: "alf",
+    }, "Germany", "Norway").matches.find((item) => item.id === "m073");
+
+    const score = scorePrediction(match!, null);
+
+    expect(score.outcome).toBe(0);
+    expect(score.exactResult).toBe(0);
+    expect(score.total).toBe(0);
+  });
+
+  it("does not score unresolved knockout draws before the advancing team is known", () => {
+    const state = resolvedKnockoutState();
+    const match = upsertMatchResultInState(state, "m073", {
+      homeGoals: 0,
+      awayGoals: 0,
+      decidedByPenalties: false,
+      advancingTeam: null,
+      updatedAt: "2026-06-28T21:00:00Z",
+      updatedBy: "alf",
+    }, "Germany", "Norway").matches.find((item) => item.id === "m073");
+
+    const score = scorePrediction(
+      match!,
+      prediction("m073", {
+        homeGoals: 0,
+        awayGoals: 0,
+        matchupKey: knockoutMatchupKey,
+      }),
+    );
+
+    expect(score.total).toBe(0);
   });
 
   it("scores extra-time predictions against the final score", () => {

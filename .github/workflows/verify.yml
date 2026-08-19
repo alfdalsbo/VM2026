@@ -2,13 +2,26 @@ name: Verify
 
 on:
   pull_request:
-  push:
+    types: [opened, reopened, synchronize, ready_for_review]
     branches:
       - main
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       TIPPEKJELLEREN_PASSCODE: Norge
       AUTH_SECRET: github-actions-vm2026-secret

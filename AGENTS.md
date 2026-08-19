@@ -11,3 +11,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Do not use official FIFA logos, marks, or protected assets unless the user provides approved files.
 - For durable Vercel storage, use `DATABASE_URL` with Supabase/Postgres. Local file storage is only for development.
 - Run `npm run verify` when feasible before handoff.
+
+## Global app release gate
+
+For GitHub, CI, Vercel or release work, read the latest `alfdalsbo/arbeidssystem/11-app-leveransestandard.md` before the first release-related write.
+
+Choose release mode first:
+
+1. **No deploy** for work proven not to affect runtime/product.
+2. **Atomic one-shot publish** for one small coherent low-risk change: gather all affected files first, validate the whole change, then make one commit/push/publish round.
+3. **Iterative branch/draft PR** for expected iteration or broad/risky work: local/agent verification and Vercel Preview during iteration, ready PR only when finished, one external final CI, merge to `main`, then Production + smoke.
+
+Do not use repeated pushes so GitHub Actions can find local errors, and do not split one logical connector-driven change into several `main` pushes. Vercel Git integration owns Preview/Production; direct manual production deploy is an exception/recovery path.
+
+Database, auth, secrets, permissions, scheduled sync behavior and irreversible data changes follow stricter local gates than cost optimization.

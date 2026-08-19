@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- . ':(exclude)*.md' ':(exclude)**/*.md' ':(exclude)docs/**' ':(exclude).github/**'",
+  "ignoreCommand": "b=${VERCEL_GIT_PREVIOUS_SHA}; git cat-file -e \"$b\" 2>/dev/null || b=HEAD^; git diff --quiet \"$b\" HEAD -- . ':(exclude)*.md' ':(exclude)**/*.md' ':(exclude)docs/**' ':(exclude).github/**'",
   "crons": [
     {
       "path": "/api/sync/world-cup",

@@ -6,6 +6,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Tippekjelleren Agent Rules
 
+## Systemkobling
+
+- Tippekjelleren VM2026 er et tidsbundet fritidsprodukt i vedlikeholdsmodus, ikke et eget person- eller kunnskapsdomene. Repoet eier kode, spilldata, produktlogikk, design og release.
+- Ikke utled harde personlighetspåstander fra tipping, fotballdata, venneaktivitet eller produktvalg alene.
+- Dersom Alf Kåre eksplisitt avklarer en stabil interesse, arbeidsform eller preferanse med verdi utover produktet, kan den promoteres til `alfdalsbo/personlig`; avledede/usikre funn går til personrepoets `context/PROFILKANDIDATER.md`.
+- Generaliserbar app-, agent-, spillprodukt- eller leveranselæring vurderes mot `alfdalsbo/arbeidssystem`. Ikke opprett lokal personprofil eller ekstra kontekstarkitektur bare for symmetri.
+
 - This app is Tippekjelleren VM 2026. Do not broaden v1 into general betting, gambling, non-VM events, public leagues, payments, or open registration.
 - Keep the tone private, Norwegian, football-focused, and gently self-important in the same broad family as Geotia, but do not import Geotia lore.
 - Do not use official FIFA logos, marks, or protected assets unless the user provides approved files.

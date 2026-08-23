@@ -20,7 +20,7 @@
       "architecture-*": false
     }
   },
-  "ignoreCommand": "b=${VERCEL_GIT_PREVIOUS_SHA}; git cat-file -e \"$b\" 2>/dev/null || b=HEAD^; git diff --quiet \"$b\" HEAD -- . ':(exclude)*.md' ':(exclude)**/*.md' ':(exclude)docs/**' ':(exclude).github/**'",
+  "ignoreCommand": "git rev-parse --verify HEAD^ >/dev/null 2>&1 || exit 1; git diff --quiet HEAD^ HEAD -- . ':(exclude)*.md' ':(exclude)**/*.md' ':(exclude)docs/**' ':(exclude).github/**'; test $? -eq 0",
   "crons": [
     {
       "path": "/api/sync/world-cup",

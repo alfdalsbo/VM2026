@@ -27,8 +27,10 @@ Choose release mode first:
 
 1. **No deploy** for work proven not to affect runtime/product.
 2. **Atomic one-shot publish** for one small coherent low-risk change: gather all affected files first, validate the whole change, then make one commit/push/publish round.
-3. **Iterative branch/draft PR** for expected iteration or broad/risky work: local/agent verification and Vercel Preview during iteration, ready PR only when finished, one external final CI, merge to `main`, then Production + smoke.
+3. **Iterative branch/draft PR** for expected iteration or broad/risky work: local/agent verification and GitHub CI after the candidate is mature. Automatic Vercel Preview from every work-branch commit is not standard; create at most one explicit Preview candidate when a finished version genuinely needs browser/runtime/integration verification, then merge to `main`, Production + smoke.
 
-Do not use repeated pushes so GitHub Actions can find local errors, and do not split one logical connector-driven change into several `main` pushes. Vercel Git integration owns Preview/Production; direct manual production deploy is an exception/recovery path.
+Do not use repeated pushes so GitHub Actions or Vercel can find local errors, and do not split one logical connector-driven change into several `main` pushes. High-frequency agent-/work branches are deploy-silent through `vercel.json`. Vercel Production from `main` is the normal publication path; Preview is opt-in when it provides concrete signal. Direct manual production deploy is an exception/recovery path.
+
+`scripts/vercel-ignore-build.mjs` owns the positive product boundary. `src/**`, `public/**`, the Next build helper and relevant package/framework/runtime configuration build; documentation, tests, analysis files and CI changes do not build alone. If a new indirect build/runtime input is introduced, update the boundary and regression test in the same change. Git uncertainty fails safe to build.
 
 Database, auth, secrets, permissions, scheduled sync behavior and irreversible data changes follow stricter local gates than cost optimization.

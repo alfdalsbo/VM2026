@@ -1,5 +1,25 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "agent/**": false,
+      "automation/**": false,
+      "chatgpt/**": false,
+      "codex/**": false,
+      "dependabot/**": false,
+      "data/**": false,
+      "docs/**": false,
+      "feature/**": false,
+      "fix/**": false,
+      "chore/**": false,
+      "refactor/**": false,
+      "research/**": false,
+      "test/**": false,
+      "work/**": false,
+      "architecture/**": false,
+      "architecture-*": false
+    }
+  },
   "ignoreCommand": "b=${VERCEL_GIT_PREVIOUS_SHA}; git cat-file -e \"$b\" 2>/dev/null || b=HEAD^; git diff --quiet \"$b\" HEAD -- . ':(exclude)*.md' ':(exclude)**/*.md' ':(exclude)docs/**' ':(exclude).github/**'",
   "crons": [
     {

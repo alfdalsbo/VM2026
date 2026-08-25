@@ -2,22 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "agent/**": false,
-      "automation/**": false,
-      "chatgpt/**": false,
-      "codex/**": false,
-      "dependabot/**": false,
-      "data/**": false,
-      "docs/**": false,
-      "feature/**": false,
-      "fix/**": false,
-      "chore/**": false,
-      "refactor/**": false,
-      "research/**": false,
-      "test/**": false,
-      "work/**": false,
-      "architecture/**": false,
-      "architecture-*": false
+      "**": false,
+      "main": true
     }
   },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",

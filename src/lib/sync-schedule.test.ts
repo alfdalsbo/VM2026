@@ -4,12 +4,17 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("sync schedules", () => {
-  it("uses GitHub Actions for 15-minute polling and Vercel Cron only as a daily fallback", () => {
+  it("keeps post-tournament sync manual while preserving daily Vercel fallback and deploy-stille arbeidsgrener", () => {
     const root = process.cwd();
     const workflow = readFileSync(path.join(root, ".github", "workflows", "sync-world-cup.yml"), "utf8");
-    const vercel = JSON.parse(readFileSync(path.join(root, "vercel.json"), "utf8")) as { crons: Array<{ schedule: string }> };
+    const vercel = JSON.parse(readFileSync(path.join(root, "vercel.json"), "utf8")) as {
+      crons: Array<{ schedule: string }>;
+      git: { deploymentEnabled: Record<string, boolean> };
+    };
 
-    expect(workflow).toContain('cron: "3,18,33,48 * * 6,7 *"');
+    expect(workflow).not.toContain("schedule:");
+    expect(workflow).toContain("workflow_dispatch:");
     expect(vercel.crons[0]?.schedule).toBe("11 4 * 6,7 *");
+    expect(vercel.git.deploymentEnabled).toEqual({ "**": false, main: true });
   });
 });

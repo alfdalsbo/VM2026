@@ -15,10 +15,10 @@ Lokal standardkode er `Norge`. `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` og ekster
 ## Arbeidsflyt
 
 1. Lag en branch fra oppdatert `main`.
-2. Push branchen til GitHub.
-3. Bruk Vercels preview deployment for branchen/PR-en til testing.
-4. Merge til `main` når preview og GitHub Actions er grønne.
-5. Vercel lager production deployment automatisk fra `main`.
+2. Kjør relevant lokal verifikasjon før push.
+3. Push branchen og bruk GitHub Actions når PR-en er moden og kvalifisert for CI.
+4. Ikke forvent Vercel Preview: alle branches utenom `main` er deploy-stille. Et browser-/runtime-unntak må aktiveres bevisst og midlertidig for en ferdig kandidat.
+5. Merge til `main` når relevant lokal verifikasjon og GitHub Actions er grønne. Vercel bygger production bare dersom `main`-committen berører produktgrensen.
 
 Ikke bruk lokal `vercel --prod` som normal arbeidsflyt. Direkte CLI-deploy brukes bare som nødgrep.
 
@@ -37,10 +37,11 @@ Ikke bruk lokal `vercel --prod` som normal arbeidsflyt. Direkte CLI-deploy bruke
 Sjekk i denne rekkefolgen:
 
 1. Er committen pushet til riktig branch på GitHub?
-2. Har Vercel laget en deployment for committen?
-3. Er deploymenten grønn eller rød?
-4. Hvis deploymenten er grønn, peker `tippekjelleren.vercel.app` på samme deployment-id?
-5. Hvis alt over stemmer, test hard refresh eller privat fane.
+2. Er branchen `main`, eller er det bevisst opprettet et midlertidig Preview-unntak? Vanlige arbeidsgrener skal ikke ha deployment.
+3. Berører `main`-committen en produktinput? Dokumentasjon, tester og kontrollfiler alene skal bevisst ikke bygge.
+4. Har Vercel laget en deployment for den relevante product-committen, og er den grønn eller rød?
+5. Hvis deploymenten er grønn, peker `tippekjelleren.vercel.app` på samme deployment-id?
+6. Hvis alt over stemmer, test hard refresh eller privat fane.
 
 Build-feil sjekkes i Vercel `Deployments` eller i GitHub Actions `Verify`.
 

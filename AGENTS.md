@@ -27,8 +27,10 @@ Choose release mode first:
 
 1. **No deploy** for work proven not to affect runtime/product.
 2. **Atomic one-shot publish** for one small coherent low-risk change: gather all affected files first, validate the whole change, then make one commit/push/publish round.
-3. **Iterative branch/draft PR** for expected iteration or broad/risky work: local/agent verification and Vercel Preview during iteration, ready PR only when finished, one external final CI, merge to `main`, then Production + smoke.
+3. **Iterative branch/draft PR** for expected iteration or broad/risky work: local/agent verification and GitHub CI after the candidate is mature. Arbeidsgrener er deploy-stille; Vercel Preview er ikke et normalt PR-trinn. Et unntak for browser-/runtime-/integrasjonsverifikasjon må etableres bevisst for en ferdig kandidat gjennom eksplisitt Vercel-konfigurasjon, før merge til `main`, Production + smoke.
 
-Do not use repeated pushes so GitHub Actions can find local errors, and do not split one logical connector-driven change into several `main` pushes. Vercel Git integration owns Preview/Production; direct manual production deploy is an exception/recovery path.
+Do not use repeated pushes so GitHub Actions or Vercel can find local errors, and do not split one logical connector-driven change into several `main` pushes. `vercel.json` makes every branch other than `main` deploy-stille. Vercel Production from `main` is the normal publication path; any Preview is an explicit, temporary exception when it provides concrete signal. Direct manual production deploy is an exception/recovery path.
+
+`scripts/vercel-ignore-build.mjs` owns the positive product boundary. Runtimekode i `src/**` (men ikke `*.test.*`/`*.spec.*`), `public/**`, den aktuelle Next-bygghjelperen og relevant package/framework/runtime-konfigurasjon bygger; dokumentasjon, tester, analysefiler og CI-endringer bygger ikke alene. Hvis en ny indirekte build-/runtime-input introduseres, oppdater grensen og regresjonstesten i samme endring. Git-usikkerhet feiler trygt til bygg.
 
 Database, auth, secrets, permissions, scheduled sync behavior and irreversible data changes follow stricter local gates than cost optimization.

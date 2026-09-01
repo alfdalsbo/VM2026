@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process';
 
 export const vercelProductInputs = [
-  /^src\//,
   /^public\//,
   /^scripts\/clean-next-dev-types\.mjs$/,
   /^next\.config\.(?:js|mjs|ts)$/,
@@ -13,10 +12,16 @@ export const vercelProductInputs = [
   /^\.node-version$/,
 ];
 
+export function isVercelProductInput(file) {
+  return typeof file === 'string'
+    && ((/^src\//.test(file) && !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file))
+      || vercelProductInputs.some((pattern) => pattern.test(file)));
+}
+
 export function canSkipVercelBuild(changedFiles) {
   return Array.isArray(changedFiles)
     && changedFiles.length > 0
-    && changedFiles.every((file) => !vercelProductInputs.some((pattern) => pattern.test(file)));
+    && changedFiles.every((file) => !isVercelProductInput(file));
 }
 
 function changedFilesForTriggeringCommit() {

@@ -24,6 +24,8 @@ test('arbeids-, dokumentasjons- og testendringer kan hoppe over Vercel', () => {
     'CONTRIBUTING.md',
     'docs/notat.md',
     'tests/tippekjelleren.spec.ts',
+    'src/lib/sync-schedule.test.ts',
+    'src/lib/world-cup-sync.spec.tsx',
     'playwright.config.ts',
     'scripts/analysis-context.mjs',
     '.github/workflows/verify.yml',
@@ -35,5 +37,6 @@ test('arbeids-, dokumentasjons- og testendringer kan hoppe over Vercel', () => {
 test('blandet commit bygger hvis minst én produktfil er endret', () => {
   assert.equal(canSkipVercelBuild(['README.md', 'src/app/page.tsx']), false);
   assert.equal(canSkipVercelBuild(['README.md', 'tests/tippekjelleren.spec.ts']), true);
+  assert.equal(canSkipVercelBuild(['README.md', 'src/lib/sync-schedule.test.ts']), true);
   assert.equal(canSkipVercelBuild([]), false);
 });

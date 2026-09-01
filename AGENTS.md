@@ -31,6 +31,6 @@ Choose release mode first:
 
 Do not use repeated pushes so GitHub Actions or Vercel can find local errors, and do not split one logical connector-driven change into several `main` pushes. `vercel.json` makes every branch other than `main` deploy-stille. Vercel Production from `main` is the normal publication path; any Preview is an explicit, temporary exception when it provides concrete signal. Direct manual production deploy is an exception/recovery path.
 
-`scripts/vercel-ignore-build.mjs` owns the positive product boundary. `src/**`, `public/**`, the Next build helper and relevant package/framework/runtime configuration build; documentation, tests, analysis files and CI changes do not build alone. If a new indirect build/runtime input is introduced, update the boundary and regression test in the same change. Git uncertainty fails safe to build.
+`scripts/vercel-ignore-build.mjs` owns the positive product boundary. Runtimekode i `src/**` (men ikke `*.test.*`/`*.spec.*`), `public/**`, den aktuelle Next-bygghjelperen og relevant package/framework/runtime-konfigurasjon bygger; dokumentasjon, tester, analysefiler og CI-endringer bygger ikke alene. Hvis en ny indirekte build-/runtime-input introduseres, oppdater grensen og regresjonstesten i samme endring. Git-usikkerhet feiler trygt til bygg.
 
 Database, auth, secrets, permissions, scheduled sync behavior and irreversible data changes follow stricter local gates than cost optimization.

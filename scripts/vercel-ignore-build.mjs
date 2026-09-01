@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 
 export const vercelProductInputs = [
   /^public\//,
+  /^scripts\/vercel-ignore-build\.mjs$/,
   /^scripts\/clean-next-dev-types\.mjs$/,
   /^next\.config\.(?:js|mjs|ts)$/,
   /^postcss\.config\.(?:js|mjs|ts)$/,

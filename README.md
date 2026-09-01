@@ -26,7 +26,7 @@ npm run dev
 
 ## Samarbeid og deploy
 
-Vercel-prosjektet heter `tippekjelleren` og er koblet til GitHub-repoet `alfdalsbo/VM2026`. Push/merge til `main` lager production deployment automatisk. Pull requests og andre branches får preview deployments.
+Vercel-prosjektet heter `tippekjelleren` og er koblet til GitHub-repoet `alfdalsbo/VM2026`. `main` er production branch. Alle andre branches, inkludert pull requests, er deploy-stille; en vanlig Git-push er derfor ikke en deployment-intensjon. Når en `main`-commit berører en definert produktinput, lager Vercel production deployment automatisk. Dokumentasjon, tester og kontrollfiler alene skal ikke bygge produktet.
 
 Fast produksjonsadresse er `https://tippekjelleren.vercel.app`. Den adressen er lagt inn som prosjektdomene i Vercel og skal derfor følge siste grønne production deployment automatisk.
 
@@ -40,7 +40,7 @@ npm run verify
 git push -u origin min-endring
 ```
 
-Test Vercel preview-URL-en fra PR-en før merge til `main`. Se `CONTRIBUTING.md` for feilsøking når en endring ikke vises i produksjon.
+Kjør lokal verifikasjon før push og bruk GitHub Actions for en moden, kvalifisert PR. Vercel Preview er ikke en normal PR-fase i denne konfigurasjonen: hvis en ferdig kandidat virkelig trenger browser-/runtime-/integrasjonsverifikasjon, må Preview aktiveres bevisst og midlertidig før den brukes. Se `CONTRIBUTING.md` for feilsøking når en endring ikke vises i produksjon.
 
 ## Miljøvariabler
 
@@ -98,9 +98,9 @@ Playwright:
 npm run test:e2e
 ```
 
-## GitHub-sync hvert kvarter i VM-månedene
+## Manuell GitHub-sync etter mesterskapet
 
-Workflowen `.github/workflows/sync-world-cup.yml` kaller produksjons-endepunktet 03, 18, 33 og 48 minutter over hver time i juni og juli 2026. For at den skal virke må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`. Vercel Cron ligger samtidig som daglig sikkerhetssync, fordi Hobby-planen bare støtter gratis cron én gang i døgnet.
+Den automatiske GitHub-synken ble stanset etter mesterskapet. Workflowen `.github/workflows/sync-world-cup.yml` kan nå bare kjøres manuelt. For en manuell kjøring må GitHub-repoet ha en Actions secret med samme verdi som Vercel-miljøvariabelen `CRON_SECRET`. Vercel Cron står fortsatt som daglig sikkerhetskall i den eksisterende driftskonfigurasjonen.
 
 ```bash
 gh auth login

@@ -1,8 +1,6 @@
 name: Sync World Cup data
 
 on:
-  schedule:
-    - cron: "3,18,33,48 * * 6,7 *"
   workflow_dispatch:
     inputs:
       force:
@@ -18,7 +16,7 @@ jobs:
       - name: Call Tippekjelleren sync endpoint
         run: |
           url="https://tippekjelleren.vercel.app/api/sync/world-cup"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
+          if [ "${{ inputs.force }}" = "true" ]; then
             url="${url}?force=1"
           fi
           curl --fail --show-error --silent \

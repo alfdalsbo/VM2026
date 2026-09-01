@@ -7,6 +7,7 @@ test('Tippekjelleren bygger når publisert produkt eller runtime endres', () => 
     'src/app/page.tsx',
     'src/lib/db.ts',
     'public/avatars/Haaland.jpg',
+    'scripts/vercel-ignore-build.mjs',
     'scripts/clean-next-dev-types.mjs',
     'next.config.ts',
     'package.json',
